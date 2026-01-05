@@ -7,7 +7,7 @@
  *   2. 运行: node scripts/generate-diagram.js
  *
  * 或者直接使用 npx:
- *   npx @mermaid-js/mermaid-cli -i docs/roadmap.mmd -o docs/roadmap.svg -b white
+ *   npx @mermaid-js/mermaid-cli -i figures/plan/roadmap.mmd -o figures/plan/roadmap.svg -b white
  */
 
 const { execSync } = require('child_process');
@@ -15,8 +15,8 @@ const path = require('path');
 const fs = require('fs');
 
 const ROOT = path.resolve(__dirname, '..');
-const INPUT = path.join(ROOT, 'docs', 'roadmap.mmd');
-const OUTPUT = path.join(ROOT, 'docs', 'roadmap.svg');
+const INPUT = path.join(ROOT, 'figures', 'plan', 'roadmap.mmd');
+const OUTPUT = path.join(ROOT, 'figures', 'plan', 'roadmap.svg');
 
 // Mermaid 配置
 const CONFIG = {
@@ -54,7 +54,7 @@ try {
 } catch (error) {
     console.error('生成失败:', error.message);
     console.log('\n💡 替代方案:');
-    console.log('   1. 用浏览器打开 docs/roadmap.html');
+    console.log('   1. 用浏览器打开 figures/plan/roadmap.html');
     console.log('   2. 点击"导出 SVG"按钮');
     process.exit(1);
 }
