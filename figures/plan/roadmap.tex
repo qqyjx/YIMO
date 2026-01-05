@@ -19,30 +19,39 @@
     rectangle, rounded corners=8pt,
     draw=phaseborder, line width=1.5pt,
     fill=phaseblue,
-    minimum width=6cm, minimum height=3.5cm,
+    minimum width=7cm, minimum height=5cm,
     font=\bfseries\small
 ]
 \tikzstyle{activity} = [
     rectangle, rounded corners=4pt,
     draw=activityborder, line width=0.8pt,
     fill=activitywhite,
-    text width=4.5cm, align=center,
-    minimum height=0.8cm,
+    text width=5.8cm, align=center,
+    minimum height=1cm,
     font=\small
 ]
 \tikzstyle{milestone} = [
-    diamond, aspect=2.5,
+    rectangle, rounded corners=6pt,
     draw=milestoneborder, line width=1.5pt,
     fill=milestoneyellow,
     text width=2.2cm, align=center,
-    font=\small
+    minimum height=2.2cm,
+    font=\footnotesize
 ]
 \tikzstyle{startend} = [
     rectangle, rounded corners=12pt,
     draw=startborder, line width=1.5pt,
     fill=startgray,
-    text width=5cm, align=center,
-    minimum height=1cm,
+    text width=4.5cm, align=center,
+    minimum height=1.2cm,
+    font=\small
+]
+\tikzstyle{endbox} = [
+    rectangle, rounded corners=12pt,
+    draw=startborder, line width=1.5pt,
+    fill=startgray,
+    text width=4cm, align=center,
+    minimum height=1.2cm,
     font=\small
 ]
 \tikzstyle{arrow} = [
@@ -57,75 +66,74 @@
     color=feedbackorange
 ]
 \tikzstyle{phaselabel} = [
-    font=\bfseries\small,
+    font=\bfseries\footnotesize,
     color=phaseborder
 ]
 
 \begin{document}
-\begin{tikzpicture}[node distance=0.6cm]
+\begin{tikzpicture}[node distance=1cm]
 
 % ===== 标题 =====
-\node[font=\Large\bfseries, text width=16cm, align=center] (title) at (8, 1)
-    {面向资产全生命多模态孪生体 — 任务一：财务数据架构试点实施技术路线图};
-\node[font=\small, color=gray] at (8, 0.3) {2026.01 -- 2026.04};
+\node[font=\Large\bfseries, text width=20cm, align=center] (title) at (10, 0.8)
+    {财务数据架构试点实施技术路线图};
 
 % ===== 开始节点 =====
-\node[startend] (start) at (0, -1.5) {项目启动\\接收财务架构与需求输入};
+\node[startend] (start) at (0, -2) {项目启动\\接收财务架构与需求输入};
 
 % ===== 第一阶段 =====
-\node[phaselabel] (p1label) at (0, -3.2) {第一阶段：财务本体定义与架构映射 (2026.01)};
-\node[activity] (a11) at (0, -4.2) {财务架构梳理与实体识别};
-\node[activity] (a12) at (0, -5.4) {基于CIM的财务领域本体构建};
-\node[activity] (a13) at (0, -6.6) {知识图谱关系映射定义};
+\node[phaselabel] (p1label) at (0, -4.5) {第一阶段：财务本体定义与架构映射 (2026.01)};
+\node[activity] (a11) at (0, -5.8) {财务架构梳理与实体识别};
+\node[activity] (a12) at (0, -7.4) {基于CIM的财务领域本体构建};
+\node[activity] (a13) at (0, -9.0) {知识图谱关系映射定义};
 
 \begin{scope}[on background layer]
-    \node[phase, fit=(p1label)(a11)(a12)(a13), inner sep=8pt] (p1box) {};
+    \node[phase, fit=(p1label)(a11)(a12)(a13), inner sep=12pt] (p1box) {};
 \end{scope}
 
 % ===== 里程碑1 =====
-\node[milestone, right=1.2cm of p1box] (m1) {里程碑 1月底\\财务本体库\\初步建模};
+\node[milestone] (m1) at (5.5, -6.5) {里程碑 1月底\\财务本体库\\初步建模};
 
 % ===== 第二阶段 =====
-\node[phaselabel] (p2label) at (8, -3.2) {第二阶段：EAV存储构建与数据汇聚 (2026.02)};
-\node[activity] (a21) at (8, -4.2) {财务场景EAV模型动态扩展设计};
-\node[activity] (a22) at (8, -5.4) {流批一体数据接入适配};
-\node[activity] (a23) at (8, -6.6) {多源异构财务数据自动化导入};
+\node[phaselabel] (p2label) at (11, -4.5) {第二阶段：EAV存储构建与数据汇聚 (2026.02)};
+\node[activity] (a21) at (11, -5.8) {财务场景EAV模型动态扩展设计};
+\node[activity] (a22) at (11, -7.4) {流批一体数据接入适配};
+\node[activity] (a23) at (11, -9.0) {多源异构财务数据自动化导入};
 
 \begin{scope}[on background layer]
-    \node[phase, fit=(p2label)(a21)(a22)(a23), inner sep=8pt] (p2box) {};
+    \node[phase, fit=(p2label)(a21)(a22)(a23), inner sep=12pt] (p2box) {};
 \end{scope}
 
 % ===== 里程碑2 =====
-\node[milestone, right=1.2cm of p2box] (m2) {里程碑 2月底\\财务全量数据\\EAV化存贮};
+\node[milestone] (m2) at (16.5, -6.5) {里程碑 2月底\\财务全量数据\\EAV化存储};
 
 % ===== 第三阶段 =====
-\node[phaselabel] (p3label) at (0, -9.2) {第三阶段：本体串联与语义对齐 (2026.03)};
-\node[activity] (a31) at (0, -10.2) {EAV数据库与本体管理器串联集成};
-\node[activity] (a32) at (0, -11.4) {基于混合打分算法的语义相似度计算};
-\node[activity] (a33) at (0, -12.6) {财务-实物资产语义映射规则生成};
+\node[phaselabel] (p3label) at (0, -13) {第三阶段：本体串联与语义对齐 (2026.03)};
+\node[activity] (a31) at (0, -14.3) {EAV数据库与本体管理器串联集成};
+\node[activity] (a32) at (0, -15.9) {基于混合打分算法的语义相似度计算};
+\node[activity] (a33) at (0, -17.5) {财务-实物资产语义映射规则生成};
 
 \begin{scope}[on background layer]
-    \node[phase, fit=(p3label)(a31)(a32)(a33), inner sep=8pt] (p3box) {};
+    \node[phase, fit=(p3label)(a31)(a32)(a33), inner sep=12pt] (p3box) {};
 \end{scope}
 
 % ===== 里程碑3 =====
-\node[milestone, right=1.2cm of p3box] (m3) {里程碑 3月底\\语义映射规则\\部署完成};
+\node[milestone] (m3) at (5.5, -15) {里程碑 3月底\\语义映射规则\\部署完成};
 
 % ===== 第四阶段 =====
-\node[phaselabel] (p4label) at (8, -9.2) {第四阶段：模型萃取与试点验证 (2026.04)};
-\node[activity] (a41) at (8, -10.2) {面向多态业务的参数化切片技术研发};
-\node[activity] (a42) at (8, -11.4) {财务审计/成本分析视点模型萃取};
-\node[activity] (a43) at (8, -12.6) {试点场景应用与性能验证};
+\node[phaselabel] (p4label) at (11, -13) {第四阶段：模型萃取与试点验证 (2026.04)};
+\node[activity] (a41) at (11, -14.3) {面向多态业务的参数化切片技术研发};
+\node[activity] (a42) at (11, -15.9) {财务审计/成本分析视点模型萃取};
+\node[activity] (a43) at (11, -17.5) {试点场景应用与性能验证};
 
 \begin{scope}[on background layer]
-    \node[phase, fit=(p4label)(a41)(a42)(a43), inner sep=8pt] (p4box) {};
+    \node[phase, fit=(p4label)(a41)(a42)(a43), inner sep=12pt] (p4box) {};
 \end{scope}
 
 % ===== 里程碑4 =====
-\node[milestone, right=1.2cm of p4box] (m4) {里程碑 4月底\\试点场景\\功能验收};
+\node[milestone] (m4) at (16.5, -15) {里程碑 4月底\\试点场景\\功能验收};
 
 % ===== 结束节点 =====
-\node[startend] (end) at (14.5, -8) {项目目标达成\\建立统一数据与知识表达体系};
+\node[endbox] (end) at (16.5, -11) {项目目标达成\\建立统一数据与\\知识表达体系};
 
 % ===== 连接线 =====
 % 阶段内部
@@ -142,31 +150,29 @@
 \draw[arrow] (start) -- (p1box.north);
 
 % 阶段1 -> 里程碑1 -> 阶段2
-\draw[arrow] (a13.east) -- ++(0.3,0) |- (m1.west);
-\draw[arrow] (m1.east) -- (p2box.west |- m1);
+\draw[arrow] (p1box.east) -- (m1.west);
+\draw[arrow] (m1.east) -- (p2box.west);
 
 % 阶段2 -> 里程碑2
-\draw[arrow] (a23.east) -- ++(0.3,0) |- (m2.west);
+\draw[arrow] (p2box.east) -- (m2.west);
 
 % 阶段1 -> 阶段3
 \draw[arrow] (p1box.south) -- (p3box.north);
 
+% 里程碑2 -> 结束
+\draw[arrow] (m2.south) -- (end.north);
+
 % 阶段3 -> 里程碑3 -> 阶段4
-\draw[arrow] (a33.east) -- ++(0.3,0) |- (m3.west);
-\draw[arrow] (m3.east) -- (p4box.west |- m3);
+\draw[arrow] (p3box.east) -- (m3.west);
+\draw[arrow] (m3.east) -- (p4box.west);
 
 % 阶段4 -> 里程碑4 -> 结束
-\draw[arrow] (a43.east) -- ++(0.3,0) |- (m4.west);
-\draw[arrow] (m4.east) -- ++(0.5,0) |- (end.west);
+\draw[arrow] (p4box.east) -- (m4.west);
+\draw[arrow] (m4.north) -- (end.south);
 
-% 里程碑2 -> 阶段3 (垂直连接)
-\draw[arrow] (m2.south) -- ++(0,-0.8) -| ($(p3box.north)+(1.5,0)$);
-
-% ===== 反馈回路 =====
-\draw[feedback] (a43.south) -- ++(0,-0.8) -| ($(a12.south)-(0.3,0)$)
-    node[pos=0.25, below, font=\scriptsize, color=feedbackorange] {验证反馈与模型迭代优化};
-\draw[feedback] (a33.west) -- ++(-0.5,0) |- ($(a13.west)-(0,0.2)$)
-    node[pos=0.3, left, font=\scriptsize, color=feedbackorange] {语义规则修正};
+% ===== 反馈回路 (放在最外侧避免重叠) =====
+\draw[feedback] (p4box.south) -- ++(0,-1.5) -- ++(-16,0) -- ++(0,12.5) -- (-5,-7.4) -- (a12.west)
+    node[pos=0.15, below, font=\scriptsize, color=feedbackorange] {验证反馈与模型迭代优化};
 
 \end{tikzpicture}
 \end{document}
