@@ -1,0 +1,63 @@
+graph TD
+    %% 定义样式
+    classDef mainPhase fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1,font-weight:bold,rx:10,ry:10;
+    classDef activity fill:#FFFFFF,stroke:#37474F,stroke-width:1px,color:#000000,rx:5,ry:5;
+    classDef milestone fill:#FFFDE7,stroke:#F9A825,stroke-width:2px,color:#000000,rotate:45;
+    classDef startEnd fill:#CFD8DC,stroke:#455A64,stroke-width:2px,color:#000000,rx:15,ry:15;
+    classDef technicalRoute fill:none,stroke:#FF5722,stroke-width:2px,stroke-dasharray: 5 5,color:#BF360C;
+
+    %% 标题
+    Title[面向资产全生命多模态孪生体 - 任务一：财务数据架构试点实施技术路线图 2026.01-2026.04]:::technicalRoute
+
+    %% 开始节点
+    Start(项目启动：接收财务架构与需求输入):::startEnd --> P1_Box
+
+    %% 第一阶段
+    subgraph P1_Box [第一阶段：财务本体定义与架构映射 2026.01]
+        direction TB
+        A1_1(财务架构梳理与实体识别) --> A1_2(基于CIM的财务领域本体构建)
+        A1_2 --> A1_3(知识图谱关系映射定义)
+    end
+    A1_3 --> M1
+    M1{里程碑 1月底<br>财务本体库初步建模}:::milestone --> P2_Box
+
+    %% 第二阶段
+    subgraph P2_Box [第二阶段：EAV存储构建与数据汇聚 2026.02]
+        direction TB
+        A2_1(财务场景EAV模型动态扩展设计) --> A2_2(流批一体数据接入适配)
+        A2_2 --> A2_3(多源异构财务数据自动化导入)
+    end
+    A2_3 --> M2
+    M2{里程碑 2月底<br>财务全量数据EAV化存贮}:::milestone --> P3_Box
+
+    %% 第三阶段
+    subgraph P3_Box [第三阶段：本体串联与语义对齐 2026.03]
+        direction TB
+        A3_1(EAV数据库与本体管理器串联集成) --> A3_2(基于混合打分算法的语义相似度计算)
+        A3_2 --> A3_3(财务-实物资产语义映射规则生成)
+    end
+    A3_3 --> M3
+    M3{里程碑 3月底<br>语义映射规则部署完成}:::milestone --> P4_Box
+
+    %% 第四阶段
+    subgraph P4_Box [第四阶段：模型萃取与试点验证 2026.04]
+        direction TB
+        A4_1(面向多态业务的参数化切片技术研发) --> A4_2(财务审计/成本分析视点模型萃取)
+        A4_2 --> A4_3(试点场景应用与性能验证)
+    end
+    A4_3 --> M4
+    M4{里程碑 4月底<br>试点场景功能验收}:::milestone --> End
+
+    %% 结束节点
+    End(项目目标达成：建立统一数据与知识表达体系):::startEnd
+
+    %% 反馈迭代回路
+    A4_3 -.-> |验证反馈与模型迭代优化| A1_2
+    A3_3 -.-> |语义规则修正| A1_3
+
+    %% 应用样式
+    class P1_Box,P2_Box,P3_Box,P4_Box mainPhase;
+    class A1_1,A1_2,A1_3,A2_1,A2_2,A2_3,A3_1,A3_2,A3_3,A4_1,A4_2,A4_3 activity;
+
+    linkStyle default stroke:#263238,stroke-width:1.5px,fill:none;
+    linkStyle 11,12 stroke:#FF5722,stroke-width:2px,stroke-dasharray: 5 5;
