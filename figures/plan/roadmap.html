@@ -14,12 +14,15 @@
             display: flex;
             justify-content: center;
         }
-        #export-btn {
+        .export-buttons {
             position: fixed;
             top: 20px;
             right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .export-btn {
             padding: 12px 24px;
-            background: #1565C0;
             color: white;
             border: none;
             border-radius: 8px;
@@ -27,11 +30,17 @@
             font-size: 16px;
             font-weight: bold;
         }
-        #export-btn:hover { background: #0D47A1; }
+        .btn-png { background: #388E3C; }
+        .btn-png:hover { background: #2E7D32; }
+        .btn-svg { background: #1565C0; }
+        .btn-svg:hover { background: #0D47A1; }
     </style>
 </head>
 <body>
-    <button id="export-btn" onclick="exportSVG()">导出 SVG</button>
+    <div class="export-buttons">
+        <button class="export-btn btn-png" onclick="exportPNG()">导出 PNG（推荐）</button>
+        <button class="export-btn btn-svg" onclick="exportSVG()">导出 SVG</button>
+    </div>
 
     <div class="mermaid">
 graph TD
@@ -111,6 +120,62 @@ graph TD
             }
         });
 
+        // 导出高清 PNG（Word 兼容）
+        function exportPNG() {
+            const svg = document.querySelector('.mermaid svg');
+            if (!svg) {
+                alert('图表尚未渲染完成，请稍候重试');
+                return;
+            }
+
+            const scale = 3; // 3倍分辨率，高清输出
+            const svgRect = svg.getBoundingClientRect();
+            const width = svgRect.width * scale;
+            const height = svgRect.height * scale;
+
+            // 克隆并准备 SVG
+            const clone = svg.cloneNode(true);
+            clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            clone.setAttribute('width', svgRect.width);
+            clone.setAttribute('height', svgRect.height);
+
+            // 嵌入字体样式
+            const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+            style.textContent = `
+                * { font-family: 'Microsoft YaHei', 'SimHei', 'PingFang SC', sans-serif !important; }
+            `;
+            clone.insertBefore(style, clone.firstChild);
+
+            const svgData = new XMLSerializer().serializeToString(clone);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+                ctx.scale(scale, scale);
+                ctx.drawImage(img, 0, 0);
+
+                canvas.toBlob(function(blob) {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'roadmap.png';
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                }, 'image/png', 1.0);
+
+                URL.revokeObjectURL(url);
+            };
+            img.src = url;
+        }
+
+        // 导出 SVG
         function exportSVG() {
             const svg = document.querySelector('.mermaid svg');
             if (!svg) {
@@ -118,19 +183,16 @@ graph TD
                 return;
             }
 
-            // 克隆 SVG 并添加必要属性
             const clone = svg.cloneNode(true);
             clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
             clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
 
-            // 添加字体样式
             const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
             style.textContent = `
                 text { font-family: 'Microsoft YaHei', 'SimHei', 'PingFang SC', sans-serif; }
             `;
             clone.insertBefore(style, clone.firstChild);
 
-            // 序列化并下载
             const svgData = new XMLSerializer().serializeToString(clone);
             const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
             const url = URL.createObjectURL(blob);
