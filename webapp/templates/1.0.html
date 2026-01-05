@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>EAV 语义库概览</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1.5rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 4px 8px; }
+    th { background: #f5f5f5; }
+    .small { font-size: 12px; color: #666; }
+    .mono { font-family: monospace; }
+        .row { display: flex; gap: 1rem; align-items: center; }
+        .col { flex: 1; }
+        textarea { width: 100%; height: 120px; }
+        input[type="text"] { width: 100%; }
+        pre { background: #f7f7f7; padding: 8px; overflow-x: auto; }
+        .muted { color:#888; font-size: 12px; }
+        .btn { padding: 6px 12px; cursor: pointer; }
+  </style>
+</head>
+<body>
+<h1>EAV 语义库概览</h1>
+<table>
+  <thead>
+    <tr><th>ID</th><th>Name</th><th>Source File</th><th>Canon Rows</th><th>Mapping Rows</th></tr>
+  </thead>
+  <tbody>
+  {% for row in stats %}
+    <tr>
+      <td>{{ row.id }}</td>
+      <td>{{ row.name }}</td>
+      <td class="small">{{ row.source_file }}</td>
+      <td>{{ row.canon }}</td>
+      <td>{{ row.mapping }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>RAG 检索 + LLM 回答</h2>
+<div class="row">
+    <div class="col" style="max-width:220px;">
+        <label>选择数据集：</label>
+        <select id="dsid">
+            {% for row in stats %}
+                <option value="{{ row.id }}">[{{ row.id }}] {{ row.name }}</option>
+            {% endfor %}
+        </select>
+        <p class="muted">注意：首次检索会构建索引，较慢；随后相同 dataset 会缓存。</p>
+    </div>
+    <div class="col">
+        <label>问题（将基于所选数据集的 canonical_text 进行 Top-K 检索）：</label>
+        <input id="rag_q" type="text" placeholder="例如：某字段的含义？或如何映射X到标准值？" />
+        <div style="margin-top:8px;">
+            <button class="btn" onclick="doRag()">提交 RAG 查询</button>
+        </div>
+    </div>
+</div>
+<div class="row" style="margin-top:12px;">
+    <div class="col">
+        <h3>检索到的上下文</h3>
+        <pre id="rag_ctx">(尚无)</pre>
+    </div>
+    <div class="col">
+        <h3>LLM 回答</h3>
+        <pre id="rag_ans">(尚无)</pre>
+    </div>
+    <div class="col" style="max-width:220px;">
+        <h3>诊断</h3>
+        <pre id="rag_dbg" class="muted">(等待查询)</pre>
+    </div>
+</div>
+
+<h2>直接调用 LLM API（无检索）</h2>
+<div class="row">
+    <div class="col">
+        <label>对话消息（JSON 数组），例如：[{"role":"user","content":"你好"}]</label>
+        <textarea id="chat_msgs">[{"role":"user","content":"你好，做一个自我介绍。"}]</textarea>
+        <div style="margin-top:8px;">
+            <button class="btn" onclick="doChat()">发送</button>
+        </div>
+    </div>
+    <div class="col">
+        <h3>响应</h3>
+        <pre id="chat_resp">(尚无)</pre>
+    </div>
+</div>
+
+<div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #999; font-size: 12px;">
+    &copy; 2025 DataMind | 
+    <a href="#" style="color: #666; text-decoration: none; margin: 0 10px;">联系我们</a> |
+    版本: 
+    <a href="/?v=1.0" style="color: #333; font-weight: bold; text-decoration: none; margin: 0 10px;">v1.0</a>
+    <a href="/?v=2.0" style="color: #666; text-decoration: none; margin: 0 10px;">v2.0</a>
+    <a href="/?v=3.0" style="color: #666; text-decoration: none; margin: 0 10px;">v3.0</a>
+    <a href="/?v=10.0" style="color: #666; text-decoration: none; margin: 0 10px;">v10.0</a>
+</div>
+</body>
+<script>
+async function doRag(){
+    const dsid = document.getElementById('dsid').value;
+    const q = document.getElementById('rag_q').value.trim();
+    if(!q){ alert('请输入问题'); return; }
+    document.getElementById('rag_dbg').textContent = '检索中...';
+    try{
+        const resp = await fetch('/rag/query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dataset_id: Number(dsid), query: q })
+        });
+        const data = await resp.json();
+        if(data.error){
+            document.getElementById('rag_dbg').textContent = '错误: ' + data.error;
+            return;
+        }
+        document.getElementById('rag_ctx').textContent = (data.retrieved||[]).join('\n\n');
+        const llm = data.llm || {};
+        // deepseek 返回结构兼容 openai 格式
+        let text = '';
+        try { text = llm.choices[0].message.content; } catch(e) { text = JSON.stringify(llm, null, 2); }
+        document.getElementById('rag_ans').textContent = text;
+        document.getElementById('rag_dbg').textContent = 'OK';
+    }catch(err){
+        document.getElementById('rag_dbg').textContent = '异常: ' + err;
+    }
+}
+
+async function doChat(){
+    let msgsRaw = document.getElementById('chat_msgs').value;
+    let msgs;
+    try{ msgs = JSON.parse(msgsRaw); }
+    catch(e){ alert('消息 JSON 解析失败: ' + e); return; }
+    const resp = await fetch('/deepseek/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: msgs, model: 'deepseek-chat' })
+    });
+    const data = await resp.json();
+    if(data.error){
+        document.getElementById('chat_resp').textContent = '错误: ' + data.error;
+        return;
+    }
+    let text = '';
+    try { text = data.choices[0].message.content; } catch(e) { text = JSON.stringify(data, null, 2); }
+    document.getElementById('chat_resp').textContent = text;
+}
+</script>
+</html>

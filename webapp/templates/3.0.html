@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据模型管理 v3.0</title>
+    <style>
+        :root {
+            --sidebar-w: 235px;
+            --primary: #1e293b; /* Darker theme based on image buttons */
+            --accent: #3b82f6;
+            --bg-body: #f3f4f6;
+            --text-main: #333;
+            --text-light: #666;
+            --border: #e5e7eb;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg-body); display: flex; min-height: 100vh; }
+        
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: #fff;
+            position: fixed;
+            height: 100%;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 1.8rem;
+        }
+        .brand { font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; gap: 10px; margin-bottom: 3rem; color: #000; }
+        .sb-title { font-size: 0.85rem; color: #999; margin-bottom: 1rem; }
+        .ds-list { list-style: none; padding: 0; margin-bottom: 3rem; }
+        .ds-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer; color: #555; font-size: 0.95rem; }
+        .ds-item:hover, .ds-item.active { color: var(--accent); }
+        .ds-id { color: #ccc; font-size: 0.85rem; }
+        
+        .sb-guide { font-size: 0.85rem; color: #888; line-height: 1.6; margin-top: auto; }
+        .sb-footer { font-size: 0.75rem; color: #ccc; margin-top: 2rem; }
+
+        /* Main */
+        .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+        
+        /* Banner */
+        .banner {
+            height: 240px;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 3rem;
+        }
+        .banner h1 { font-family: "Songti SC", serif; font-size: 2.5rem; margin-bottom: 1rem; font-weight: 400; letter-spacing: 2px; }
+        .banner p { font-size: 1rem; opacity: 0.9; font-weight: 300; }
+
+        /* Content */
+        .content { padding: 2rem 3rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+        
+        .card { background: #fff; border-radius: 8px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #f0f0f0; padding-bottom: 1rem; }
+        .card-title { font-size: 1.5rem; font-family: "Songti SC", serif; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .badge { background: #f3f4f6; color: #666; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; font-family: sans-serif; font-weight: normal; }
+        
+        .form-group { margin-bottom: 1.5rem; }
+        .input-group { display: flex; gap: 1rem; }
+        .form-control { padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem; outline: none; transition: 0.3s; }
+        .form-control:focus { border-color: var(--accent); }
+        select.form-control { min-width: 200px; }
+        input.form-control { flex: 1; }
+        
+        .btn { background: #1f2937; color: #fff; border: none; padding: 0.8rem 2rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+        .btn:hover { background: #000; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .grid-chat { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
+        
+        .res-box { background: #f9fafb; border-left: 3px solid #333; padding: 1rem; min-height: 100px; margin-top: 0.5rem; font-size: 0.9rem; color: #444; white-space: pre-wrap; }
+        .label { font-size: 0.85rem; font-weight: bold; color: #333; margin-bottom: 0.5rem; display: block; }
+
+        .tips-list li { margin-bottom: 1rem; display: flex; gap: 10px; font-size: 0.9rem; color: #555; line-height: 1.5; }
+        .tips-icon { font-size: 1.1rem; }
+
+        /* Footer Links */
+        .footer-links { text-align: center; margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #eee; color: #999; font-size: 0.85rem; }
+        .footer-links a { margin: 0 5px; text-decoration: none; color: #999; }
+        .footer-links a.active { color: #333; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="brand">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            数据模型管理
+        </div>
+        
+        <div class="sb-title">数据集列表</div>
+        <ul class="ds-list">
+            {% for row in stats %}
+            <li class="ds-item" onclick="selectDataset({{ row.id }})">
+                <span>{{ row.name }}</span>
+                <span class="ds-id">#{{ row.id }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        
+        <div class="sb-title">操作指南</div>
+        <p class="sb-guide">请在上方选择一个数据集，随后在右侧面板进行 RAG 检索或 LLM 对话。</p>
+        
+        <div class="sb-footer">
+            &copy; 2025 智能电网数据中心
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+        <div class="banner">
+            <h1>数据驱动 · 洞见未来</h1>
+            <p>构建高效、智能的数据模型管理体验。</p>
+        </div>
+        
+        <div class="content">
+            <!-- RAG -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">RAG 检索 + LLM 回答 <span class="badge">实验</span></div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:0.85rem; color:#666;">Top-K</span>
+                        <input type="number" id="top_k" value="5" class="form-control" style="width:60px; padding:5px;">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="input-group">
+                        <select id="dsid" class="form-control">
+                            {% for row in stats %}
+                            <option value="{{ row.id }}">[{{ row.id }}] {{ row.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="input-group" style="margin-top: 1rem;">
+                        <input type="text" id="rag_q" class="form-control" placeholder="请输入问题，例如：字段 X 的含义是什么？">
+                        <button class="btn" onclick="doRag()">检索并回答</button>
+                    </div>
+                </div>
+                
+                <div class="grid-2">
+                    <div>
+                        <span class="label">检索到的上下文</span>
+                        <div id="rag_ctx" class="res-box">(尚无)</div>
+                    </div>
+                    <div>
+                        <span class="label">LLM 回答</span>
+                        <div id="rag_ans" class="res-box">(尚无)</div>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <span class="label">诊断</span>
+                    <div id="rag_dbg" style="color:#999; font-size:0.85rem;">(等待查询)</div>
+                </div>
+            </div>
+            
+            <!-- Chat & Tips -->
+            <div class="grid-chat">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">直接对话 <span class="badge">LLM</span></div>
+                    </div>
+                    <span class="label" style="color:#999; font-weight:normal; margin-bottom:10px;">请输入您的问题：</span>
+                    <textarea id="chat_msgs" class="form-control" style="width:100%; height:120px; font-family:sans-serif; margin-bottom:1rem;" placeholder="你好，请帮我写一段代码...">你好，做一个简短自我介绍。</textarea>
+                    <input type="text" id="model_name" value="deepseek-chat" class="form-control" style="margin-bottom:1rem; width:100%; display:none;" placeholder="Model Name">
+                    <button class="btn" onclick="doChat()">发送</button>
+                    
+                    <div style="margin-top:1.5rem;">
+                        <span class="label">响应</span>
+                        <div id="chat_resp" class="res-box" style="border-left-color: var(--accent);">(尚无)</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">使用小贴士</div>
+                    </div>
+                    <ul class="tips-list">
+                        <li>
+                            <span class="tips-icon">🔍</span>
+                            <div>
+                                <strong>精准检索</strong>
+                                <div style="font-size:0.8rem; color:#888; margin-top:2px;">在 RAG 模式下，建议输入包含具体字段名或业务术语的完整问题，以提高检索命中率。</div>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="tips-icon">⚙️</span>
+                            <div>
+                                <strong>参数调节</strong>
+                                <div style="font-size:0.8rem; color:#888; margin-top:2px;">Top-K 决定了检索上下文的数量。如果回答不够全面，可尝试将 Top-K 调大（如 10）。</div>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="tips-icon">💬</span>
+                            <div>
+                                <strong>多轮对话</strong>
+                                <div style="font-size:0.8rem; color:#888; margin-top:2px;">直接对话模式支持上下文记忆。您可以追问“请详细解释第一点”或“换个方式说”。</div>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="tips-icon">🚀</span>
+                            <div>
+                                <strong>模型能力</strong>
+                                <div style="font-size:0.8rem; color:#888; margin-top:2px;">当前接入 DeepSeek V3 模型，擅长代码生成、逻辑推理及中文语义理解。</div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Footer Version -->
+            <div class="footer-links">
+                <a href="#">联系我们</a> | 版本:
+                <a href="/?v=1.0">v1.0</a>
+                <a href="/?v=2.0">v2.0</a>
+                <a href="/?v=3.0" class="active">v3.0</a>
+                <a href="/?v=10.0">v10.0</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectDataset(id) {
+            document.getElementById('dsid').value = id;
+            document.querySelectorAll('.ds-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        async function doRag(){
+            const dsid = document.getElementById('dsid').value;
+            const q = document.getElementById('rag_q').value.trim();
+            const topk = document.getElementById('top_k').value;
+            if(!q){ alert('请输入问题'); return; }
+            
+            const dbg = document.getElementById('rag_dbg');
+            dbg.textContent = '检索中...';
+            
+            try{
+                const resp = await fetch('/rag/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dataset_id: Number(dsid), query: q, top_k: Number(topk) })
+                });
+                const data = await resp.json();
+                if(data.error){
+                    dbg.textContent = '错误: ' + data.error;
+                    return;
+                }
+                document.getElementById('rag_ctx').textContent = (data.retrieved||[]).join('\n\n');
+                const llm = data.llm || {};
+                let text = '';
+                try { text = llm.choices[0].message.content; } catch(e) { text = JSON.stringify(llm, null, 2); }
+                document.getElementById('rag_ans').textContent = text;
+                dbg.textContent = 'OK';
+            }catch(err){
+                dbg.textContent = '异常: ' + err;
+            }
+        }
+
+        async function doChat(){
+            const userText = document.getElementById('chat_msgs').value.trim();
+            if(!userText) { alert('请输入内容'); return; }
+            
+            // Construct messages array automatically
+            const msgs = [{"role": "user", "content": userText}];
+            
+            const respBox = document.getElementById('chat_resp');
+            respBox.textContent = '思考中...';
+            
+            try {
+                const resp = await fetch('/deepseek/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: msgs, model: 'deepseek-chat' })
+                });
+                
+                if (!resp.ok) {
+                    throw new Error(`HTTP error! status: ${resp.status}`);
+                }
+
+                const data = await resp.json();
+                if(data.error){
+                    respBox.textContent = '错误: ' + data.error;
+                    return;
+                }
+                let text = '';
+                try { text = data.choices[0].message.content; } catch(e) { text = JSON.stringify(data, null, 2); }
+                respBox.textContent = text;
+            } catch(err) {
+                console.error(err);
+                respBox.textContent = '网络错误: ' + err.message + ' (请检查控制台日志)';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataMind | 智能数据平台</title>
+    <style>
+        /* --- Global Variables & Reset --- */
+        :root {
+            --primary: #2563eb; /* Tech Blue */
+            --primary-dark: #1d4ed8;
+            --secondary: #4f46e5; /* Indigo */
+            --accent: #06b6d4; /* Cyan */
+            --text-main: #0f172a; /* Slate 900 */
+            --text-muted: #64748b; /* Slate 500 */
+            --bg-body: #f8fafc; /* Slate 50 */
+            --bg-card: #ffffff;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a { text-decoration: none; color: inherit; transition: 0.2s; }
+        ul { list-style: none; }
+        button, input, select, textarea { font-family: inherit; }
+
+        /* --- Navigation --- */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+            z-index: 1000;
+        }
+
+        nav {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-links { display: flex; gap: 2.5rem; }
+        .nav-links a {
+            font-weight: 500;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        .nav-links a:hover { color: var(--primary); }
+
+        .btn-nav {
+            background: var(--text-main);
+            color: white;
+            padding: 0.5rem 1.25rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .btn-nav:hover { background: #334155; }
+
+        /* --- Hero Section --- */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 8rem 2rem 4rem;
+            background: 
+                radial-gradient(circle at 15% 50%, rgba(37, 99, 235, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.08), transparent 25%);
+        }
+
+        .hero-content { max-width: 800px; animation: fadeUp 0.8s ease-out; }
+
+        .hero h1 {
+            font-size: 4rem;
+            line-height: 1.1;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.03em;
+            background: linear-gradient(to bottom right, var(--text-main), #475569);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-hero {
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--text-muted); background: #f1f5f9; }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .modal-card {
+            background: var(--bg-card);
+            width: 90%;
+            max-width: 900px;
+            max-height: 85vh;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .modal-overlay.active .modal-card { transform: scale(1); }
+
+        .modal-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+        }
+        .modal-header h2 { font-size: 1.5rem; font-weight: 700; }
+        .close-btn {
+            background: none; border: none; font-size: 1.5rem;
+            color: var(--text-muted); cursor: pointer;
+        }
+        .close-btn:hover { color: var(--text-main); }
+
+        .modal-body {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* --- Components inside Modals --- */
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .data-table th, .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .data-table th {
+            background: #f1f5f9;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .data-table tr:last-child td { border-bottom: none; }
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #e0e7ff;
+            color: var(--primary);
+        }
+
+        /* Forms */
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        textarea.form-control { min-height: 120px; resize: vertical; }
+
+        .result-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            font-family: 'Menlo', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            color: #334155;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2.5rem; }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Showcase Section --- */
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 3rem;
+            font-weight: 700;
+        }
+
+        .showcase {
+            background: #0f172a; /* Dark slate matching theme */
+            color: #fff;
+            padding: 5rem 2rem;
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .img-box {
+            height: 250px;
+            background-color: #1e293b;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: var(--shadow);
+        }
+
+        .img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .img-box:hover img {
+            transform: scale(1.1);
+        }
+
+        /* --- Footer --- */
+        footer {
+            background: var(--bg-card);
+            padding: 4rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            margin-top: auto;
+        }
+
+        .socials {
+            margin: 1.5rem 0;
+        }
+        .socials a { 
+            margin: 0 12px; 
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .socials a:hover { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <header>
+        <nav>
+            <div class="logo">DataMind.</div>
+            <div class="nav-links">
+                <a href="#" onclick="window.scrollTo(0,0)">首页</a>
+                <a href="#" onclick="openModal('modal-datasets')">数据集</a>
+                <a href="#" onclick="openModal('modal-rag')">RAG 检索</a>
+                <a href="#" onclick="openModal('modal-chat')">AI 对话</a>
+            </div>
+            <button class="btn-nav" onclick="openModal('modal-chat')">开始对话</button>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>释放数据价值<br>开启智能检索</h1>
+            <p>利用我们先进的 EAV 语义平台探索数据集，执行基于 RAG 的查询，并使用最先进的 LLM 与您的数据进行对话。</p>
+            <div class="hero-btns">
+                <button class="btn-hero btn-primary" onclick="openModal('modal-rag')">开始 RAG 查询</button>
+                <button class="btn-hero btn-secondary" onclick="openModal('modal-datasets')">查看数据集</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Showcase Section -->
+    <section id="showcase" class="showcase">
+        <h2 class="section-title" style="color: white;">精选案例</h2>
+        <div class="showcase-grid">
+            <div class="img-box"><img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=500&q=80" alt="Work 1"></div>
+            <div class="img-box"><img src="https://images.unsplash.com/photo-1504384308090-c54be3855463?w=500&q=80" alt="Work 2"></div>
+            <div class="img-box"><img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&q=80" alt="Work 3"></div>
+            <div class="img-box"><img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=500&q=80" alt="Work 4"></div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="logo" style="margin-bottom: 1rem;">DataMind.</div>
+        <div class="socials">
+            <a href="#">微博</a>
+            <a href="#">知乎</a>
+            <a href="#">Twitter</a>
+            <a href="#">Instagram</a>
+        </div>
+        <p>&copy; 2025 DataMind Platform. All Rights Reserved.</p>
+        <div style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
+            <a href="#">联系我们</a>
+            <span style="margin: 0 0.5rem;">|</span>
+            版本: 
+            <a href="/?v=1.0" style="margin: 0 5px; color: var(--text-muted);">v1.0</a>
+            <a href="/?v=2.0" style="margin: 0 5px; color: var(--text-muted);">v2.0</a>
+            <a href="/?v=3.0" style="margin: 0 5px; color: var(--text-muted);">v3.0</a>
+            <a href="/?v=10.0" style="margin: 0 5px; color: var(--primary); font-weight: 600;">v10.0</a>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    
+    <!-- Datasets Modal -->
+    <div id="modal-datasets" class="modal-overlay" onclick="closeModal(event, 'modal-datasets')">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>可用数据集</h2>
+                <button class="close-btn" onclick="closeModal(null, 'modal-datasets')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>ID</th><th>名称</th><th>来源</th><th>标准行数</th><th>映射行数</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for row in stats %}
+                        <tr>
+                            <td><span class="tag">#{{ row.id }}</span></td>
+                            <td>{{ row.name }}</td>
+                            <td style="font-family:monospace; font-size:0.85rem;">{{ row.source_file }}</td>
+                            <td>{{ row.canon }}</td>
+                            <td>{{ row.mapping }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- RAG Modal -->
+    <div id="modal-rag" class="modal-overlay" onclick="closeModal(event, 'modal-rag')">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>RAG 智能检索</h2>
+                <button class="close-btn" onclick="closeModal(null, 'modal-rag')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="grid-2">
+                    <div>
+                        <div class="form-group">
+                            <label>选择数据集</label>
+                            <select id="dsid" class="form-control">
+                                {% for row in stats %}
+                                    <option value="{{ row.id }}">[{{ row.id }}] {{ row.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>您的问题</label>
+                            <input id="rag_q" type="text" class="form-control" placeholder="例如：字段 X 的含义是什么？" />
+                        </div>
+                        <button class="btn-hero btn-primary" style="width:100%" onclick="doRag()">提交查询</button>
+                        <div id="rag_dbg" style="margin-top:1rem; color:var(--text-muted); font-size:0.85rem;">就绪</div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label>检索到的上下文</label>
+                            <div id="rag_ctx" class="result-box" style="height:150px; overflow-y:auto;">(暂无上下文)</div>
+                        </div>
+                        <div class="form-group">
+                            <label>LLM 回答</label>
+                            <div id="rag_ans" class="result-box" style="height:150px; overflow-y:auto;">(暂无回答)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Modal -->
+    <div id="modal-chat" class="modal-overlay" onclick="closeModal(event, 'modal-chat')">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>AI 助手对话</h2>
+                <button class="close-btn" onclick="closeModal(null, 'modal-chat')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="grid-2">
+                    <div>
+                        <div class="form-group">
+                            <label>消息历史 (JSON)</label>
+                            <textarea id="chat_msgs" class="form-control" style="font-family:monospace;">[{"role":"user","content":"你好，请做一个自我介绍。"}]</textarea>
+                        </div>
+                        <button class="btn-hero btn-primary" style="width:100%" onclick="doChat()">发送消息</button>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label>响应</label>
+                            <div id="chat_resp" class="result-box" style="height:300px; overflow-y:auto;">(等待输入...)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+        // Modal Logic
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(e, id) {
+            if (e === null || e.target.id === id) {
+                document.getElementById(id).classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // RAG Logic
+        async function doRag(){
+            const dsid = document.getElementById('dsid').value;
+            const q = document.getElementById('rag_q').value.trim();
+            if(!q){ alert('请输入问题'); return; }
+            
+            const dbg = document.getElementById('rag_dbg');
+            dbg.textContent = '搜索中...';
+            
+            try{
+                const resp = await fetch('/rag/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dataset_id: Number(dsid), query: q })
+                });
+                const data = await resp.json();
+                if(data.error){
+                    dbg.textContent = '错误: ' + data.error;
+                    return;
+                }
+                document.getElementById('rag_ctx').textContent = (data.retrieved||[]).join('\n\n');
+                const llm = data.llm || {};
+                let text = '';
+                try { text = llm.choices[0].message.content; } catch(e) { text = JSON.stringify(llm, null, 2); }
+                document.getElementById('rag_ans').textContent = text;
+                dbg.textContent = '成功';
+            }catch(err){
+                dbg.textContent = '异常: ' + err;
+            }
+        }
+
+        // Chat Logic
+        async function doChat(){
+            let msgsRaw = document.getElementById('chat_msgs').value;
+            let msgs;
+            try{ msgs = JSON.parse(msgsRaw); }
+            catch(e){ alert('JSON 解析错误: ' + e); return; }
+            
+            const respBox = document.getElementById('chat_resp');
+            respBox.textContent = '思考中...';
+            
+            try {
+                const resp = await fetch('/deepseek/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: msgs, model: 'deepseek-chat' })
+                });
+                const data = await resp.json();
+                if(data.error){
+                    respBox.textContent = '错误: ' + data.error;
+                    return;
+                }
+                let text = '';
+                try { text = data.choices[0].message.content; } catch(e) { text = JSON.stringify(data, null, 2); }
+                respBox.textContent = text;
+            } catch(err) {
+                respBox.textContent = '网络错误: ' + err;
+            }
+        }
+    </script>
+</body>
+</html>

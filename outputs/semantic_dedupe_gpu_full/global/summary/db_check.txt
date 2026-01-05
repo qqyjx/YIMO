@@ -1,0 +1,16 @@
+eav_semantic_canon.count = 67156
+eav_semantic_mapping.count = 101994
+
+TOP10 canon by cluster_size:
+{'canon_id': 54345, 'dataset_id': 1, 'attribute_id': 17, 'canonical_text': '是', 'cluster_size': 47756, 'mapping_rows': 1}
+{'canon_id': 30242, 'dataset_id': 1, 'attribute_id': 17, 'canonical_text': '是', 'cluster_size': 47756, 'mapping_rows': 1}
+{'canon_id': 25609, 'dataset_id': 1, 'attribute_id': 17, 'canonical_text': '是', 'cluster_size': 47756, 'mapping_rows': 1}
+{'canon_id': 13083, 'dataset_id': 1, 'attribute_id': 17, 'canonical_text': '是', 'cluster_size': 47756, 'mapping_rows': 1}
+{'canon_id': 398, 'dataset_id': 1, 'attribute_id': 17, 'canonical_text': '是', 'cluster_size': 47756, 'mapping_rows': 1}
+{'canon_id': 10176, 'dataset_id': 1, 'attribute_id': 78, 'canonical_text': '普通对象', 'cluster_size': 43698, 'mapping_rows': 1}
+{'canon_id': 22861, 'dataset_id': 1, 'attribute_id': 78, 'canonical_text': '普通对象', 'cluster_size': 43698, 'mapping_rows': 1}
+{'canon_id': 64123, 'dataset_id': 1, 'attribute_id': 78, 'canonical_text': '普通对象', 'cluster_size': 43698, 'mapping_rows': 1}
+{'canon_id': 49033, 'dataset_id': 1, 'attribute_id': 78, 'canonical_text': '普通对象', 'cluster_size': 43698, 'mapping_rows': 1}
+{'canon_id': 49035, 'dataset_id': 1, 'attribute_id': 78, 'canonical_text': '普通对象', 'cluster_size': 43698, 'mapping_rows': 1}
+
+orphan_mappings = 0

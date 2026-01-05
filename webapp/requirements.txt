@@ -1,0 +1,7 @@
+flask==3.0.3
+pymysql==1.1.1
+sqlalchemy==2.0.32
+sentence-transformers==2.7.0
+faiss-cpu==1.7.4
+python-dotenv==1.0.1
+requests==2.32.3
