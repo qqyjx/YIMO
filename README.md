@@ -31,7 +31,7 @@
                          YIMO 一模到底
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     解决方案（白圆）                              │
+│                     解决方案（统一本体）                              │
 ├─────────────────────────────────────────────────────────────────┤
 │              🔘 全局唯一身份：GA-2024-TRF-001                    │
 │              📊 黄金属性：{"容量":"120MVA", "电压":"220kV"}      │
@@ -80,10 +80,10 @@
 │   └────────────────────────────────┬─────────────────────────────┘          │
 │                                    ▼                                        │
 │   ┌──────────────────────────────────────────────────────────────┐          │
-│   │                全局资产索引层（白圆）                          │          │
+│   │                全局资产索引层（统一本体）                          │          │
 │   │   ┌───────────────────┐  ┌──────────────────────┐            │          │
 │   │   │ global_asset_index│  │ entity_global_mapping │            │          │
-│   │   │ • global_uid      │  │ • 实体→白圆映射       │            │          │
+│   │   │ • global_uid      │  │ • 实体→统一本体映射       │            │          │
 │   │   │ • golden_attrs    │  │ • 置信度评分          │            │          │
 │   │   │ • trust_score     │  │ • 映射方法记录        │            │          │
 │   │   └───────────────────┘  └──────────────────────┘            │          │
@@ -92,7 +92,7 @@
 │   ┌──────────────────────────────────────────────────────────────┐          │
 │   │                  应用服务层 (Flask)                           │          │
 │   │   ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │          │
-│   │   │ 白圆可视化 │ │  RAG检索   │ │ 异常监控   │ │ AI对话   │ │          │
+│   │   │ 统一本体可视化 │ │  RAG检索   │ │ 异常监控   │ │ AI对话   │ │          │
 │   │   │/lifecycle  │ │ /rag/query │ │ /anomalies │ │/deepseek │ │          │
 │   │   └────────────┘ └────────────┘ └────────────┘ └──────────┘ │          │
 │   └──────────────────────────────────────────────────────────────┘          │
@@ -266,7 +266,7 @@ YIMO 是一个面向智能电网数据的完整解决方案，提供以下核心
          ▼                ▼                ▼                ▼                ▼
     ┌─────────────────────────────────────────────────────────────────────────────┐
     │                                                                             │
-    │                      🔘 白圆 (Global Asset Index)                           │
+    │                      🔘 统一本体 (Global Asset Index)                           │
     │                                                                             │
     │   ┌──────────────────────────────────────────────────────────────────┐     │
     │   │  global_uid: GA-2024-TRF-001                                     │     │
@@ -288,8 +288,8 @@ YIMO 是一个面向智能电网数据的完整解决方案，提供以下核心
 
 ### 四大支柱
 
-#### 1. 全局资产索引 (Global Asset Index) - "白圆"
-白圆是每个资产的唯一"身份证"，存储经过融合的黄金属性值：
+#### 1. 全局资产索引 (Global Asset Index) - "统一本体"
+统一本体是每个资产的唯一"身份证"，存储经过融合的黄金属性值：
 
 ```sql
 -- 核心表结构
@@ -336,8 +336,8 @@ python scripts/aiops_consistency_monitor.py --check-all
 | `missing_stage` | 缺失阶段（有运维数据但无建设记录） | warning |
 | `orphan_entity` | 孤立实体（未关联到任何全局资产） | info |
 
-#### 4. 白圆可视化 (Lifecycle Visualization)
-轨道式可视化界面，5个卫星围绕白圆运转：
+#### 4. 统一本体可视化 (Lifecycle Visualization)
+轨道式可视化界面，5个卫星围绕统一本体运转：
 
 ```
 访问: http://localhost:5000/lifecycle
@@ -382,8 +382,8 @@ python scripts/aiops_consistency_monitor.py --check-all
 │                    全局资产索引层                                    │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
-│   global_asset_index (白圆)                                         │
-│   entity_global_mapping (实体→白圆映射)                              │
+│   global_asset_index (统一本体)                                         │
+│   entity_global_mapping (实体→统一本体映射)                              │
 │   semantic_fingerprints (语义指纹缓存)                               │
 │                                                                     │
 └───────────────────────────┬─────────────────────────────────────────┘
@@ -393,7 +393,7 @@ python scripts/aiops_consistency_monitor.py --check-all
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │   aiops_consistency_monitor.py → data_anomalies 表                  │
-│   /lifecycle → 白圆可视化                                           │
+│   /lifecycle → 统一本体可视化                                           │
 │   /anomalies → 异常监控面板                                          │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
@@ -411,7 +411,7 @@ python scripts/import_all.py --stage design --incremental ./dataset/设计/
 python scripts/import_all.py --stage construction --incremental ./dataset/建设/
 python scripts/import_all.py --stage operation --incremental ./dataset/运维/
 
-# 3. 运行融合代理（建立白圆）
+# 3. 运行融合代理（建立统一本体）
 python scripts/agent_lifecycle_fusion.py --batch-size 100
 
 # 4. 运行一致性监控
@@ -421,7 +421,7 @@ python scripts/aiops_consistency_monitor.py --check-all
 cd webapp && ./start_web.sh
 
 # 访问
-# http://localhost:5000/lifecycle  - 白圆可视化
+# http://localhost:5000/lifecycle  - 统一本体可视化
 # http://localhost:5000/anomalies  - 异常监控
 ```
 
@@ -455,7 +455,7 @@ YIMO/
 │   ├── stop_web.sh           # 停止脚本
 │   └── templates/
 │       ├── 10.0.html         # 🆕 主界面v10（含一模到底入口）
-│       ├── lifecycle_manager.html  # 🆕 白圆可视化独立页
+│       ├── lifecycle_manager.html  # 🆕 统一本体可视化独立页
 │       └── anomalies.html    # 🆕 异常监控面板
 │
 ├── DATA/                     # 🆕 数据文件目录
@@ -753,7 +753,7 @@ LEFT JOIN eav_semantic_canon c
 ### v2.0.0 (2026-01) - 一模到底
 
 - ✅ **全生命周期本体管理器**：规划→设计→建设→运维→财务全链路
-- ✅ **白圆可视化**：轨道式资产生命周期追踪界面
+- ✅ **统一本体可视化**：轨道式资产生命周期追踪界面
 - ✅ **LLM 融合代理**：智能实体匹配与属性融合
 - ✅ **AIOps 一致性哨兵**：数据质量实时监控
 - ✅ **增量导入**：支持按阶段标记的数据导入
@@ -776,13 +776,13 @@ LEFT JOIN eav_semantic_canon c
 ### 主界面 (v10.0)
 访问 `http://localhost:5000/?v=10.0` 即可看到：
 - 🏠 首页：数据集浏览、RAG检索、AI对话
-- 🔘 一模到底：点击导航栏进入白圆可视化
+- 🔘 一模到底：点击导航栏进入统一本体可视化
 
 ### 功能入口
 | 功能 | URL | 说明 |
 |------|-----|------|
 | 主界面 | `/?v=10.0` | EAV数据浏览 + 一模到底入口 |
-| 白圆可视化 | `/lifecycle` | 全生命周期资产追踪（独立页面） |
+| 统一本体可视化 | `/lifecycle` | 全生命周期资产追踪（独立页面） |
 | 异常监控 | `/anomalies` | 数据质量告警面板 |
 | 健康检查 | `/health` | 系统状态API |
 
@@ -809,7 +809,7 @@ export MYSQL_USER=eav_user
 export MYSQL_PASSWORD=your_password
 ```
 
-### Q: 白圆可视化没有数据？
+### Q: 统一本体可视化没有数据？
 
 需要先运行融合代理建立全局资产索引：
 ```bash
