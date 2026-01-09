@@ -523,7 +523,7 @@
                     </div>
                 </div>
                 
-                <!-- 右侧：白圆可视化 -->
+                <!-- 右侧：统一本体可视化 -->
                 <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
                     <!-- 统计卡片 -->
                     <div id="lifecycle_stats" style="padding:1rem; border-bottom:1px solid var(--border); display:flex; gap:1rem; flex-wrap:wrap; background:white;">
@@ -545,7 +545,7 @@
                         </div>
                     </div>
                     
-                    <!-- 白圆可视化区域 -->
+                    <!-- 统一本体可视化区域 -->
                     <div id="lifecycle_viz" style="flex:1; overflow:auto; padding:1.5rem; display:flex; justify-content:center; align-items:flex-start;">
                         <div id="white_circle_container" style="text-align:center;">
                             <p style="color:var(--text-muted); padding:3rem;">
@@ -553,7 +553,7 @@
                                 选择左侧资产查看其<br><strong>全生命周期轨迹</strong>
                             </p>
                             <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2rem;">
-                                💡 提示：先运行 <code>agent_lifecycle_fusion.py</code> 建立白圆索引
+                                💡 提示：先运行 <code>agent_lifecycle_fusion.py</code> 建立统一本体索引
                             </p>
                         </div>
                     </div>
@@ -674,7 +674,7 @@
         
         async function loadAssetGraph(globalUid) {
             const vizEl = document.getElementById('white_circle_container');
-            vizEl.innerHTML = '<p style="padding:2rem; color:var(--text-muted);">加载白圆数据...</p>';
+            vizEl.innerHTML = '<p style="padding:2rem; color:var(--text-muted);">加载统一本体数据...</p>';
             
             try {
                 const resp = await fetch(`/api/lifecycle/graph/${globalUid}`);
@@ -703,10 +703,10 @@
                 operation: '#8b5cf6', finance: '#ef4444'
             };
             
-            // 构建白圆可视化
+            // 构建统一本体可视化
             let html = `
                 <div style="position:relative; width:600px; height:500px;">
-                    <!-- 中心白圆 -->
+                    <!-- 中心统一本体 -->
                     <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
                                 width:200px; height:200px; border-radius:50%; background:white;
                                 box-shadow:0 0 40px rgba(0,0,0,0.15), 0 0 80px rgba(59,130,246,0.2);
@@ -727,7 +727,7 @@
                     <!-- 轨道卫星 -->
             `;
             
-            // 5个阶段卫星围绕白圆
+            // 5个阶段卫星围绕统一本体
             const radius = 200;
             stages.forEach((stage, i) => {
                 const angle = (i * 72 - 90) * Math.PI / 180; // 从顶部开始，每72度一个
