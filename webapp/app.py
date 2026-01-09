@@ -175,15 +175,15 @@ def home():
             })
         
         # Template selection logic
-        v = request.args.get('v', '3.0')
+        v = request.args.get('v', '10.0')
         # Allow alphanumeric and dots
         if not all(c.isalnum() or c == '.' for c in v):
-             v = '3.0'
+             v = '10.0'
         
         template_name = f"{v}.html"
         folder = app.template_folder if app.template_folder else 'templates'
         if not os.path.exists(os.path.join(folder, template_name)):
-             template_name = '3.0.html'
+             template_name = 'home.html'
             
         return render_template(template_name, stats=stats)
     except Exception as e:

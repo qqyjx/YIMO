@@ -126,15 +126,17 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # 4️⃣ 配置数据库（MySQL需已安装运行）
-mysql -u root -e "
+mysql -u root -h 127.0.0.1 -e "
   CREATE DATABASE IF NOT EXISTS eav_db CHARACTER SET utf8mb4;
-  CREATE USER IF NOT EXISTS 'eav_user'@'localhost' IDENTIFIED BY 'Eav_pass_1234';
+  CREATE USER IF NOT EXISTS 'eav_user'@'localhost' IDENTIFIED BY 'eavpass123';
+  CREATE USER IF NOT EXISTS 'eav_user'@'127.0.0.1' IDENTIFIED BY 'eavpass123';
   GRANT ALL ON eav_db.* TO 'eav_user'@'localhost';
+  GRANT ALL ON eav_db.* TO 'eav_user'@'127.0.0.1';
   FLUSH PRIVILEGES;
 "
 
 # 5️⃣ 初始化数据库表
-mysql -u root eav_db < mysql-local/bootstrap.sql
+mysql -u root -h 127.0.0.1 eav_db < mysql-local/bootstrap.sql
 
 # 6️⃣ 导入样例数据（可选，快速体验）
 python scripts/import_all.py --stage Planning --dir DATA/lifecycle_demo/planning/
@@ -143,11 +145,25 @@ python scripts/import_all.py --stage Construction --dir DATA/lifecycle_demo/cons
 python scripts/import_all.py --stage Operation --dir DATA/lifecycle_demo/operation/
 python scripts/import_all.py --stage Finance --dir DATA/lifecycle_demo/finance/
 
-# 7️⃣ 启动Web服务
+# 7️⃣ 创建配置文件
+cat > webapp/.env << 'EOF'
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_DB=eav_db
+MYSQL_USER=eav_user
+MYSQL_PASSWORD=eavpass123
+TABLE_PREFIX=eav
+EMBED_MODEL=shibing624/text2vec-base-chinese
+MODEL_CACHE=./models
+DEEPSEEK_API_KEY=your_api_key_here
+RAG_TOP_K=5
+EOF
+
+# 8️⃣ 启动Web服务
 cd webapp && python app.py
 
-# 8️⃣ 访问系统
-# 🌐 http://localhost:5000/?v=10.0
+# 9️⃣ 访问系统
+# 🌐 http://localhost:5000
 ```
 
 ---
@@ -197,7 +213,7 @@ mysql_tunnel_4090_start.bat
 #    主机: 127.0.0.1
 #    端口: 3308
 #    用户名: eav_user
-#    密码: Eav_pass_1234
+#    密码: eavpass123
 #    数据库: eav_db
 
 # 4. 用完后关闭隧道
@@ -211,7 +227,7 @@ mysql_tunnel_4090_stop.bat
    - 主机：`127.0.0.1`
    - 端口：`3306`
    - 用户名：`eav_user`
-   - 密码：`Eav_pass_1234`
+   - 密码：`eavpass123`
 3. **SSH**选项卡：
    - ☑️ 使用SSH隧道
    - 主机：`192.168.1.123`（服务器IP）
@@ -598,8 +614,10 @@ pip install faiss-cpu  # 或 faiss-gpu
 
 ```sql
 CREATE DATABASE eav_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'eav_user'@'localhost' IDENTIFIED BY 'your_password';
+CREATE USER 'eav_user'@'localhost' IDENTIFIED BY 'eavpass123';
+CREATE USER 'eav_user'@'127.0.0.1' IDENTIFIED BY 'eavpass123';
 GRANT ALL PRIVILEGES ON eav_db.* TO 'eav_user'@'localhost';
+GRANT ALL PRIVILEGES ON eav_db.* TO 'eav_user'@'127.0.0.1';
 ```
 
 2. 或使用本地 MySQL 配置：
@@ -615,7 +633,7 @@ cd mysql-local
 python scripts/eav_full.py \
     --excel ./dataset/1.xlsx \
     --db eav_db --host 127.0.0.1 --port 3306 \
-    --user eav_user --password your_password
+    --user eav_user --password eavpass123
 ```
 
 ### 运行语义去重
@@ -675,7 +693,7 @@ MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3306
 MYSQL_DB=eav_db
 MYSQL_USER=eav_user
-MYSQL_PASSWORD=your_password
+MYSQL_PASSWORD=eavpass123
 
 # 模型配置
 EMBED_MODEL=shibing624/text2vec-base-chinese
@@ -806,7 +824,7 @@ export MYSQL_HOST=127.0.0.1
 export MYSQL_PORT=3306
 export MYSQL_DB=eav_db
 export MYSQL_USER=eav_user
-export MYSQL_PASSWORD=your_password
+export MYSQL_PASSWORD=eavpass123
 ```
 
 ### Q: 统一本体可视化没有数据？
