@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一模到底 - 资产生命周期管理器</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --success: #34a853;
+            --warning: #fbbc04;
+            --error: #ea4335;
+            --bg-dark: #1a1a2e;
+            --bg-light: #16213e;
+            --text: #eee;
+            --text-muted: #888;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-light) 100%);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(0,0,0,0.3);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .header h1 span {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 1rem;
+            padding: 1rem;
+            height: calc(100vh - 70px);
+        }
+        
+        /* Sidebar - Asset List */
+        .sidebar {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-header h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px;
+            background: rgba(0,0,0,0.3);
+            color: var(--text);
+        }
+        
+        .asset-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+        
+        .asset-item {
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .asset-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .asset-item.active {
+            background: rgba(26, 115, 232, 0.2);
+            border-color: var(--primary);
+        }
+        
+        .asset-item .name {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .asset-item .meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .trust-badge {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .trust-high { background: var(--success); color: #000; }
+        .trust-medium { background: var(--warning); color: #000; }
+        .trust-low { background: var(--error); color: #fff; }
+        
+        /* Center - White Circle Visualization */
+        .center-panel {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .center-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .visualization-area {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        /* The White Circle - Core Asset */
+        .white-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, #e0e0e0);
+            box-shadow: 
+                0 0 60px rgba(255,255,255,0.3),
+                inset 0 0 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 10;
+            position: relative;
+        }
+        
+        .white-circle:hover {
+            transform: scale(1.05);
+            box-shadow: 
+                0 0 80px rgba(255,255,255,0.5),
+                inset 0 0 30px rgba(0,0,0,0.1);
+        }
+        
+        .white-circle .icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .white-circle .label {
+            font-size: 0.85rem;
+            color: #333;
+            font-weight: 600;
+            text-align: center;
+            padding: 0 0.5rem;
+        }
+        
+        .white-circle .sublabel {
+            font-size: 0.7rem;
+            color: #666;
+        }
+        
+        /* Orbital Satellites - Lifecycle Stages */
+        .orbital-container {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            animation: rotate 60s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .orbital-path {
+            position: absolute;
+            border: 1px dashed rgba(255,255,255,0.2);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .satellite {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            transform-origin: center;
+            animation: counter-rotate 60s linear infinite;
+        }
+        
+        @keyframes counter-rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+        
+        .satellite:hover {
+            transform: scale(1.15) rotate(0deg) !important;
+            z-index: 100;
+        }
+        
+        .satellite.active {
+            transform: scale(1.2);
+            box-shadow: 0 0 30px currentColor;
+        }
+        
+        .satellite.has-data {
+            opacity: 1;
+        }
+        
+        .satellite.no-data {
+            opacity: 0.3;
+            filter: grayscale(1);
+        }
+        
+        .satellite .icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.15rem;
+        }
+        
+        .satellite .label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        /* Stage Colors */
+        .stage-planning {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+        
+        .stage-design {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+        
+        .stage-construction {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        }
+        
+        .stage-operation {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .stage-finance {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Connection Lines */
+        .connection-line {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            height: 2px;
+            transform-origin: left center;
+            pointer-events: none;
+        }
+        
+        /* Right Panel - Details */
+        .detail-panel {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .detail-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .detail-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .detail-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        
+        .detail-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .detail-section h4 {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .attr-list {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+        
+        .attr-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        
+        .attr-item:last-child {
+            border-bottom: none;
+        }
+        
+        .attr-key {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        
+        .attr-value {
+            font-size: 0.85rem;
+            text-align: right;
+            word-break: break-all;
+        }
+        
+        /* Trust Score Widget */
+        .trust-widget {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .trust-score-circle {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 0.5rem;
+            position: relative;
+        }
+        
+        .trust-score-circle svg {
+            transform: rotate(-90deg);
+        }
+        
+        .trust-score-circle circle {
+            fill: none;
+            stroke-width: 8;
+        }
+        
+        .trust-score-circle .bg {
+            stroke: rgba(255,255,255,0.1);
+        }
+        
+        .trust-score-circle .progress {
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s;
+        }
+        
+        .trust-score-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .trust-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        /* Anomaly List */
+        .anomaly-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .anomaly-item {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+        }
+        
+        .anomaly-item.error {
+            background: rgba(234, 67, 53, 0.2);
+            border-left: 3px solid var(--error);
+        }
+        
+        .anomaly-item.warning {
+            background: rgba(251, 188, 4, 0.2);
+            border-left: 3px solid var(--warning);
+        }
+        
+        .anomaly-item.info {
+            background: rgba(26, 115, 232, 0.2);
+            border-left: 3px solid var(--primary);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+        
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            
+            .sidebar, .detail-panel {
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>
+            ⚪ 一模到底
+            <span>Universal Lifecycle Ontology Manager</span>
+        </h1>
+        <nav class="nav-links">
+            <a href="/">📊 数据集</a>
+            <a href="/lifecycle" class="active">⚪ 生命周期</a>
+            <a href="/anomalies">🛡️ 异常监控</a>
+        </nav>
+    </header>
+    
+    <main class="main-container">
+        <!-- Left Sidebar - Asset List -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>🏭 全局资产</h3>
+                <input type="text" class="search-box" placeholder="搜索资产..." id="assetSearch">
+            </div>
+            <div class="asset-list" id="assetList">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </aside>
+        
+        <!-- Center - White Circle Visualization -->
+        <section class="center-panel">
+            <div class="center-header">
+                <h3>🎯 资产生命周期视图</h3>
+                <span id="currentAssetName" style="color: var(--text-muted);">选择一个资产查看</span>
+            </div>
+            <div class="visualization-area" id="vizArea">
+                <div class="empty-state" id="emptyViz">
+                    <div class="icon">⚪</div>
+                    <p>从左侧选择一个资产</p>
+                    <p style="font-size: 0.85rem; margin-top: 0.5rem;">
+                        白圆代表统一的物理资产实体<br>
+                        轨道卫星代表各生命周期阶段的数据
+                    </p>
+                </div>
+                
+                <!-- Orbital System (initially hidden) -->
+                <div id="orbitalSystem" style="display: none;">
+                    <!-- Orbital Paths -->
+                    <div class="orbital-path" style="width: 400px; height: 400px;"></div>
+                    
+                    <!-- Orbital Container with Satellites -->
+                    <div class="orbital-container" id="orbitalContainer">
+                        <!-- Planning -->
+                        <div class="satellite stage-planning no-data" data-stage="Planning" 
+                             style="top: 50px; left: 50%; transform: translateX(-50%);">
+                            <span class="icon">📋</span>
+                            <span class="label">规划</span>
+                        </div>
+                        <!-- Design -->
+                        <div class="satellite stage-design no-data" data-stage="Design"
+                             style="top: 25%; right: 30px;">
+                            <span class="icon">📐</span>
+                            <span class="label">设计</span>
+                        </div>
+                        <!-- Construction -->
+                        <div class="satellite stage-construction no-data" data-stage="Construction"
+                             style="bottom: 25%; right: 30px;">
+                            <span class="icon">🏗️</span>
+                            <span class="label">建设</span>
+                        </div>
+                        <!-- Operation -->
+                        <div class="satellite stage-operation no-data" data-stage="Operation"
+                             style="bottom: 50px; left: 50%; transform: translateX(-50%);">
+                            <span class="icon">⚙️</span>
+                            <span class="label">运维</span>
+                        </div>
+                        <!-- Finance -->
+                        <div class="satellite stage-finance no-data" data-stage="Finance"
+                             style="top: 25%; left: 30px;">
+                            <span class="icon">💰</span>
+                            <span class="label">财务</span>
+                        </div>
+                    </div>
+                    
+                    <!-- The White Circle -->
+                    <div class="white-circle" id="whiteCircle" onclick="showGoldenRecord()">
+                        <span class="icon">⚪</span>
+                        <span class="label" id="circleAssetName">资产名称</span>
+                        <span class="sublabel">点击查看黄金记录</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Right Panel - Details -->
+        <aside class="detail-panel">
+            <div class="detail-header">
+                <h3>📋 <span id="detailTitle">资产详情</span></h3>
+            </div>
+            <div class="detail-content" id="detailContent">
+                <div class="empty-state">
+                    <p>选择资产或点击阶段卫星查看详情</p>
+                </div>
+            </div>
+        </aside>
+    </main>
+    
+    <script>
+        // State
+        let currentAsset = null;
+        let assets = [];
+        
+        // API Calls
+        async function fetchAssets() {
+            try {
+                const resp = await fetch('/api/lifecycle/assets');
+                const data = await resp.json();
+                assets = data.assets || [];
+                renderAssetList();
+            } catch (e) {
+                console.error('Failed to fetch assets:', e);
+                document.getElementById('assetList').innerHTML = 
+                    '<div class="empty-state"><p>加载失败，请检查数据库连接</p></div>';
+            }
+        }
+        
+        async function fetchAssetGraph(globalUid) {
+            try {
+                const resp = await fetch(`/api/lifecycle/graph/${globalUid}`);
+                return await resp.json();
+            } catch (e) {
+                console.error('Failed to fetch asset graph:', e);
+                return null;
+            }
+        }
+        
+        // Render Functions
+        function renderAssetList() {
+            const container = document.getElementById('assetList');
+            
+            if (!assets.length) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <p>暂无全局资产</p>
+                        <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+                            请先运行融合代理<br>
+                            <code>python scripts/agent_lifecycle_fusion.py</code>
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = assets.map(asset => {
+                const trustClass = asset.trust_score >= 0.8 ? 'trust-high' : 
+                                   asset.trust_score >= 0.5 ? 'trust-medium' : 'trust-low';
+                const trustText = Math.round(asset.trust_score * 100) + '%';
+                
+                return `
+                    <div class="asset-item" data-uid="${asset.global_uid}" onclick="selectAsset('${asset.global_uid}')">
+                        <div class="name">${asset.asset_name || asset.global_uid}</div>
+                        <div class="meta">
+                            <span class="trust-badge ${trustClass}">${trustText}</span>
+                            <span>${asset.source_count || 0} 来源</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function selectAsset(globalUid) {
+            // Update UI state
+            document.querySelectorAll('.asset-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.uid === globalUid);
+            });
+            
+            // Fetch data
+            const graph = await fetchAssetGraph(globalUid);
+            if (!graph) return;
+            
+            currentAsset = graph;
+            
+            // Update visualization
+            document.getElementById('emptyViz').style.display = 'none';
+            document.getElementById('orbitalSystem').style.display = 'block';
+            document.getElementById('currentAssetName').textContent = graph.asset_name || globalUid;
+            document.getElementById('circleAssetName').textContent = 
+                (graph.asset_name || '未命名资产').substring(0, 20);
+            
+            // Update satellites
+            const stages = ['Planning', 'Design', 'Construction', 'Operation', 'Finance'];
+            stages.forEach(stage => {
+                const satellite = document.querySelector(`.satellite[data-stage="${stage}"]`);
+                const stageData = graph.stages && graph.stages[stage];
+                
+                if (stageData && stageData.entities && stageData.entities.length > 0) {
+                    satellite.classList.remove('no-data');
+                    satellite.classList.add('has-data');
+                    satellite.onclick = () => showStageDetail(stage, stageData);
+                } else {
+                    satellite.classList.remove('has-data');
+                    satellite.classList.add('no-data');
+                    satellite.onclick = () => showEmptyStage(stage);
+                }
+            });
+            
+            // Show trust score
+            showTrustScore(graph);
+        }
+        
+        function showGoldenRecord() {
+            if (!currentAsset) return;
+            
+            document.getElementById('detailTitle').textContent = '黄金记录 (Golden Record)';
+            
+            const golden = currentAsset.golden_attributes || {};
+            const attrs = Object.entries(golden);
+            
+            let html = `
+                <div class="detail-section">
+                    <h4>全局标识</h4>
+                    <div class="attr-list">
+                        <div class="attr-item">
+                            <span class="attr-key">Global UID</span>
+                            <span class="attr-value" style="font-family: monospace;">${currentAsset.global_uid}</span>
+                        </div>
+                        <div class="attr-item">
+                            <span class="attr-key">资产名称</span>
+                            <span class="attr-value">${currentAsset.asset_name || '-'}</span>
+                        </div>
+                        <div class="attr-item">
+                            <span class="attr-key">资产类型</span>
+                            <span class="attr-value">${currentAsset.asset_type || '-'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (attrs.length > 0) {
+                html += `
+                    <div class="detail-section">
+                        <h4>融合后属性</h4>
+                        <div class="attr-list">
+                            ${attrs.map(([k, v]) => `
+                                <div class="attr-item">
+                                    <span class="attr-key">${k}</span>
+                                    <span class="attr-value">${v}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Show lifecycle coverage
+            const stages = currentAsset.stages || {};
+            const presentStages = Object.keys(stages).filter(s => 
+                stages[s] && stages[s].entities && stages[s].entities.length > 0
+            );
+            
+            html += `
+                <div class="detail-section">
+                    <h4>生命周期覆盖</h4>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        ${['Planning', 'Design', 'Construction', 'Operation', 'Finance'].map(s => {
+                            const hasData = presentStages.includes(s);
+                            const stageNames = {
+                                'Planning': '规划', 'Design': '设计', 
+                                'Construction': '建设', 'Operation': '运维', 'Finance': '财务'
+                            };
+                            return `
+                                <span class="trust-badge ${hasData ? 'trust-high' : ''}" 
+                                      style="${!hasData ? 'opacity: 0.3;' : ''}">
+                                    ${stageNames[s]}
+                                </span>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('detailContent').innerHTML = html;
+        }
+        
+        function showStageDetail(stage, stageData) {
+            const stageNames = {
+                'Planning': '📋 规划阶段', 'Design': '📐 设计阶段', 
+                'Construction': '🏗️ 建设阶段', 'Operation': '⚙️ 运维阶段', 'Finance': '💰 财务阶段'
+            };
+            
+            document.getElementById('detailTitle').textContent = stageNames[stage] || stage;
+            
+            // Highlight satellite
+            document.querySelectorAll('.satellite').forEach(el => {
+                el.classList.toggle('active', el.dataset.stage === stage);
+            });
+            
+            let html = '';
+            
+            if (stageData.entities && stageData.entities.length > 0) {
+                stageData.entities.forEach((entity, idx) => {
+                    html += `
+                        <div class="detail-section">
+                            <h4>数据源 ${idx + 1}: ${entity.dataset_name || '未知'}</h4>
+                            <div class="attr-list">
+                                <div class="attr-item">
+                                    <span class="attr-key">Entity ID</span>
+                                    <span class="attr-value">${entity.entity_id}</span>
+                                </div>
+                                <div class="attr-item">
+                                    <span class="attr-key">External ID</span>
+                                    <span class="attr-value">${entity.external_id || '-'}</span>
+                                </div>
+                                <div class="attr-item">
+                                    <span class="attr-key">映射置信度</span>
+                                    <span class="attr-value">${Math.round((entity.confidence || 0) * 100)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Show attributes if available
+                    if (entity.attributes && Object.keys(entity.attributes).length > 0) {
+                        const attrs = Object.entries(entity.attributes).slice(0, 15);
+                        html += `
+                            <div class="detail-section">
+                                <h4>属性值</h4>
+                                <div class="attr-list">
+                                    ${attrs.map(([k, v]) => `
+                                        <div class="attr-item">
+                                            <span class="attr-key">${k}</span>
+                                            <span class="attr-value">${String(v).substring(0, 50)}</span>
+                                        </div>
+                                    `).join('')}
+                                    ${Object.keys(entity.attributes).length > 15 ? 
+                                        `<div class="attr-item" style="color: var(--text-muted);">
+                                            ... 还有 ${Object.keys(entity.attributes).length - 15} 个属性
+                                        </div>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            
+            document.getElementById('detailContent').innerHTML = html || 
+                '<div class="empty-state"><p>无详细数据</p></div>';
+        }
+        
+        function showEmptyStage(stage) {
+            const stageNames = {
+                'Planning': '📋 规划阶段', 'Design': '📐 设计阶段', 
+                'Construction': '🏗️ 建设阶段', 'Operation': '⚙️ 运维阶段', 'Finance': '💰 财务阶段'
+            };
+            
+            document.getElementById('detailTitle').textContent = stageNames[stage] || stage;
+            document.getElementById('detailContent').innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <p>该阶段暂无数据</p>
+                    <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+                        导入该阶段的数据文件时<br>请使用 --stage ${stage} 参数
+                    </p>
+                </div>
+            `;
+        }
+        
+        function showTrustScore(asset) {
+            const score = asset.trust_score || 0;
+            const anomalies = asset.anomalies || [];
+            
+            // Calculate circle progress
+            const circumference = 2 * Math.PI * 42;
+            const offset = circumference - (score * circumference);
+            const color = score >= 0.8 ? 'var(--success)' : 
+                         score >= 0.5 ? 'var(--warning)' : 'var(--error)';
+            
+            let html = `
+                <div class="trust-widget">
+                    <div class="trust-score-circle">
+                        <svg width="100" height="100">
+                            <circle class="bg" cx="50" cy="50" r="42"></circle>
+                            <circle class="progress" cx="50" cy="50" r="42"
+                                    stroke="${color}"
+                                    stroke-dasharray="${circumference}"
+                                    stroke-dashoffset="${offset}"></circle>
+                        </svg>
+                        <div class="trust-score-value" style="color: ${color}">
+                            ${Math.round(score * 100)}
+                        </div>
+                    </div>
+                    <div class="trust-label">数据可信度</div>
+                </div>
+            `;
+            
+            if (anomalies.length > 0) {
+                html += `
+                    <div class="detail-section" style="margin-top: 1rem;">
+                        <h4>⚠️ 数据异常 (${anomalies.length})</h4>
+                        <div class="anomaly-list">
+                            ${anomalies.slice(0, 5).map(a => `
+                                <div class="anomaly-item ${a.severity}">
+                                    <span>${a.description}</span>
+                                </div>
+                            `).join('')}
+                            ${anomalies.length > 5 ? 
+                                `<div style="text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+                                    还有 ${anomalies.length - 5} 个异常...
+                                </div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Prepend to detail content if showing golden record
+            const detailContent = document.getElementById('detailContent');
+            if (detailContent.innerHTML.includes('黄金记录') || detailContent.innerHTML.includes('empty-state')) {
+                showGoldenRecord();
+            }
+        }
+        
+        // Search
+        document.getElementById('assetSearch').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            document.querySelectorAll('.asset-item').forEach(el => {
+                const name = el.querySelector('.name').textContent.toLowerCase();
+                el.style.display = name.includes(query) ? '' : 'none';
+            });
+        });
+        
+        // Initialize
+        fetchAssets();
+    </script>
+</body>
+</html>

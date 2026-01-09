@@ -184,15 +184,19 @@ def ensure_schema(cursor, table_prefix="eav", charset="utf8mb4", collation="utf8
     """
     注意：为兼容旧 InnoDB 767 字节限制，所有参与索引的可变长字符列统一使用 VARCHAR(191)，
     并指定 ROW_FORMAT=DYNAMIC。
+    新增：lifecycle_stage 字段支持“一模到底”全生命周期管理。
     """
-    # datasets
+    # datasets - 添加生命周期阶段字段
     cursor.execute(f"""
     CREATE TABLE IF NOT EXISTS `{table_prefix}_datasets` (
         `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
         `name` VARCHAR(191) NOT NULL,
         `source_file` VARCHAR(1024),
+        `lifecycle_stage` VARCHAR(50) DEFAULT 'Finance' COMMENT '生命周期阶段: Planning/Design/Construction/Operation/Finance',
+        `stage_metadata` JSON COMMENT '阶段相关元数据',
         `imported_at` DATETIME(6) NOT NULL,
-        UNIQUE KEY `uniq_name` (`name`)
+        UNIQUE KEY `uniq_name` (`name`),
+        KEY `idx_stage` (`lifecycle_stage`)
     ) ENGINE=InnoDB ROW_FORMAT=DYNAMIC DEFAULT CHARSET={charset} COLLATE={collation};
     """)
     # attributes
@@ -246,14 +250,21 @@ def ensure_schema(cursor, table_prefix="eav", charset="utf8mb4", collation="utf8
     ) ENGINE=InnoDB ROW_FORMAT=DYNAMIC DEFAULT CHARSET={charset} COLLATE={collation};
     """)
 
-def upsert_dataset(cursor, table_prefix, name, source_file)->int:
+# 有效的生命周期阶段
+VALID_LIFECYCLE_STAGES = ['Planning', 'Design', 'Construction', 'Operation', 'Finance']
+
+def upsert_dataset(cursor, table_prefix, name, source_file, lifecycle_stage='Finance', stage_metadata=None)->int:
+    """创建或更新数据集，支持生命周期阶段标记"""
+    import json
+    stage_meta_json = json.dumps(stage_metadata) if stage_metadata else None
     cursor.execute(
         f"""
-        INSERT INTO `{table_prefix}_datasets` (`name`, `source_file`, `imported_at`)
-        VALUES (%s,%s,%s) AS new
-        ON DUPLICATE KEY UPDATE `source_file`=new.`source_file`, `imported_at`=new.`imported_at`
+        INSERT INTO `{table_prefix}_datasets` (`name`, `source_file`, `lifecycle_stage`, `stage_metadata`, `imported_at`)
+        VALUES (%s,%s,%s,%s,%s) AS new
+        ON DUPLICATE KEY UPDATE `source_file`=new.`source_file`, `lifecycle_stage`=new.`lifecycle_stage`, 
+                                `stage_metadata`=new.`stage_metadata`, `imported_at`=new.`imported_at`
         """,
-        (name, source_file, datetime.utcnow())
+        (name, source_file, lifecycle_stage, stage_meta_json, datetime.utcnow())
     )
     cursor.execute(f"SELECT `id` FROM `{table_prefix}_datasets` WHERE `name`=%s", (name,))
     return cursor.fetchone()[0]
@@ -322,6 +333,46 @@ def insert_value(cursor, table_prefix, entity_id:int, attribute_id:int, raw:Opti
         (entity_id, attribute_id, value_text, value_number, value_datetime, value_bool, s)
     )
 
+# ---------- 增量导入辅助函数 ----------
+
+def check_entity_exists(cursor, table_prefix: str, dataset_id: int, row_number: int) -> Optional[Tuple[int, str]]:
+    """检查实体是否已存在，返回 (entity_id, row_hash) 或 None"""
+    cursor.execute(
+        f"SELECT `id`, `row_hash` FROM `{table_prefix}_entities` WHERE `dataset_id`=%s AND `row_number`=%s",
+        (dataset_id, row_number)
+    )
+    row = cursor.fetchone()
+    if row:
+        return (row[0], row[1])
+    return None
+
+def delete_entity_values(cursor, table_prefix: str, entity_id: int):
+    """删除实体的所有属性值（用于更新时先删后插）"""
+    cursor.execute(
+        f"DELETE FROM `{table_prefix}_values` WHERE `entity_id`=%s",
+        (entity_id,)
+    )
+
+def update_entity_hash(cursor, table_prefix: str, entity_id: int, new_hash: str, external_id: Optional[str]):
+    """更新实体的 hash 和 external_id"""
+    cursor.execute(
+        f"UPDATE `{table_prefix}_entities` SET `row_hash`=%s, `external_id`=%s WHERE `id`=%s",
+        (new_hash, external_id, entity_id)
+    )
+
+class IncrementalStats:
+    """增量导入统计"""
+    def __init__(self):
+        self.inserted = 0
+        self.updated = 0
+        self.skipped = 0
+    
+    def total(self):
+        return self.inserted + self.updated + self.skipped
+    
+    def __str__(self):
+        return f"新增: {self.inserted}, 更新: {self.updated}, 跳过(未变): {self.skipped}"
+
 # ---------- Excel 加载 ----------
 
 def load_excel_all_sheets(path: Path) -> Dict[str, pd.DataFrame]:
@@ -361,7 +412,7 @@ def load_excel_all_sheets(path: Path) -> Dict[str, pd.DataFrame]:
 # ---------- 主流程 ----------
 
 def main():
-    ap = argparse.ArgumentParser(description="将 Excel(含多表单) 导入 MySQL 的标准 EAV 模型")
+    ap = argparse.ArgumentParser(description="将 Excel(含多表单) 导入 MySQL 的标准 EAV 模型（支持生命周期阶段）")
     ap.add_argument("--excel", required=True, help="Excel 文件路径（.xlsx/.xls）")
     ap.add_argument("--db", default="eav_db", help="MySQL 数据库名（默认 eav_db）")
     ap.add_argument("--host", default="127.0.0.1", help="MySQL 主机（默认 127.0.0.1）")
@@ -375,6 +426,13 @@ def main():
     ap.add_argument("--table-name", default=None, help="数据集可读别名（仅展示）")
     ap.add_argument("--collation", default=None, help="强制排序规则（如 utf8mb4_unicode_ci）。若不指定将自动探测。")
     ap.add_argument("--add-sheet-attr", action="store_true", default=True, help="为每个实体添加系统属性 __sheet__（默认开启）")
+    ap.add_argument("--incremental", action="store_true", default=False, help="增量导入模式：基于行哈希跳过未变更数据（默认关闭）")
+    ap.add_argument("--force-update", action="store_true", default=False, help="增量模式下强制更新所有已存在记录（默认关闭）")
+    # 生命周期阶段参数
+    ap.add_argument("--stage", default="Finance", choices=VALID_LIFECYCLE_STAGES,
+                    help="生命周期阶段: Planning/Design/Construction/Operation/Finance（默认 Finance）")
+    ap.add_argument("--stage-date", default=None, help="阶段日期（如 2026-01-09，用于时序校验）")
+    ap.add_argument("--stage-source", default=None, help="阶段数据来源系统（如 SAP/ERP/MES）")
     args = ap.parse_args()
 
     excel_path = Path(args.excel)
@@ -385,8 +443,16 @@ def main():
     dataset_name = args.dataset_name or excel_path.stem
     if args.table_name:
         dataset_name = f"{dataset_name} ({args.table_name})"
+    
+    # 构建阶段元数据
+    stage_metadata = {
+        'stage_date': args.stage_date,
+        'source_system': args.stage_source,
+        'import_timestamp': datetime.utcnow().isoformat()
+    }
 
     print(f"[INFO] 读取 Excel: {excel_path}")
+    print(f"[INFO] 🏷️  生命周期阶段: {args.stage}")
     sheet_dfs = load_excel_all_sheets(excel_path)
     if not sheet_dfs:
         print("[ERROR] Excel 文件没有任何表单。", file=sys.stderr)
@@ -417,10 +483,11 @@ def main():
     ensure_schema(cur, table_prefix=args.table_prefix, charset=chosen_charset, collation=chosen_collation)
     conn.commit()
 
-    # 数据集记录
-    dataset_id = upsert_dataset(cur, args.table_prefix, dataset_name, str(excel_path.resolve()))
+    # 数据集记录（带生命周期阶段）
+    dataset_id = upsert_dataset(cur, args.table_prefix, dataset_name, str(excel_path.resolve()), 
+                                 lifecycle_stage=args.stage, stage_metadata=stage_metadata)
     conn.commit()
-    print(f"[INFO] 数据集 ID: {dataset_id}")
+    print(f"[INFO] 数据集 ID: {dataset_id} (阶段: {args.stage})")
 
     # --- 收集所有列名，建立属性（合并同名） ---
     from collections import OrderedDict
@@ -460,8 +527,14 @@ def main():
     print(f"[INFO] 属性数量: {len(attr_ids)}")
 
     # 导入实体与值
+    incremental_mode = args.incremental
+    force_update = args.force_update
+    if incremental_mode:
+        print("[INFO] 🔄 增量导入模式已启用" + (" (强制更新)" if force_update else " (跳过未变更)"))
     print("[INFO] 开始导入实体与值 ...")
+    
     global_row_no = 0
+    stats = IncrementalStats()
     sheet_names = list(sheet_dfs.keys())
 
     for sheet_name in tqdm(sheet_names, desc="表单(Sheets)", unit="sheet"):
@@ -498,21 +571,55 @@ def main():
             if external_id is None:
                 external_id = f"{sheet_name}!{idx+1}"
 
-            cur.execute(
-                f"""
-                INSERT INTO `{args.table_prefix}_entities`
-                    (`dataset_id`, `row_number`, `external_id`, `row_hash`, `created_at`)
-                    VALUES (%s,%s,%s,%s,%s) AS new
-                    ON DUPLICATE KEY UPDATE `external_id`=new.`external_id`, `row_hash`=new.`row_hash`
-                """,
-                (dataset_id, global_row_no, external_id, rhash, datetime.utcnow())
-            )
-            cur.execute(
-                f"SELECT `id` FROM `{args.table_prefix}_entities` WHERE `dataset_id`=%s AND `row_number`=%s",
-                (dataset_id, global_row_no)
-            )
-            ent_id = cur.fetchone()[0]
+            # ========== 增量导入逻辑 ==========
+            if incremental_mode:
+                existing = check_entity_exists(cur, args.table_prefix, dataset_id, global_row_no)
+                if existing:
+                    ent_id, old_hash = existing
+                    if old_hash == rhash and not force_update:
+                        # 数据未变更，跳过
+                        stats.skipped += 1
+                        continue
+                    else:
+                        # 数据已变更或强制更新，删除旧值后重新插入
+                        delete_entity_values(cur, args.table_prefix, ent_id)
+                        update_entity_hash(cur, args.table_prefix, ent_id, rhash, external_id)
+                        stats.updated += 1
+                else:
+                    # 新增实体
+                    cur.execute(
+                        f"""
+                        INSERT INTO `{args.table_prefix}_entities`
+                            (`dataset_id`, `row_number`, `external_id`, `row_hash`, `created_at`)
+                            VALUES (%s,%s,%s,%s,%s)
+                        """,
+                        (dataset_id, global_row_no, external_id, rhash, datetime.utcnow())
+                    )
+                    cur.execute(
+                        f"SELECT `id` FROM `{args.table_prefix}_entities` WHERE `dataset_id`=%s AND `row_number`=%s",
+                        (dataset_id, global_row_no)
+                    )
+                    ent_id = cur.fetchone()[0]
+                    stats.inserted += 1
+            else:
+                # ========== 原有逻辑（全量覆盖） ==========
+                cur.execute(
+                    f"""
+                    INSERT INTO `{args.table_prefix}_entities`
+                        (`dataset_id`, `row_number`, `external_id`, `row_hash`, `created_at`)
+                        VALUES (%s,%s,%s,%s,%s) AS new
+                        ON DUPLICATE KEY UPDATE `external_id`=new.`external_id`, `row_hash`=new.`row_hash`
+                    """,
+                    (dataset_id, global_row_no, external_id, rhash, datetime.utcnow())
+                )
+                cur.execute(
+                    f"SELECT `id` FROM `{args.table_prefix}_entities` WHERE `dataset_id`=%s AND `row_number`=%s",
+                    (dataset_id, global_row_no)
+                )
+                ent_id = cur.fetchone()[0]
+                stats.inserted += 1
 
+            # 插入属性值
             if args.add_sheet_attr:
                 insert_value(cur, args.table_prefix, ent_id, attr_ids["__sheet__"], sheet_name)
 
@@ -527,7 +634,13 @@ def main():
                 conn.commit()
 
     conn.commit()
-    print(f"[DONE] 导入完成：共导入 {len(sheet_names)} 个表单、{global_row_no} 行实体。")
+    
+    # 打印统计信息
+    if incremental_mode:
+        print(f"[DONE] 增量导入完成：共处理 {len(sheet_names)} 个表单、{global_row_no} 行。")
+        print(f"[STAT] {stats}")
+    else:
+        print(f"[DONE] 导入完成：共导入 {len(sheet_names)} 个表单、{global_row_no} 行实体。")
     print("[HINT] 典型查询：")
     print(f"  -- 列出数据集属性：")
     print(f"  SELECT a.display_name, a.data_type FROM {args.table_prefix}_attributes a WHERE a.dataset_id = {dataset_id} ORDER BY a.ord_index;")
