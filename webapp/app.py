@@ -248,6 +248,225 @@ def api_rag_query():
     llm_resp = call_deepseek(messages)
     return jsonify({"query": query, "retrieved": retrieved, "llm": llm_resp})
 
+
+# ============================================================================
+# 生命周期管理器 API - "一模到底"
+# ============================================================================
+
+@app.route('/lifecycle')
+def lifecycle_manager():
+    """生命周期管理器页面"""
+    return render_template('lifecycle_manager.html')
+
+
+@app.route('/api/lifecycle/assets')
+def api_lifecycle_assets():
+    """获取所有全局资产列表"""
+    try:
+        with get_conn() as conn, conn.cursor() as cur:
+            cur.execute("""
+                SELECT global_uid, asset_name, asset_type, asset_class, 
+                       trust_score, fusion_status, source_count,
+                       first_seen_stage, latest_stage, created_at
+                FROM global_asset_index
+                ORDER BY trust_score DESC, source_count DESC
+                LIMIT 500
+            """)
+            assets = cur.fetchall()
+        
+        # Convert datetime to string for JSON
+        for a in assets:
+            if a.get('created_at'):
+                a['created_at'] = a['created_at'].isoformat()
+        
+        return jsonify({"assets": list(assets), "total": len(assets)})
+    except Exception as e:
+        return jsonify({"assets": [], "error": str(e)})
+
+
+@app.route('/api/lifecycle/graph/<global_uid>')
+def api_lifecycle_graph(global_uid: str):
+    """获取资产的生命周期图数据"""
+    try:
+        with get_conn() as conn, conn.cursor() as cur:
+            # 获取资产基本信息
+            cur.execute("""
+                SELECT global_uid, asset_name, asset_type, asset_class,
+                       trust_score, fusion_status, golden_attributes,
+                       source_count, first_seen_stage, latest_stage
+                FROM global_asset_index
+                WHERE global_uid = %s
+            """, (global_uid,))
+            asset = cur.fetchone()
+            
+            if not asset:
+                return jsonify({"error": "Asset not found"}), 404
+            
+            # 解析 golden_attributes JSON
+            if asset.get('golden_attributes'):
+                try:
+                    import json
+                    asset['golden_attributes'] = json.loads(asset['golden_attributes'])
+                except:
+                    asset['golden_attributes'] = {}
+            
+            # 获取关联的实体和阶段数据
+            cur.execute("""
+                SELECT m.entity_id, m.lifecycle_stage, m.confidence, m.mapping_method,
+                       m.mapping_reason, e.external_id, d.name as dataset_name
+                FROM entity_global_mapping m
+                JOIN eav_entities e ON e.id = m.entity_id
+                JOIN eav_datasets d ON d.id = e.dataset_id
+                WHERE m.global_uid = %s
+                ORDER BY m.lifecycle_stage, m.confidence DESC
+            """, (global_uid,))
+            mappings = cur.fetchall()
+            
+            # 按阶段组织数据
+            stages = {}
+            for m in mappings:
+                stage = m['lifecycle_stage']
+                if stage not in stages:
+                    stages[stage] = {"entities": []}
+                
+                # 获取实体属性
+                cur.execute(f"""
+                    SELECT a.display_name, v.raw_text, v.value_text, v.value_number
+                    FROM {TABLE_PREFIX}_values v
+                    JOIN {TABLE_PREFIX}_attributes a ON a.id = v.attribute_id
+                    WHERE v.entity_id = %s
+                    LIMIT 20
+                """, (m['entity_id'],))
+                attrs = {}
+                for row in cur.fetchall():
+                    val = row['raw_text'] or row['value_text'] or str(row['value_number'] or '')
+                    if val and row['display_name'] != '__sheet__':
+                        attrs[row['display_name']] = val
+                
+                stages[stage]["entities"].append({
+                    "entity_id": m['entity_id'],
+                    "external_id": m['external_id'],
+                    "dataset_name": m['dataset_name'],
+                    "confidence": float(m['confidence']) if m['confidence'] else 0,
+                    "mapping_method": m['mapping_method'],
+                    "attributes": attrs
+                })
+            
+            # 获取异常
+            cur.execute("""
+                SELECT anomaly_type, severity, attribute_name, description, suggestion
+                FROM data_anomalies
+                WHERE global_uid = %s AND status = 'open'
+                ORDER BY 
+                    CASE severity 
+                        WHEN 'critical' THEN 1 
+                        WHEN 'error' THEN 2 
+                        WHEN 'warning' THEN 3 
+                        ELSE 4 
+                    END
+                LIMIT 10
+            """, (global_uid,))
+            anomalies = cur.fetchall()
+            
+            result = {
+                "global_uid": asset['global_uid'],
+                "asset_name": asset['asset_name'],
+                "asset_type": asset['asset_type'],
+                "asset_class": asset['asset_class'],
+                "trust_score": float(asset['trust_score']) if asset['trust_score'] else 0,
+                "fusion_status": asset['fusion_status'],
+                "golden_attributes": asset.get('golden_attributes', {}),
+                "source_count": asset['source_count'],
+                "stages": stages,
+                "anomalies": list(anomalies)
+            }
+            
+            return jsonify(result)
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/lifecycle/stats')
+def api_lifecycle_stats():
+    """获取生命周期统计数据"""
+    try:
+        with get_conn() as conn, conn.cursor() as cur:
+            stats = {}
+            
+            # 总资产数
+            cur.execute("SELECT COUNT(*) as cnt FROM global_asset_index")
+            stats['total_assets'] = cur.fetchone()['cnt']
+            
+            # 按融合状态统计
+            cur.execute("""
+                SELECT fusion_status, COUNT(*) as cnt 
+                FROM global_asset_index 
+                GROUP BY fusion_status
+            """)
+            stats['by_fusion_status'] = {r['fusion_status']: r['cnt'] for r in cur.fetchall()}
+            
+            # 按阶段统计
+            cur.execute("""
+                SELECT lifecycle_stage, COUNT(DISTINCT global_uid) as cnt
+                FROM entity_global_mapping
+                GROUP BY lifecycle_stage
+            """)
+            stats['by_stage'] = {r['lifecycle_stage']: r['cnt'] for r in cur.fetchall()}
+            
+            # 平均信任分
+            cur.execute("SELECT AVG(trust_score) as avg_trust FROM global_asset_index")
+            row = cur.fetchone()
+            stats['avg_trust_score'] = float(row['avg_trust']) if row['avg_trust'] else 0
+            
+            # 异常统计
+            cur.execute("""
+                SELECT anomaly_type, COUNT(*) as cnt
+                FROM data_anomalies
+                WHERE status = 'open'
+                GROUP BY anomaly_type
+            """)
+            stats['open_anomalies'] = {r['anomaly_type']: r['cnt'] for r in cur.fetchall()}
+            
+            return jsonify(stats)
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/anomalies')
+def anomalies_page():
+    """异常监控页面"""
+    try:
+        with get_conn() as conn, conn.cursor() as cur:
+            cur.execute("""
+                SELECT a.*, g.asset_name
+                FROM data_anomalies a
+                LEFT JOIN global_asset_index g ON g.global_uid = a.global_uid
+                WHERE a.status = 'open'
+                ORDER BY 
+                    CASE a.severity 
+                        WHEN 'critical' THEN 1 
+                        WHEN 'error' THEN 2 
+                        WHEN 'warning' THEN 3 
+                        ELSE 4 
+                    END,
+                    a.created_at DESC
+                LIMIT 100
+            """)
+            anomalies = cur.fetchall()
+            
+            # Convert datetime
+            for a in anomalies:
+                if a.get('created_at'):
+                    a['created_at'] = a['created_at'].strftime('%Y-%m-%d %H:%M')
+            
+        return render_template('anomalies.html', anomalies=anomalies)
+    except Exception as e:
+        return f"<h2>异常监控</h2><p>加载失败: {e}</p><p>请确保已运行 bootstrap.sql 和一致性监控脚本</p>"
+
 # ---------------- Templates ----------------
 # Basic Jinja template
 HOME_HTML = """<!doctype html>

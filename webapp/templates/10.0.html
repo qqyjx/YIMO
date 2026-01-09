@@ -350,6 +350,7 @@
                 <a href="#" onclick="openModal('modal-datasets')">数据集</a>
                 <a href="#" onclick="openModal('modal-rag')">RAG 检索</a>
                 <a href="#" onclick="openModal('modal-chat')">AI 对话</a>
+                <a href="#" onclick="openModal('modal-lifecycle')" style="color:var(--accent);">🔘 一模到底</a>
             </div>
             <button class="btn-nav" onclick="openModal('modal-chat')">开始对话</button>
         </nav>
@@ -359,10 +360,11 @@
     <section class="hero">
         <div class="hero-content">
             <h1>释放数据价值<br>开启智能检索</h1>
-            <p>利用我们先进的 EAV 语义平台探索数据集，执行基于 RAG 的查询，并使用最先进的 LLM 与您的数据进行对话。</p>
+            <p>利用我们先进的 EAV 语义平台探索数据集，执行基于 RAG 的查询，并使用最先进的 LLM 与您的数据进行对话。<br><strong style="color:var(--accent);">🆕 一模到底：全生命周期资产本体管理</strong></p>
             <div class="hero-btns">
                 <button class="btn-hero btn-primary" onclick="openModal('modal-rag')">开始 RAG 查询</button>
                 <button class="btn-hero btn-secondary" onclick="openModal('modal-datasets')">查看数据集</button>
+                <button class="btn-hero btn-secondary" onclick="openModal('modal-lifecycle')" style="border-color:var(--accent);color:var(--accent);">🔘 一模到底</button>
             </div>
         </div>
     </section>
@@ -496,6 +498,69 @@
         </div>
     </div>
 
+    <!-- Lifecycle Modal - 一模到底 -->
+    <div id="modal-lifecycle" class="modal-overlay" onclick="closeModal(event, 'modal-lifecycle')">
+        <div class="modal-card" style="max-width:1200px; max-height:90vh;">
+            <div class="modal-header" style="background:linear-gradient(135deg, #0f172a, #1e3a5f);">
+                <h2 style="color:white; display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:1.8rem;">🔘</span> 
+                    一模到底 · 全生命周期本体管理器
+                </h2>
+                <button class="close-btn" style="color:white;" onclick="closeModal(null, 'modal-lifecycle')">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:0; display:flex; height:calc(90vh - 80px);">
+                <!-- 左侧：资产列表 -->
+                <div style="width:320px; border-right:1px solid var(--border); overflow-y:auto; background:#f8fafc;">
+                    <div style="padding:1rem; border-bottom:1px solid var(--border); position:sticky; top:0; background:#f8fafc; z-index:10;">
+                        <input type="text" id="asset_search" class="form-control" placeholder="🔍 搜索资产名称..." oninput="filterAssets()" style="font-size:0.9rem;">
+                        <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
+                            <button onclick="loadLifecycleAssets()" class="btn-hero btn-primary" style="padding:0.4rem 0.8rem; font-size:0.8rem; flex:1;">刷新</button>
+                            <button onclick="loadLifecycleStats()" class="btn-hero btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.8rem; flex:1;">统计</button>
+                        </div>
+                    </div>
+                    <div id="asset_list" style="padding:0.5rem;">
+                        <p style="color:var(--text-muted); text-align:center; padding:2rem;">点击"刷新"加载资产列表</p>
+                    </div>
+                </div>
+                
+                <!-- 右侧：白圆可视化 -->
+                <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                    <!-- 统计卡片 -->
+                    <div id="lifecycle_stats" style="padding:1rem; border-bottom:1px solid var(--border); display:flex; gap:1rem; flex-wrap:wrap; background:white;">
+                        <div class="stat-card" style="flex:1; min-width:120px; padding:0.8rem; border-radius:8px; background:linear-gradient(135deg, #3b82f6, #1d4ed8); color:white;">
+                            <div style="font-size:1.5rem; font-weight:700;" id="stat_total">-</div>
+                            <div style="font-size:0.75rem; opacity:0.9;">全局资产</div>
+                        </div>
+                        <div class="stat-card" style="flex:1; min-width:120px; padding:0.8rem; border-radius:8px; background:linear-gradient(135deg, #10b981, #047857); color:white;">
+                            <div style="font-size:1.5rem; font-weight:700;" id="stat_complete">-</div>
+                            <div style="font-size:0.75rem; opacity:0.9;">融合完成</div>
+                        </div>
+                        <div class="stat-card" style="flex:1; min-width:120px; padding:0.8rem; border-radius:8px; background:linear-gradient(135deg, #f59e0b, #d97706); color:white;">
+                            <div style="font-size:1.5rem; font-weight:700;" id="stat_pending">-</div>
+                            <div style="font-size:0.75rem; opacity:0.9;">待处理</div>
+                        </div>
+                        <div class="stat-card" style="flex:1; min-width:120px; padding:0.8rem; border-radius:8px; background:linear-gradient(135deg, #ef4444, #dc2626); color:white;">
+                            <div style="font-size:1.5rem; font-weight:700;" id="stat_anomalies">-</div>
+                            <div style="font-size:0.75rem; opacity:0.9;">异常告警</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 白圆可视化区域 -->
+                    <div id="lifecycle_viz" style="flex:1; overflow:auto; padding:1.5rem; display:flex; justify-content:center; align-items:flex-start;">
+                        <div id="white_circle_container" style="text-align:center;">
+                            <p style="color:var(--text-muted); padding:3rem;">
+                                <span style="font-size:4rem;">🔘</span><br><br>
+                                选择左侧资产查看其<br><strong>全生命周期轨迹</strong>
+                            </p>
+                            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:2rem;">
+                                💡 提示：先运行 <code>agent_lifecycle_fusion.py</code> 建立白圆索引
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     <script>
@@ -503,6 +568,11 @@
         function openModal(id) {
             document.getElementById(id).classList.add('active');
             document.body.style.overflow = 'hidden';
+            // 自动加载生命周期数据
+            if (id === 'modal-lifecycle') {
+                loadLifecycleAssets();
+                loadLifecycleStats();
+            }
         }
 
         function closeModal(e, id) {
@@ -510,6 +580,253 @@
                 document.getElementById(id).classList.remove('active');
                 document.body.style.overflow = '';
             }
+        }
+        
+        // ============ 一模到底 - 生命周期管理器 ============
+        let lifecycleAssets = [];
+        
+        async function loadLifecycleAssets() {
+            const listEl = document.getElementById('asset_list');
+            listEl.innerHTML = '<p style="text-align:center; padding:1rem; color:var(--text-muted);">加载中...</p>';
+            
+            try {
+                const resp = await fetch('/api/lifecycle/assets');
+                const data = await resp.json();
+                
+                if (data.error) {
+                    listEl.innerHTML = `<p style="color:#ef4444; padding:1rem;">错误: ${data.error}</p>`;
+                    return;
+                }
+                
+                lifecycleAssets = data.assets || [];
+                renderAssetList(lifecycleAssets);
+            } catch(e) {
+                listEl.innerHTML = `<p style="color:#ef4444; padding:1rem;">加载失败: ${e}</p>`;
+            }
+        }
+        
+        function renderAssetList(assets) {
+            const listEl = document.getElementById('asset_list');
+            
+            if (!assets.length) {
+                listEl.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:2rem;">暂无全局资产<br><small>请先运行融合代理</small></p>';
+                return;
+            }
+            
+            const html = assets.map(a => {
+                const trustColor = a.trust_score >= 0.8 ? '#10b981' : a.trust_score >= 0.5 ? '#f59e0b' : '#ef4444';
+                const statusIcon = {pending: '⏳', partial: '🔄', complete: '✅'}[a.fusion_status] || '❓';
+                return `
+                    <div class="asset-item" onclick="loadAssetGraph('${a.global_uid}')" 
+                         style="padding:0.8rem; margin-bottom:0.5rem; border-radius:8px; cursor:pointer; 
+                                background:white; border:1px solid var(--border); transition:all 0.2s;"
+                         onmouseover="this.style.borderColor='var(--primary)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" 
+                         onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-weight:600; font-size:0.9rem;">${a.asset_name || '未命名'}</span>
+                            <span>${statusIcon}</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">
+                            ${a.asset_type || '-'} · ${a.source_count || 0}个数据源
+                        </div>
+                        <div style="margin-top:0.4rem; display:flex; align-items:center; gap:0.5rem;">
+                            <div style="flex:1; height:4px; background:#e2e8f0; border-radius:2px; overflow:hidden;">
+                                <div style="width:${(a.trust_score||0)*100}%; height:100%; background:${trustColor};"></div>
+                            </div>
+                            <span style="font-size:0.7rem; color:${trustColor}; font-weight:600;">
+                                ${((a.trust_score||0)*100).toFixed(0)}%
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            listEl.innerHTML = html;
+        }
+        
+        function filterAssets() {
+            const q = document.getElementById('asset_search').value.toLowerCase();
+            const filtered = lifecycleAssets.filter(a => 
+                (a.asset_name || '').toLowerCase().includes(q) ||
+                (a.asset_type || '').toLowerCase().includes(q) ||
+                (a.global_uid || '').toLowerCase().includes(q)
+            );
+            renderAssetList(filtered);
+        }
+        
+        async function loadLifecycleStats() {
+            try {
+                const resp = await fetch('/api/lifecycle/stats');
+                const data = await resp.json();
+                
+                if (!data.error) {
+                    document.getElementById('stat_total').textContent = data.total_assets || 0;
+                    document.getElementById('stat_complete').textContent = data.by_fusion_status?.complete || 0;
+                    document.getElementById('stat_pending').textContent = data.by_fusion_status?.pending || 0;
+                    
+                    const anomalyCount = Object.values(data.open_anomalies || {}).reduce((a,b) => a+b, 0);
+                    document.getElementById('stat_anomalies').textContent = anomalyCount;
+                }
+            } catch(e) {
+                console.error('加载统计失败:', e);
+            }
+        }
+        
+        async function loadAssetGraph(globalUid) {
+            const vizEl = document.getElementById('white_circle_container');
+            vizEl.innerHTML = '<p style="padding:2rem; color:var(--text-muted);">加载白圆数据...</p>';
+            
+            try {
+                const resp = await fetch(`/api/lifecycle/graph/${globalUid}`);
+                const data = await resp.json();
+                
+                if (data.error) {
+                    vizEl.innerHTML = `<p style="color:#ef4444; padding:2rem;">错误: ${data.error}</p>`;
+                    return;
+                }
+                
+                renderWhiteCircle(data);
+            } catch(e) {
+                vizEl.innerHTML = `<p style="color:#ef4444; padding:2rem;">加载失败: ${e}</p>`;
+            }
+        }
+        
+        function renderWhiteCircle(data) {
+            const vizEl = document.getElementById('white_circle_container');
+            const stages = ['planning', 'design', 'construction', 'operation', 'finance'];
+            const stageLabels = {
+                planning: '🌱 规划', design: '🖊️ 设计', construction: '🏗️ 建设',
+                operation: '⚡ 运维', finance: '💰 财务'
+            };
+            const stageColors = {
+                planning: '#10b981', design: '#3b82f6', construction: '#f59e0b',
+                operation: '#8b5cf6', finance: '#ef4444'
+            };
+            
+            // 构建白圆可视化
+            let html = `
+                <div style="position:relative; width:600px; height:500px;">
+                    <!-- 中心白圆 -->
+                    <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+                                width:200px; height:200px; border-radius:50%; background:white;
+                                box-shadow:0 0 40px rgba(0,0,0,0.15), 0 0 80px rgba(59,130,246,0.2);
+                                display:flex; flex-direction:column; justify-content:center; align-items:center;
+                                border:3px solid #e2e8f0;">
+                        <div style="font-size:2rem;">🔘</div>
+                        <div style="font-size:0.85rem; font-weight:700; margin-top:0.5rem; text-align:center; padding:0 1rem;">
+                            ${data.asset_name || '资产'}
+                        </div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">${data.asset_type || ''}</div>
+                        <div style="margin-top:0.5rem; padding:0.3rem 0.8rem; border-radius:12px; font-size:0.7rem; font-weight:600;
+                                    background:${data.trust_score >= 0.8 ? '#dcfce7' : data.trust_score >= 0.5 ? '#fef3c7' : '#fee2e2'};
+                                    color:${data.trust_score >= 0.8 ? '#166534' : data.trust_score >= 0.5 ? '#92400e' : '#991b1b'};">
+                            可信度 ${((data.trust_score||0)*100).toFixed(0)}%
+                        </div>
+                    </div>
+                    
+                    <!-- 轨道卫星 -->
+            `;
+            
+            // 5个阶段卫星围绕白圆
+            const radius = 200;
+            stages.forEach((stage, i) => {
+                const angle = (i * 72 - 90) * Math.PI / 180; // 从顶部开始，每72度一个
+                const x = 300 + radius * Math.cos(angle);
+                const y = 250 + radius * Math.sin(angle);
+                
+                const stageData = data.stages?.[stage];
+                const hasData = stageData && stageData.entities && stageData.entities.length > 0;
+                const entityCount = stageData?.entities?.length || 0;
+                
+                html += `
+                    <div class="satellite" style="position:absolute; left:${x}px; top:${y}px; transform:translate(-50%,-50%);
+                                width:90px; height:90px; border-radius:50%;
+                                background:${hasData ? stageColors[stage] : '#94a3b8'};
+                                box-shadow:0 4px 12px ${hasData ? stageColors[stage] + '60' : 'rgba(0,0,0,0.2)'};
+                                display:flex; flex-direction:column; justify-content:center; align-items:center;
+                                color:white; cursor:${hasData ? 'pointer' : 'default'};
+                                transition:transform 0.2s; opacity:${hasData ? 1 : 0.5};"
+                         ${hasData ? `onclick="showStageDetail('${stage}', ${JSON.stringify(stageData).replace(/"/g, '&quot;')})"` : ''}
+                         ${hasData ? 'onmouseover="this.style.transform=\'translate(-50%,-50%) scale(1.1)\'" onmouseout="this.style.transform=\'translate(-50%,-50%)\'"' : ''}>
+                        <div style="font-size:1.2rem;">${stageLabels[stage].split(' ')[0]}</div>
+                        <div style="font-size:0.7rem; font-weight:600;">${stageLabels[stage].split(' ')[1]}</div>
+                        <div style="font-size:0.65rem; margin-top:2px; opacity:0.9;">${entityCount}条</div>
+                    </div>
+                    
+                    <!-- 连接线 -->
+                    ${hasData ? `
+                    <svg style="position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none;">
+                        <line x1="300" y1="250" x2="${x}" y2="${y}" 
+                              stroke="${stageColors[stage]}" stroke-width="2" stroke-dasharray="5,5" opacity="0.5"/>
+                    </svg>
+                    ` : ''}
+                `;
+            });
+            
+            html += `</div>`;
+            
+            // 黄金属性展示
+            if (data.golden_attributes && Object.keys(data.golden_attributes).length > 0) {
+                html += `
+                    <div style="margin-top:1.5rem; padding:1rem; background:#fffbeb; border:1px solid #fcd34d; border-radius:8px; text-align:left; max-width:500px;">
+                        <div style="font-weight:600; color:#92400e; margin-bottom:0.5rem;">🏆 黄金属性（融合后权威值）</div>
+                        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:0.5rem; font-size:0.85rem;">
+                            ${Object.entries(data.golden_attributes).map(([k,v]) => 
+                                `<div><span style="color:var(--text-muted);">${k}:</span> <strong>${v}</strong></div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 异常告警
+            if (data.anomalies && data.anomalies.length > 0) {
+                html += `
+                    <div style="margin-top:1rem; padding:1rem; background:#fef2f2; border:1px solid #fca5a5; border-radius:8px; text-align:left; max-width:500px;">
+                        <div style="font-weight:600; color:#991b1b; margin-bottom:0.5rem;">⚠️ 异常告警</div>
+                        ${data.anomalies.map(a => `
+                            <div style="font-size:0.85rem; padding:0.3rem 0; border-bottom:1px solid #fecaca;">
+                                <span style="display:inline-block; padding:0.1rem 0.4rem; border-radius:4px; font-size:0.7rem; font-weight:600;
+                                             background:${a.severity==='critical'?'#dc2626':a.severity==='error'?'#f97316':'#eab308'}; color:white;">
+                                    ${a.severity}
+                                </span>
+                                ${a.description || a.anomaly_type}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            vizEl.innerHTML = html;
+        }
+        
+        function showStageDetail(stage, stageData) {
+            const stageLabels = {
+                planning: '🌱 规划阶段', design: '🖊️ 设计阶段', construction: '🏗️ 建设阶段',
+                operation: '⚡ 运维阶段', finance: '💰 财务阶段'
+            };
+            
+            let detailHtml = `<h3 style="margin-bottom:1rem;">${stageLabels[stage]}</h3>`;
+            
+            if (stageData.entities && stageData.entities.length > 0) {
+                stageData.entities.forEach((ent, i) => {
+                    detailHtml += `
+                        <div style="margin-bottom:1rem; padding:1rem; background:#f8fafc; border-radius:8px; border:1px solid var(--border);">
+                            <div style="font-weight:600; margin-bottom:0.5rem;">
+                                ${ent.dataset_name || '数据源'} 
+                                <span style="font-size:0.75rem; color:var(--text-muted);">(置信度: ${((ent.confidence||0)*100).toFixed(0)}%)</span>
+                            </div>
+                            <div style="font-size:0.85rem; display:grid; grid-template-columns:repeat(2, 1fr); gap:0.3rem;">
+                                ${Object.entries(ent.attributes || {}).slice(0, 10).map(([k,v]) => 
+                                    `<div><span style="color:var(--text-muted);">${k}:</span> ${v}</div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            alert(detailHtml.replace(/<[^>]*>/g, '\n').substring(0, 500)); // 简化展示，实际可用更好的弹窗
         }
 
         // RAG Logic
