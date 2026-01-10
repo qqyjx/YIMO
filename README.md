@@ -195,6 +195,9 @@ curl http://localhost:5000/health
 **快速启动命令（一行搞定）**：
 ```bash
 cd /root/YIMO && source venv/bin/activate && cd webapp && python app.py
+
+# 或使用绝对路径（无需激活虚拟环境）
+cd /root/YIMO/webapp && /root/.venv/bin/python app.py
 ```
 
 ### 使用 Navicat 远程连接数据库
