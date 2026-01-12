@@ -79,161 +79,41 @@ flowchart TB
 
 ---
 
-## 🚀 从 GitHub 部署（5分钟）
+## 🚀 一键部署
 
 ### 环境要求
-- **操作系统**: Ubuntu 20.04+ / CentOS 7+ / Windows 10+ (WSL2)
-- **Python**: 3.10+
-- **MySQL**: 8.0+
-- **内存**: 8GB+ (推荐16GB)
-- **GPU**: 可选（CUDA用于加速语义处理）
+- Python 3.10+ | MySQL 8.0+ | 8GB+ 内存
 
-### 一键部署脚本
+### 快速开始
 
 ```bash
-# 1️⃣ 克隆仓库
+# 克隆并部署
 git clone https://github.com/YOUR_USERNAME/YIMO.git
 cd YIMO
+./deploy.sh                    # 基础部署
+./deploy.sh --with-demo-data   # 含样例数据
 
-# 2️⃣ 创建虚拟环境
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 3️⃣ 安装依赖
-pip install -r requirements.txt
-
-# 4️⃣ 配置数据库（MySQL需已安装运行）
-mysql -u root -h 127.0.0.1 -e "
-  CREATE DATABASE IF NOT EXISTS eav_db CHARACTER SET utf8mb4;
-  CREATE USER IF NOT EXISTS 'eav_user'@'localhost' IDENTIFIED BY 'eavpass123';
-  CREATE USER IF NOT EXISTS 'eav_user'@'127.0.0.1' IDENTIFIED BY 'eavpass123';
-  GRANT ALL ON eav_db.* TO 'eav_user'@'localhost';
-  GRANT ALL ON eav_db.* TO 'eav_user'@'127.0.0.1';
-  FLUSH PRIVILEGES;
-"
-
-# 5️⃣ 初始化数据库表
-mysql -u root -h 127.0.0.1 eav_db < mysql-local/bootstrap.sql
-
-# 6️⃣ 导入样例数据（可选，快速体验）
-python scripts/import_all.py --stage Planning --dir DATA/lifecycle_demo/planning/
-python scripts/import_all.py --stage Design --dir DATA/lifecycle_demo/design/
-python scripts/import_all.py --stage Construction --dir DATA/lifecycle_demo/construction/
-python scripts/import_all.py --stage Operation --dir DATA/lifecycle_demo/operation/
-python scripts/import_all.py --stage Finance --dir DATA/lifecycle_demo/finance/
-
-# 7️⃣ 创建配置文件
-cat > webapp/.env << 'EOF'
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_DB=eav_db
-MYSQL_USER=eav_user
-MYSQL_PASSWORD=eavpass123
-TABLE_PREFIX=eav
-EMBED_MODEL=shibing624/text2vec-base-chinese
-MODEL_CACHE=./models
-DEEPSEEK_API_KEY=your_api_key_here
-RAG_TOP_K=5
-EOF
-
-# 8️⃣ 启动Web服务
-cd webapp && python app.py
-
-# 9️⃣ 访问系统
-# 🌐 http://localhost:5000
+# 访问 http://localhost:5000
 ```
+
+> 脚本会自动: 创建虚拟环境 → 安装依赖 → 配置数据库 → 启动服务
 
 ---
 
-## 💻 日常使用指南
-
-### 从终端启动 Web 服务
-
-每次服务器重启后，需要手动启动 Web 服务：
+## 💻 日常操作
 
 ```bash
-# 进入项目目录
-cd /root/YIMO
-
-# 激活虚拟环境
-source venv/bin/activate
-
-# 启动 Web 服务（前台运行，可查看日志）
-cd webapp && python app.py
-
-# 或后台运行（关闭终端后仍然运行）
-cd webapp && nohup python app.py > /tmp/webapp.log 2>&1 &
-
-# 检查服务是否启动成功
-curl http://localhost:5000/health
-# 返回 {"status": "ok", "faiss": true} 表示成功
-```
-
-**快速启动命令（一行搞定）**：
-```bash
+# 启动服务
 cd /root/YIMO && source venv/bin/activate && cd webapp && python app.py
 
-# 或使用绝对路径（无需激活虚拟环境）
-cd /root/YIMO/webapp && /root/.venv/bin/python app.py
-```
+# 后台运行
+cd /root/YIMO/webapp && nohup python app.py > /tmp/webapp.log 2>&1 &
 
-### 使用 Navicat 远程连接数据库
-
-如果服务器在远程（如192.168.1.123），本地Windows电脑需要通过SSH隧道连接MySQL：
-
-#### 方法1：使用提供的bat脚本（推荐）
-
-```batch
-# 1. 在 bat/ 目录找到启动脚本
-mysql_tunnel_4090_start.bat
-
-# 2. 按提示输入SSH密码
-
-# 3. 打开Navicat，新建连接：
-#    主机: 127.0.0.1
-#    端口: 3308
-#    用户名: eav_user
-#    密码: eavpass123
-#    数据库: eav_db
-
-# 4. 用完后关闭隧道
-mysql_tunnel_4090_stop.bat
-```
-
-#### 方法2：Navicat内置SSH隧道
-
-1. 打开 Navicat → 新建MySQL连接
-2. **常规**选项卡：
-   - 主机：`127.0.0.1`
-   - 端口：`3306`
-   - 用户名：`eav_user`
-   - 密码：`eavpass123`
-3. **SSH**选项卡：
-   - ☑️ 使用SSH隧道
-   - 主机：`192.168.1.123`（服务器IP）
-   - 端口：`22`
-   - 用户名：`xdx`
-   - 认证方法：密码或密钥
-4. 点击"测试连接"
-
-### 停止 Web 服务
-
-```bash
-# 方法1：找到进程并kill
-ps aux | grep app.py
-kill <PID>
-
-# 方法2：用fuser直接杀掉端口
+# 停止服务
 fuser -k 5000/tcp
-```
 
----
-
-### 🐳 Docker 部署（即将支持）
-
-```bash
-docker-compose up -d
-# 访问 http://localhost:5000
+# 检查状态
+curl http://localhost:5000/health
 ```
 
 ---
@@ -550,75 +430,6 @@ cd webapp
 | `eav_semantic_canon` | 规范值（每个簇的代表文本） |
 | `eav_semantic_mapping` | 原文→规范值映射 |
 
----
-
-## 🚀 快速开始
-
-### 环境要求
-
-- Python 3.10+
-- MySQL 8.0 (UTF8MB4, InnoDB)
-- CUDA (可选，用于 GPU 加速)
-
-### 安装依赖
-
-```bash
-# 基础依赖
-pip install -r requirements.txt
-
-# 语义去重额外依赖
-pip install sentence-transformers scikit-learn torch
-pip install faiss-cpu  # 或 faiss-gpu
-```
-
-### 配置数据库
-
-1. 创建数据库和用户：
-
-```sql
-CREATE DATABASE eav_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'eav_user'@'localhost' IDENTIFIED BY 'eavpass123';
-CREATE USER 'eav_user'@'127.0.0.1' IDENTIFIED BY 'eavpass123';
-GRANT ALL PRIVILEGES ON eav_db.* TO 'eav_user'@'localhost';
-GRANT ALL PRIVILEGES ON eav_db.* TO 'eav_user'@'127.0.0.1';
-```
-
-2. 或使用本地 MySQL 配置：
-
-```bash
-cd mysql-local
-./init_local_mysql.sh
-```
-
-### 导入数据
-
-```bash
-python scripts/eav_full.py \
-    --excel ./dataset/1.xlsx \
-    --db eav_db --host 127.0.0.1 --port 3306 \
-    --user eav_user --password eavpass123
-```
-
-### 运行语义去重
-
-```bash
-python scripts/eav_semantic_dedupe.py \
-    --dataset-id 1 \
-    --model shibing624/text2vec-base-chinese \
-    --model-cache /path/to/models \
-    --device cuda --multi-gpu -1 \
-    --batch-size 512 --threshold 0.86 \
-    --out-dir ./outputs/semantic_dedupe_gpu_full/single
-```
-
-### 启动 Web 服务
-
-```bash
-cd webapp
-pip install -r requirements.txt
-./start_web.sh
-# 访问 http://localhost:5000
-```
 
 ---
 
@@ -675,57 +486,6 @@ DEEPSEEK_API_KEY=your_api_key
 | `--max-values` | 5000 | 每属性最大候选文本数 |
 | `--multi-gpu` | 0 | -1 使用全部 GPU，>0 指定张数 |
 
----
-
-## 🔧 常见问题
-
-### Q: 如何验证多 GPU 是否生效？
-
-运行日志会打印目标设备列表：
-```
-[INFO] 多卡编码: ['cuda:0', 'cuda:1', 'cuda:2', 'cuda:3'] / 可见GPU=4
-```
-
-使用 `nvidia-smi pmon -c 1` 观察多 GPU 负载。
-
-### Q: 模型下载失败？
-
-- 使用本地缓存：`--model /path/to/local/model`
-- 开启代理后重试
-- 添加 `--offline` 强制离线（回退 TF-IDF）
-
-### Q: 如何续跑中断的任务？
-
-```bash
-python scripts/resume_global_missing.py \
-    --dataset-ids 1,2,3 \
-    --out-dir ./outputs/semantic_dedupe_gpu_full/global \
-    --exec
-```
-
----
-
-## 📄 示例 SQL
-
-### 查询规范化后的数据
-
-```sql
-CREATE OR REPLACE VIEW v_attr_normalized AS
-SELECT
-    e.id AS entity_id,
-    a.name AS attribute_name,
-    v.raw_text,
-    COALESCE(c.canonical_text, v.raw_text) AS normalized_text
-FROM eav_values v
-JOIN eav_entities e ON e.id = v.entity_id
-JOIN eav_attributes a ON a.id = v.attribute_id
-LEFT JOIN eav_semantic_mapping m
-    ON m.dataset_id = e.dataset_id
-    AND m.attribute_id = v.attribute_id
-    AND m.from_text = v.raw_text
-LEFT JOIN eav_semantic_canon c
-    ON c.id = m.canonical_id;
-```
 
 ---
 
