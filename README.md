@@ -68,10 +68,10 @@ flowchart TB
     end
 
     subgraph 应用服务层
-        F1[/lifecycle]
-        F2[/rag/query]
-        F3[/anomalies]
-        F4[/deepseek]
+        F1["lifecycle"]
+        F2["rag/query"]
+        F3["anomalies"]
+        F4["deepseek"]
     end
 
     A1 & A2 & A3 & A4 --> B --> C --> D1 & D2 --> E --> F1 & F2 & F3 & F4
@@ -368,8 +368,8 @@ flowchart TB
 
     subgraph 监控与可视化层
         M1[aiops_consistency_monitor.py]
-        M2[/lifecycle 统一本体可视化]
-        M3[/anomalies 异常监控面板]
+        M2["lifecycle 统一本体可视化"]
+        M3["anomalies 异常监控面板"]
     end
 
     I --> E1 & E2 & E3
