@@ -51,11 +51,11 @@ flowchart TB
     end
 
     subgraph 数据导入层
-        B[import_all.py<br/>多格式支持 | 生命周期标记]
+        B[import_all.py<br/>多格式支持 · 生命周期标记]
     end
 
     subgraph EAV存储层
-        C[MySQL 8.0<br/>eav_datasets | eav_entities | eav_attributes | eav_values]
+        C[MySQL 8.0<br/>eav_datasets · eav_entities · eav_attributes · eav_values]
     end
 
     subgraph 智能处理层
@@ -64,7 +64,7 @@ flowchart TB
     end
 
     subgraph 全局资产索引层
-        E[统一本体<br/>global_asset_index | entity_global_mapping]
+        E[统一本体<br/>global_asset_index · entity_global_mapping]
     end
 
     subgraph 应用服务层
