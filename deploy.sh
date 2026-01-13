@@ -1,6 +1,14 @@
 #!/bin/bash
 # YIMO 一键部署脚本
-# 用法: ./deploy.sh [--with-demo-data]
+# 用法: ./deploy.sh [--with-demo-data] [--no-interact]
+#
+# 环境变量支持（用于无交互模式）:
+#   MYSQL_ROOT_PASSWORD - MySQL root密码（留空则无密码）
+#
+# 示例:
+#   ./deploy.sh                                    # 交互模式
+#   ./deploy.sh --with-demo-data                   # 含样例数据
+#   MYSQL_ROOT_PASSWORD=mypass ./deploy.sh --no-interact  # 全自动部署
 
 set -e
 
@@ -9,6 +17,16 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# 解析参数
+WITH_DEMO_DATA=false
+NO_INTERACT=false
+for arg in "$@"; do
+  case $arg in
+    --with-demo-data) WITH_DEMO_DATA=true ;;
+    --no-interact) NO_INTERACT=true ;;
+  esac
+done
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  YIMO 一模到底 - 一键部署脚本${NC}"
@@ -68,8 +86,17 @@ echo -e "${GREEN}✓ 依赖安装完成${NC}"
 
 # 配置数据库
 echo -e "\n${YELLOW}[5/7] 配置数据库...${NC}"
-read -sp "请输入 MySQL root 密码 (直接回车跳过如果无密码): " MYSQL_ROOT_PASS
-echo ""
+
+# 获取MySQL root密码
+if [ "$NO_INTERACT" = true ]; then
+    # 无交互模式：使用环境变量
+    MYSQL_ROOT_PASS="${MYSQL_ROOT_PASSWORD:-}"
+    echo -e "${YELLOW}无交互模式：使用环境变量 MYSQL_ROOT_PASSWORD${NC}"
+else
+    # 交互模式：提示输入
+    read -sp "请输入 MySQL root 密码 (直接回车跳过如果无密码): " MYSQL_ROOT_PASS
+    echo ""
+fi
 
 MYSQL_CMD="mysql -u root -h 127.0.0.1"
 if [ -n "$MYSQL_ROOT_PASS" ]; then
@@ -113,13 +140,13 @@ else
 fi
 
 # 导入样例数据（可选）
-if [[ "$1" == "--with-demo-data" ]]; then
+if [ "$WITH_DEMO_DATA" = true ]; then
     echo -e "\n${YELLOW}[6.5/7] 导入样例数据...${NC}"
-    python scripts/import_all.py --stage Planning --dir DATA/lifecycle_demo/planning/ 2>/dev/null
-    python scripts/import_all.py --stage Design --dir DATA/lifecycle_demo/design/ 2>/dev/null
-    python scripts/import_all.py --stage Construction --dir DATA/lifecycle_demo/construction/ 2>/dev/null
-    python scripts/import_all.py --stage Operation --dir DATA/lifecycle_demo/operation/ 2>/dev/null
-    python scripts/import_all.py --stage Finance --dir DATA/lifecycle_demo/finance/ 2>/dev/null
+    python scripts/import_all.py --stage Planning --dir DATA/lifecycle_demo/planning/ 2>/dev/null || true
+    python scripts/import_all.py --stage Design --dir DATA/lifecycle_demo/design/ 2>/dev/null || true
+    python scripts/import_all.py --stage Construction --dir DATA/lifecycle_demo/construction/ 2>/dev/null || true
+    python scripts/import_all.py --stage Operation --dir DATA/lifecycle_demo/operation/ 2>/dev/null || true
+    python scripts/import_all.py --stage Finance --dir DATA/lifecycle_demo/finance/ 2>/dev/null || true
     echo -e "${GREEN}✓ 样例数据已导入${NC}"
 fi
 
@@ -143,6 +170,7 @@ echo -e ""
 echo -e "  访问地址: ${YELLOW}http://localhost:5000${NC}"
 echo -e "  健康检查: ${YELLOW}http://localhost:5000/health${NC}"
 echo -e "  统一本体: ${YELLOW}http://localhost:5000/lifecycle${NC}"
+echo -e "  异常监控: ${YELLOW}http://localhost:5000/anomalies${NC}"
 echo -e ""
 echo -e "  停止服务: ${YELLOW}fuser -k 5000/tcp${NC}"
 echo -e "  查看日志: ${YELLOW}tail -f /tmp/yimo_webapp.log${NC}"
