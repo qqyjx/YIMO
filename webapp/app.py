@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Minimal Flask webapp to browse EAV semantic tables and provide
-Deepseek API proxy + simple RAG (FAISS + SBERT).
+"""YIMO 智能数据平台 - Flask 网页应用
+提供 EAV 语义库浏览、智能问答和 RAG 检索功能。
 
 Endpoints
 - GET /            : Dashboard, dataset list & quick stats.
 - GET /dataset/<int:dsid>/attributes : JSON list of attributes.
 - GET /dataset/<int:dsid>/attribute/<int:aid>/canon : JSON list of canon values.
 - GET /dataset/<int:dsid>/attribute/<int:aid>/mapping?limit=... : Mapping rows.
-- POST /deepseek/chat : Proxy a chat completion to Deepseek API.
-- POST /rag/query : Run RAG over semantic canon texts (per dataset) and call Deepseek.
+- POST /api/chat : YIMO智能助手聊天接口
+- POST /rag/query : RAG检索 + 智能问答
 
-RAG minimal design
-- Build (in-memory) FAISS index of canonical texts for requested dataset (lazy cache).
-- Embed by sentence-transformers (shibing624/text2vec-base-chinese by default). 
-- Top-K retrieval -> join canonical_texts into a context -> ask Deepseek.
+RAG 设计
+- 基于 FAISS 构建内存索引（按数据集懒加载缓存）
+- 使用 sentence-transformers 进行文本嵌入
+- Top-K 检索 -> 构建上下文 -> 调用智能助手
 
 Security NOTE: This is a local development script; do NOT expose without adding auth & rate limiting.
 """
@@ -137,22 +137,52 @@ def build_rag_index(dataset_id: int) -> RagIndex:
     _rag_cache[dataset_id] = ri
     return ri
 
-# ---------------- Deepseek Proxy ----------------
+# ---------------- LLM Proxy (内部使用DeepSeek，对外展示为YIMO助手) ----------------
 
-def call_deepseek(messages: List[Dict[str, str]], model: str = "deepseek-chat") -> Dict[str, Any]:
+# YIMO助手系统提示 - 包装底层模型身份
+YIMO_SYSTEM_PROMPT = """你是 YIMO 智能助手，一个专业的数据分析和知识问答AI。
+你由 YIMO 团队开发和维护，专注于帮助用户进行数据理解、语义分析和知识检索。
+请不要提及你的底层技术实现细节。当用户问你是谁或什么模型时，只需说你是 YIMO 智能助手。
+保持友好、专业、简洁的回答风格。"""
+
+def call_llm(messages: List[Dict[str, str]], model: str = "deepseek-chat", inject_system: bool = True) -> Dict[str, Any]:
+    """调用LLM API（内部使用DeepSeek）"""
     if not DEEPSEEK_API_KEY:
-        return {"error": "DEEPSEEK_API_KEY not set"}
+        return {"error": "LLM API未配置，请联系管理员"}
+
+    # 注入YIMO系统提示
+    final_messages = messages.copy()
+    if inject_system:
+        # 检查是否已有system消息
+        has_system = any(m.get('role') == 'system' for m in final_messages)
+        if has_system:
+            # 在现有system消息前添加YIMO身份提示
+            for i, m in enumerate(final_messages):
+                if m.get('role') == 'system':
+                    final_messages[i] = {
+                        'role': 'system',
+                        'content': YIMO_SYSTEM_PROMPT + '\n\n' + m.get('content', '')
+                    }
+                    break
+        else:
+            # 添加YIMO系统提示
+            final_messages.insert(0, {'role': 'system', 'content': YIMO_SYSTEM_PROMPT})
+
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json",
     }
-    payload = {"model": model, "messages": messages}
+    payload = {"model": model, "messages": final_messages}
     url = f"{DEEPSEEK_API_BASE.rstrip('/')}/chat/completions"
     try:
         resp = requests.post(url, headers=headers, json=payload, timeout=60)
         return resp.json()
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"服务暂时不可用: {str(e)}"}
+
+# 保留旧函数名以兼容
+def call_deepseek(messages: List[Dict[str, str]], model: str = "deepseek-chat") -> Dict[str, Any]:
+    return call_llm(messages, model, inject_system=True)
 
 # ---------------- Routes ----------------
 @app.route('/')
@@ -214,12 +244,20 @@ def api_mapping(dsid: int, aid: int):
     limit = int(request.args.get('limit', 500))
     return jsonify(list_mapping(dsid, aid, limit))
 
+# 新的统一聊天接口 - 对外展示为YIMO助手
+@app.route('/api/chat', methods=['POST'])
+def api_yimo_chat():
+    """YIMO智能助手聊天接口"""
+    data = request.json or {}
+    messages = data.get('messages', [])
+    return jsonify(call_llm(messages, inject_system=True))
+
+# 保留旧接口以兼容（内部重定向到新接口）
 @app.route('/deepseek/chat', methods=['POST'])
 def api_deepseek_chat():
     data = request.json or {}
     messages = data.get('messages', [])
-    model = data.get('model', 'deepseek-chat')
-    return jsonify(call_deepseek(messages, model))
+    return jsonify(call_llm(messages, inject_system=True))
 
 @app.route('/rag/query', methods=['POST'])
 def api_rag_query():
@@ -543,7 +581,7 @@ HOME_HTML = """<!doctype html>
     </div>
 </div>
 
-<h2>直接调用 LLM API（无检索）</h2>
+<h2>YIMO 智能助手（无检索）</h2>
 <div class="row">
     <div class="col">
         <label>对话消息（JSON 数组），例如：[{"role":"user","content":"你好"}]</label>
@@ -553,7 +591,7 @@ HOME_HTML = """<!doctype html>
         </div>
     </div>
     <div class="col">
-        <h3>响应</h3>
+        <h3>助手回复</h3>
         <pre id="chat_resp">(尚无)</pre>
     </div>
 </div>
@@ -577,7 +615,6 @@ async function doRag(){
         }
         document.getElementById('rag_ctx').textContent = (data.retrieved||[]).join('\n\n');
         const llm = data.llm || {};
-        // deepseek 返回结构兼容 openai 格式
         let text = '';
         try { text = llm.choices[0].message.content; } catch(e) { text = JSON.stringify(llm, null, 2); }
         document.getElementById('rag_ans').textContent = text;
@@ -592,10 +629,10 @@ async function doChat(){
     let msgs;
     try{ msgs = JSON.parse(msgsRaw); }
     catch(e){ alert('消息 JSON 解析失败: ' + e); return; }
-    const resp = await fetch('/deepseek/chat', {
+    const resp = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: msgs, model: 'deepseek-chat' })
+        body: JSON.stringify({ messages: msgs })
     });
     const data = await resp.json();
     if(data.error){
@@ -622,8 +659,9 @@ if not os.path.exists(TEMPLATE_PATH):
         pass
 
 if __name__ == '__main__':
+    print(" * YIMO 智能数据平台启动中...")
     if DEEPSEEK_API_KEY:
-        print(f" * DeepSeek API Key loaded: {DEEPSEEK_API_KEY[:4]}...{DEEPSEEK_API_KEY[-4:]}")
+        print(" * 智能助手: 已就绪 ✓")
     else:
-        print(" * WARNING: DEEPSEEK_API_KEY is missing!")
+        print(" * 智能助手: 未配置 (请设置环境变量)")
     app.run(host='0.0.0.0', port=5000, debug=True)

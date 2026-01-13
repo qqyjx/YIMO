@@ -72,7 +72,7 @@
     </div>
 </div>
 
-<h2>直接调用 LLM API（无检索）</h2>
+<h2>YIMO 智能助手（无检索）</h2>
 <div class="row">
     <div class="col">
         <label>对话消息（JSON 数组），例如：[{"role":"user","content":"你好"}]</label>
@@ -82,7 +82,7 @@
         </div>
     </div>
     <div class="col">
-        <h3>响应</h3>
+        <h3>助手回复</h3>
         <pre id="chat_resp">(尚无)</pre>
     </div>
 </div>
@@ -116,7 +116,6 @@ async function doRag(){
         }
         document.getElementById('rag_ctx').textContent = (data.retrieved||[]).join('\n\n');
         const llm = data.llm || {};
-        // deepseek 返回结构兼容 openai 格式
         let text = '';
         try { text = llm.choices[0].message.content; } catch(e) { text = JSON.stringify(llm, null, 2); }
         document.getElementById('rag_ans').textContent = text;
@@ -131,10 +130,10 @@ async function doChat(){
     let msgs;
     try{ msgs = JSON.parse(msgsRaw); }
     catch(e){ alert('消息 JSON 解析失败: ' + e); return; }
-    const resp = await fetch('/deepseek/chat', {
+    const resp = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: msgs, model: 'deepseek-chat' })
+        body: JSON.stringify({ messages: msgs })
     });
     const data = await resp.json();
     if(data.error){

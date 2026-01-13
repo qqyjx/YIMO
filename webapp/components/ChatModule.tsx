@@ -8,7 +8,7 @@ const ChatModule: React.FC = () => {
     {
       id: 'welcome',
       role: 'model',
-      content: "Hello! I'm Lumina. I can help you analyze data, write creative content, or just chat. How can I assist you today?",
+      content: "你好！我是 YIMO 智能助手。我可以帮助你分析数据、回答问题或进行创意写作。今天有什么可以帮你的吗？",
       timestamp: Date.now()
     }
   ]);
@@ -81,9 +81,9 @@ const ChatModule: React.FC = () => {
       <div className="flex items-center justify-between mb-2 md:mb-4 px-2 md:px-0 flex-shrink-0">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            AI Chat <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium">Gemini 2.5</span>
+            YIMO 智能助手 <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium">AI</span>
           </h2>
-          <p className="text-slate-400 text-sm hidden md:block">Intelligent conversation & assistance</p>
+          <p className="text-slate-400 text-sm hidden md:block">智能对话与数据分析</p>
         </div>
         <button 
           onClick={() => setMessages([])}

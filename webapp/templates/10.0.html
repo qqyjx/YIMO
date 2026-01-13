@@ -860,21 +860,21 @@
             }
         }
 
-        // Chat Logic
+        // Chat Logic - YIMO智能助手
         async function doChat(){
             let msgsRaw = document.getElementById('chat_msgs').value;
             let msgs;
             try{ msgs = JSON.parse(msgsRaw); }
             catch(e){ alert('JSON 解析错误: ' + e); return; }
-            
+
             const respBox = document.getElementById('chat_resp');
             respBox.textContent = '思考中...';
-            
+
             try {
-                const resp = await fetch('/deepseek/chat', {
+                const resp = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: msgs, model: 'deepseek-chat' })
+                    body: JSON.stringify({ messages: msgs })
                 });
                 const data = await resp.json();
                 if(data.error){

@@ -1,29 +1,44 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("API Key is not defined");
   }
   return new GoogleGenAI({ apiKey });
 };
 
-// Model constants
-const TEXT_MODEL = 'gemini-2.5-flash';
+// Model constants - 使用最新的Gemini模型
+const TEXT_MODEL = 'gemini-2.0-flash';
+
+// YIMO助手系统提示 - 包装底层模型身份
+const YIMO_SYSTEM_PROMPT = `你是 YIMO 智能助手，一个专业的数据分析和知识问答AI。
+你由 YIMO 团队开发和维护，专注于帮助用户进行数据理解、语义分析和知识检索。
+当用户问你是谁或什么模型时，只需说你是 YIMO 智能助手。
+保持友好、专业、简洁的回答风格。`;
 
 export const streamChatResponse = async function* (
   history: { role: 'user' | 'model'; content: string }[],
   newMessage: string
 ) {
   const ai = getAiClient();
-  // Transform simple history to ChatSession format if needed, 
-  // but for simple turns, we can use sendMessageStream on a chat object.
-  // To keep it stateless for this demo, we re-init chat with history.
-  
-  const chatHistory = history.map(msg => ({
+
+  // 在历史开头注入YIMO系统提示（如果还没有）
+  const hasSystemPrompt = history.length > 0 &&
+    history[0].role === 'model' &&
+    history[0].content.includes('YIMO');
+
+  const chatHistory = hasSystemPrompt ? history.map(msg => ({
     role: msg.role,
     parts: [{ text: msg.content }],
-  }));
+  })) : [
+    // 注入系统提示作为模型的初始回复
+    { role: 'model' as const, parts: [{ text: YIMO_SYSTEM_PROMPT }] },
+    ...history.map(msg => ({
+      role: msg.role,
+      parts: [{ text: msg.content }],
+    }))
+  ];
 
   const chat = ai.chats.create({
     model: TEXT_MODEL,
