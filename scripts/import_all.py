@@ -28,7 +28,7 @@ def main():
     ap.add_argument('--host', default='127.0.0.1')
     ap.add_argument('--port', type=int, default=3306)
     ap.add_argument('--user', default='eav_user')
-    ap.add_argument('--password', default='Eav_pass_1234')
+    ap.add_argument('--password', default='eavpass123')
     ap.add_argument('--table-prefix', default='eav')
     # 生命周期阶段参数
     ap.add_argument('--stage', default='Finance', choices=VALID_STAGES,

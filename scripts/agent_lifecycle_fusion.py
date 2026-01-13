@@ -724,7 +724,7 @@ def main():
     ap.add_argument('--host', default='127.0.0.1')
     ap.add_argument('--port', type=int, default=3306)
     ap.add_argument('--user', default='eav_user')
-    ap.add_argument('--password', default='Eav_pass_1234')
+    ap.add_argument('--password', default='eavpass123')
     ap.add_argument('--model-path', default=DEFAULT_MODEL_PATH, help='语义向量模型路径')
     ap.add_argument('--similarity-threshold', type=float, default=DEFAULT_SIMILARITY_THRESHOLD,
                     help='语义相似度阈值(0-1)')
