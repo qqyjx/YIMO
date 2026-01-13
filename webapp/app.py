@@ -57,9 +57,9 @@ MYSQL_USER = os.getenv("MYSQL_USER", "eav_user")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "Eav_pass_1234")
 TABLE_PREFIX = os.getenv("TABLE_PREFIX", "eav")
 MODEL_NAME = os.getenv("EMBED_MODEL", "shibing624/text2vec-base-chinese")
-MODEL_CACHE = os.getenv("MODEL_CACHE", "/data1/xyf/models")
+MODEL_CACHE = os.getenv("MODEL_CACHE", "./models")
 DEEPSEEK_API_BASE = os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1")
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "sk-6d5df25a5d654ccf936de83c1797ba0a")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")  # Set via .env or environment variable
 RAG_TOP_K = int(os.getenv("RAG_TOP_K", "5"))
 
 os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", MODEL_CACHE)
