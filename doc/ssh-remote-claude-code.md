@@ -97,45 +97,53 @@ claude --version
 
 ### 1.5 身份验证
 
-由于远程服务器通常没有浏览器，需要使用以下方法进行身份验证：
+Claude Code 支持两种订阅方式，认证方法不同：
 
-**方法 A：本地端口转发（推荐）**
+| 订阅类型 | 认证方式 | 远程服务器推荐方法 |
+|----------|----------|-------------------|
+| **Pro 订阅** | Anthropic Console OAuth | 复制 URL 到本地浏览器 |
+| **API 付费** | API Key | 设置环境变量 |
 
-```bash
-# 在本地终端执行（新开一个终端窗口）
-ssh -L 8080:localhost:8080 username@your-server.com
+#### Pro 订阅用户认证（推荐）
 
-# 在远程服务器上启动 claude
-claude
-
-# 当出现认证 URL 时，将 URL 中的主机名替换为 localhost
-# 例如：http://127.0.0.1:8080/... 可以在本地浏览器打开
-```
-
-**方法 B：复制 URL 到本地浏览器**
+Pro 订阅用户使用 Anthropic Console 账户登录，步骤如下：
 
 ```bash
-# 在远程服务器启动 claude
+# 1. 在远程服务器启动 claude
 claude
 
-# 复制显示的认证 URL
-# 在本地浏览器打开
-# 完成认证后，复制认证代码粘贴回终端
+# 2. 首次运行会显示类似以下内容：
+#    To authenticate, visit: https://console.anthropic.com/oauth/...
+#    Enter the code shown after authorization:
+
+# 3. 复制这个 URL，在本地电脑浏览器中打开
+
+# 4. 登录你的 Anthropic 账户，点击 "Authorize"
+
+# 5. 页面会显示一个认证码（类似：XXXX-XXXX）
+
+# 6. 将认证码复制，粘贴回远程终端，按回车
 ```
 
-**方法 C：使用 API Key（最简单）**
+**认证成功后**，凭据会保存在 `~/.claude/` 目录，后续无需重复认证。
+
+#### 备选方法：使用 API Key
+
+如果你同时有 API 额度，也可以使用 API Key：
 
 ```bash
 # 设置环境变量
-export ANTHROPIC_API_KEY="your-api-key-here"
+export ANTHROPIC_API_KEY="sk-ant-api03-..."
 
 # 或添加到 .bashrc 持久化
-echo 'export ANTHROPIC_API_KEY="your-api-key"' >> ~/.bashrc
+echo 'export ANTHROPIC_API_KEY="sk-ant-api..."' >> ~/.bashrc
 source ~/.bashrc
 
 # 启动 claude（会自动使用 API Key）
 claude
 ```
+
+> **注意**: Pro 订阅用户通常不需要 API Key，直接使用 OAuth 认证即可享受订阅权益。
 
 ---
 
@@ -261,34 +269,71 @@ set -g default-terminal "screen-256color"
 
 ## 身份验证技巧
 
-### 使用 API Key 认证
+### Pro 订阅用户认证（推荐）
 
-最简单的方式是使用 Anthropic API Key：
+Claude Code Pro 订阅用户使用 OAuth 认证，无需 API Key：
 
-1. 访问 [Anthropic Console](https://console.anthropic.com/)
-2. 创建 API Key
-3. 在服务器上设置环境变量：
+**步骤详解：**
+
+1. **在远程服务器启动 Claude Code**
+   ```bash
+   claude
+   ```
+
+2. **获取认证 URL**
+
+   终端会显示：
+   ```
+   ┌──────────────────────────────────────────────────────────┐
+   │ To authenticate, visit:                                  │
+   │ https://console.anthropic.com/oauth/authorize?...        │
+   │                                                          │
+   │ Enter the code shown after authorization: _              │
+   └──────────────────────────────────────────────────────────┘
+   ```
+
+3. **在本地浏览器打开 URL**
+   - 复制上面显示的完整 URL
+   - 在本地电脑的浏览器中打开
+   - 使用你的 Anthropic 账户登录
+
+4. **授权并获取代码**
+   - 点击 "Authorize" 按钮
+   - 页面会显示认证代码（格式如 `ABCD-EFGH`）
+
+5. **输入认证代码**
+   - 将代码粘贴到远程终端
+   - 按回车确认
+
+**认证持久化：**
+
+认证成功后，凭据保存在 `~/.claude/` 目录。只要不删除该目录，后续连接无需重新认证。
+
+```bash
+# 查看认证状态
+claude auth status
+
+# 如需重新认证
+claude auth login
+
+# 完全重置（清除凭据）
+claude auth reset
+```
+
+### API Key 认证（备选）
+
+如果你有 API 额度或不想使用 OAuth：
 
 ```bash
 # 临时设置
 export ANTHROPIC_API_KEY="sk-ant-api..."
 
-# 永久设置（添加到 shell 配置）
+# 永久设置
 echo 'export ANTHROPIC_API_KEY="sk-ant-api..."' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### 使用 OAuth 认证（需要浏览器）
-
-如果必须使用 OAuth：
-
-```bash
-# 在本地开启端口转发
-ssh -L 9999:localhost:9999 username@remote-server
-
-# 在远程运行 claude，当提示 URL 时
-# 将 URL 复制到本地浏览器完成认证
-```
+> **提示**: Pro 订阅权益通过 OAuth 认证生效，使用 API Key 会消耗 API 额度而非订阅额度。
 
 ### 检查认证状态
 
@@ -324,18 +369,18 @@ claude
 
 ### Q: 无法在服务器上打开浏览器进行认证？
 
-使用 API Key 方式：
+**Pro 订阅用户**：不需要在服务器上打开浏览器！
+
+1. 在远程服务器运行 `claude`
+2. 复制终端显示的认证 URL
+3. 在**本地电脑**浏览器打开该 URL
+4. 完成授权后，将显示的代码粘贴回远程终端
+
+**API Key 用户**（备选）：
 
 ```bash
 export ANTHROPIC_API_KEY="your-key"
 claude
-```
-
-或使用端口转发：
-
-```bash
-# 本地执行
-ssh -L 8080:localhost:8080 user@server
 ```
 
 ### Q: npm 安装权限错误？
