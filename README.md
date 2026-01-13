@@ -81,10 +81,34 @@ flowchart TB
 
 ## 🚀 一键部署
 
-### 环境要求
-- Python 3.10+ | MySQL 8.0+ | 8GB+ 内存
+### 方式一：Docker 部署（推荐，无需预装 MySQL）
 
-### 快速开始
+```bash
+# 克隆项目
+git clone https://github.com/YOUR_USERNAME/YIMO.git
+cd YIMO
+
+# 一键启动（自动拉取 MySQL 镜像）
+./docker-start.sh
+
+# 或直接使用 docker compose
+docker compose up -d
+
+# 访问 http://localhost:5000
+```
+
+> 只需安装 Docker，无需预装 Python/MySQL，真正零依赖一键启动！
+
+**Docker 常用命令**:
+```bash
+docker compose logs -f      # 查看日志
+docker compose down         # 停止服务
+docker compose down -v      # 停止并清理数据
+```
+
+### 方式二：本地部署（需预装 MySQL）
+
+**环境要求**: Python 3.10+ | MySQL 8.0+ | 8GB+ 内存
 
 ```bash
 # 克隆并部署
