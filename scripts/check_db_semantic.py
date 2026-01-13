@@ -15,7 +15,7 @@ def main():
     ap.add_argument('--host', default='127.0.0.1')
     ap.add_argument('--port', type=int, default=3306)
     ap.add_argument('--user', default='eav_user')
-    ap.add_argument('--password', default='Eav_pass_1234')
+    ap.add_argument('--password', default='eavpass123')
     ap.add_argument('--prefix', default='eav')
     ap.add_argument('--out', default='/data1/xyf/smartgrid/outputs/semantic_dedupe_gpu_full/summary/db_check.txt')
     args = ap.parse_args()

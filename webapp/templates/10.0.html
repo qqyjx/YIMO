@@ -693,14 +693,14 @@
         
         function renderWhiteCircle(data) {
             const vizEl = document.getElementById('white_circle_container');
-            const stages = ['planning', 'design', 'construction', 'operation', 'finance'];
+            const stages = ['Planning', 'Design', 'Construction', 'Operation', 'Finance'];
             const stageLabels = {
-                planning: '🌱 规划', design: '🖊️ 设计', construction: '🏗️ 建设',
-                operation: '⚡ 运维', finance: '💰 财务'
+                Planning: '🌱 规划', Design: '🖊️ 设计', Construction: '🏗️ 建设',
+                Operation: '⚡ 运维', Finance: '💰 财务'
             };
             const stageColors = {
-                planning: '#10b981', design: '#3b82f6', construction: '#f59e0b',
-                operation: '#8b5cf6', finance: '#ef4444'
+                Planning: '#10b981', Design: '#3b82f6', Construction: '#f59e0b',
+                Operation: '#8b5cf6', Finance: '#ef4444'
             };
             
             // 构建统一本体可视化
@@ -802,8 +802,8 @@
         
         function showStageDetail(stage, stageData) {
             const stageLabels = {
-                planning: '🌱 规划阶段', design: '🖊️ 设计阶段', construction: '🏗️ 建设阶段',
-                operation: '⚡ 运维阶段', finance: '💰 财务阶段'
+                Planning: '🌱 规划阶段', Design: '🖊️ 设计阶段', Construction: '🏗️ 建设阶段',
+                Operation: '⚡ 运维阶段', Finance: '💰 财务阶段'
             };
             
             let detailHtml = `<h3 style="margin-bottom:1rem;">${stageLabels[stage]}</h3>`;

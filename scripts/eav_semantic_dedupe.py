@@ -397,7 +397,7 @@ def main():
     ap.add_argument('--host', default='127.0.0.1')
     ap.add_argument('--port', type=int, default=3306)
     ap.add_argument('--user', default='eav_user')
-    ap.add_argument('--password', default='Eav_pass_1234')
+    ap.add_argument('--password', default='eavpass123')
     ap.add_argument('--table-prefix', dest='prefix', default='eav')
     ap.add_argument('--dataset-id', type=int, required=False, help='单个数据集 ID（与 --dataset-ids 二选一）')
     ap.add_argument('--dataset-ids', default=None, help='逗号分隔的多个数据集 ID，会依次处理（与 --dataset-id 二选一）')

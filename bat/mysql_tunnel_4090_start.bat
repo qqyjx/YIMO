@@ -30,7 +30,7 @@ start "mysql-tunnel-%LOCAL_PORT%" /MIN ^
 
 echo [OK] 隧道进程已启动（新窗口，最小化）。如需输入密码，请切到该窗口按提示输入。
 echo      Navicat 参数如下：
-echo      主机: 127.0.0.1  端口: %LOCAL_PORT%  用户名: eav_user  密码: Eav_pass_1234  数据库: eav_db
+echo      主机: 127.0.0.1  端口: %LOCAL_PORT%  用户名: eav_user  密码: eavpass123  数据库: eav_db
 echo.
 echo [HINT] PowerShell 自检:  Test-NetConnection -ComputerName 127.0.0.1 -Port %LOCAL_PORT%
 exit /b 0

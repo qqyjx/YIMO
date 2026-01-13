@@ -10,7 +10,7 @@ def main():
     ap.add_argument('--host', default='127.0.0.1')
     ap.add_argument('--port', type=int, default=3306)
     ap.add_argument('--user', default='eav_user')
-    ap.add_argument('--password', default='Eav_pass_1234')
+    ap.add_argument('--password', default='eavpass123')
     ap.add_argument('--sql-file', required=True, help='要执行的 SQL 文件路径')
     args = ap.parse_args()
 
