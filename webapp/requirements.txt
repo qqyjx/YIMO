@@ -1,5 +1,6 @@
 flask==3.0.3
 pymysql==1.1.1
+cryptography>=42.0
 sqlalchemy==2.0.32
 sentence-transformers==2.7.0
 faiss-cpu==1.7.4
