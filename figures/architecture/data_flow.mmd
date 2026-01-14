@@ -1,0 +1,36 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#fce4ec', 'primaryTextColor': '#c2185b', 'primaryBorderColor': '#e91e63', 'lineColor': '#f06292', 'secondaryColor': '#e8eaf6', 'tertiaryColor': '#e0f7fa'}}}%%
+flowchart TB
+    subgraph 数据导入层
+        I[import_all.py<br/>--stage planning/design/construction/operation/finance]
+    end
+
+    subgraph EAV存储层
+        E1[eav_datasets]
+        E2[eav_entities]
+        E3[eav_values]
+    end
+
+    subgraph 融合处理层
+        F[agent_lifecycle_fusion.py]
+        F1[语义编码 text2vec-chinese]
+        F2[候选匹配 FAISS+规则]
+        F3[LLM/规则判断]
+        F4[属性融合 golden_attributes]
+    end
+
+    subgraph 全局资产索引层
+        G1[global_asset_index]
+        G2[entity_global_mapping]
+        G3[semantic_fingerprints]
+    end
+
+    subgraph 监控与可视化层
+        M1[aiops_consistency_monitor.py]
+        M2["lifecycle 统一本体可视化"]
+        M3["anomalies 异常监控面板"]
+    end
+
+    I --> E1 & E2 & E3
+    E1 & E2 & E3 --> F --> F1 --> F2 --> F3 --> F4
+    F4 --> G1 & G2 & G3
+    G1 & G2 & G3 --> M1 & M2 & M3
