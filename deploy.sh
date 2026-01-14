@@ -198,13 +198,45 @@ show_step 2 $TOTAL_STEPS "检查 MySQL 服务"
 if command -v mysql &> /dev/null; then
     MYSQL_VERSION=$(mysql --version 2>&1 | grep -oP '\d+\.\d+\.\d+' | head -1)
     show_info "MySQL 版本: ${MYSQL_VERSION}"
-    
+
     if mysqladmin ping -h 127.0.0.1 --silent 2>/dev/null; then
         show_success "MySQL 服务运行中"
     else
-        show_error "MySQL 服务未运行"
-        echo -e "    ${DIM}启动命令: sudo systemctl start mysql${NC}"
-        exit 1
+        show_warning "MySQL 服务未运行，正在尝试自动启动..."
+
+        # 清理可能的残留进程和端口占用
+        sudo pkill -9 mysqld 2>/dev/null || true
+        sleep 1
+
+        # 尝试启动 MySQL 服务
+        if sudo systemctl start mysql 2>/dev/null; then
+            show_info "MySQL 服务启动命令已执行"
+        else
+            show_warning "systemctl 启动失败，尝试 service 命令..."
+            sudo service mysql start 2>/dev/null || true
+        fi
+
+        # 等待服务就绪（最多 15 秒）
+        echo -ne "  等待 MySQL 就绪"
+        MYSQL_READY=false
+        for i in {1..15}; do
+            sleep 1
+            echo -ne "."
+            if mysqladmin ping -h 127.0.0.1 --silent 2>/dev/null; then
+                MYSQL_READY=true
+                break
+            fi
+        done
+        echo ""
+
+        if [ "$MYSQL_READY" = true ]; then
+            show_success "MySQL 服务已自动启动"
+        else
+            show_error "MySQL 服务启动失败"
+            echo -e "    ${DIM}请检查 MySQL 日志: sudo journalctl -xeu mysql.service${NC}"
+            echo -e "    ${DIM}或手动启动: sudo systemctl start mysql${NC}"
+            exit 1
+        fi
     fi
 else
     show_error "未找到 MySQL，请先安装 MySQL 8.0+"
