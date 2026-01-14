@@ -41,7 +41,10 @@
 
 ## 🛠️ 技术路线图
 
+> 📄 流程图源文件：[figures/architecture/tech_roadmap.mmd](figures/architecture/tech_roadmap.mmd)
+
 ```mermaid
+%%{init: {'theme': 'base'}}%%
 flowchart TB
     subgraph 数据源
         A1[Excel/CSV]
@@ -159,7 +162,10 @@ YIMO 是一个面向智能电网数据的完整解决方案，提供以下核心
 
 "一模到底"是YIMO的核心架构理念——**用一个统一的本体模型贯穿资产从规划到运营的全生命周期**。
 
+> 📄 流程图源文件：[figures/architecture/lifecycle_ontology.mmd](figures/architecture/lifecycle_ontology.mmd)
+
 ```mermaid
+%%{init: {'theme': 'base'}}%%
 flowchart TB
     subgraph 生命周期阶段
         P[🌱 规划<br/>Planning]
@@ -244,7 +250,10 @@ python scripts/aiops_consistency_monitor.py --check-all
 
 ### 数据流向
 
+> 📄 流程图源文件：[figures/architecture/data_flow.mmd](figures/architecture/data_flow.mmd)
+
 ```mermaid
+%%{init: {'theme': 'base'}}%%
 flowchart TB
     subgraph 数据导入层
         I[import_all.py<br/>--stage planning/design/construction/operation/finance]
