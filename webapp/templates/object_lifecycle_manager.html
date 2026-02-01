@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对象生命周期管理器 - YIMO 一模到底</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* 导航栏 */
+        .navbar {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .navbar h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b68ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .navbar-links a {
+            color: #a0a0a0;
+            text-decoration: none;
+            margin-left: 1.5rem;
+            transition: color 0.3s;
+        }
+        .navbar-links a:hover { color: #00d4ff; }
+        .navbar-links a.active { color: #00d4ff; }
+
+        /* 主容器 */
+        .container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 280px;
+            background: rgba(0, 0, 0, 0.2);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        .sidebar h3 {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #c0c0c0;
+        }
+        .nav-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+        }
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.2), rgba(123, 104, 238, 0.2));
+            color: #00d4ff;
+            border-left: 3px solid #00d4ff;
+        }
+        .nav-item .icon {
+            width: 24px;
+            margin-right: 0.75rem;
+            text-align: center;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #00d4ff, #7b68ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-card .label {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .stat-card.concept { border-top: 3px solid #ff6b6b; }
+        .stat-card.logical { border-top: 3px solid #4ecdc4; }
+        .stat-card.physical { border-top: 3px solid #45b7d1; }
+        .stat-card.object { border-top: 3px solid #96e6a1; }
+
+        /* 三层架构可视化 */
+        .layer-visualization {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .layer-visualization h2 {
+            margin-bottom: 1.5rem;
+            color: #e0e0e0;
+        }
+        .layer-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .layer-row {
+            display: flex;
+            align-items: center;
+            padding: 1.5rem;
+            border-radius: 8px;
+            position: relative;
+        }
+        .layer-row.concept { background: linear-gradient(90deg, rgba(255, 107, 107, 0.2), transparent); border-left: 4px solid #ff6b6b; }
+        .layer-row.logical { background: linear-gradient(90deg, rgba(78, 205, 196, 0.2), transparent); border-left: 4px solid #4ecdc4; }
+        .layer-row.physical { background: linear-gradient(90deg, rgba(69, 183, 209, 0.2), transparent); border-left: 4px solid #45b7d1; }
+        .layer-label {
+            width: 120px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .layer-desc {
+            flex: 1;
+            color: #a0a0a0;
+            font-size: 0.9rem;
+        }
+        .layer-count {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        .layer-arrow {
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            color: #666;
+        }
+
+        /* 内容面板 */
+        .content-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .panel-header h3 {
+            font-size: 1.1rem;
+            color: #e0e0e0;
+        }
+        .panel-body {
+            padding: 1.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* 表格样式 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th, .data-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .data-table th {
+            background: rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+            color: #888;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        .data-table tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+        .data-table .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge.core { background: rgba(255, 107, 107, 0.3); color: #ff6b6b; }
+        .badge.normal { background: rgba(150, 230, 161, 0.3); color: #96e6a1; }
+
+        /* 搜索框 */
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #e0e0e0;
+            font-size: 0.95rem;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .search-box button {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b68ee);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .search-box button:hover {
+            transform: scale(1.05);
+        }
+
+        /* 穿透查询面板 */
+        .penetration-panel {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 1.5rem;
+        }
+        .query-form {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #888;
+            font-size: 0.9rem;
+        }
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #e0e0e0;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(90deg, #00d4ff, #7b68ee);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        .btn-secondary {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #e0e0e0;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        /* 穿透结果可视化 */
+        .trace-result {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        .trace-path {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .trace-node {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #00d4ff;
+        }
+        .trace-node .node-layer {
+            width: 80px;
+            font-weight: 600;
+            color: #00d4ff;
+        }
+        .trace-node .node-name {
+            flex: 1;
+        }
+        .trace-connector {
+            width: 2px;
+            height: 20px;
+            background: rgba(0, 212, 255, 0.3);
+            margin-left: 40px;
+        }
+
+        /* 机理函数面板 */
+        .function-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        .function-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s;
+        }
+        .function-card:hover {
+            transform: translateY(-3px);
+            border-color: #00d4ff;
+        }
+        .function-card h4 {
+            color: #00d4ff;
+            margin-bottom: 0.5rem;
+        }
+        .function-card p {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+        }
+        .function-card .formula {
+            font-family: "Courier New", monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #96e6a1;
+        }
+
+        /* 隐藏的面板 */
+        .panel-section { display: none; }
+        .panel-section.active { display: block; }
+
+        /* 加载动画 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 212, 255, 0.2);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>YIMO 对象生命周期管理器</h1>
+        <div class="navbar-links">
+            <a href="/">EAV浏览</a>
+            <a href="/lifecycle">统一本体</a>
+            <a href="/olm" class="active">对象管理器</a>
+            <a href="/olm/finance">财务监管</a>
+            <a href="/anomalies">异常监控</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3>三层本体</h3>
+                <div class="nav-item active" data-panel="overview">
+                    <span class="icon">📊</span>概览
+                </div>
+                <div class="nav-item" data-panel="concept">
+                    <span class="icon">💡</span>概念实体
+                </div>
+                <div class="nav-item" data-panel="logical">
+                    <span class="icon">📋</span>逻辑实体
+                </div>
+                <div class="nav-item" data-panel="physical">
+                    <span class="icon">🔧</span>物理实体
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <h3>业务对象</h3>
+                <div class="nav-item" data-panel="objects">
+                    <span class="icon">📦</span>对象列表
+                </div>
+                <div class="nav-item" data-panel="rules">
+                    <span class="icon">📜</span>业务规则
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <h3>分析工具</h3>
+                <div class="nav-item" data-panel="penetration">
+                    <span class="icon">🔍</span>穿透查询
+                </div>
+                <div class="nav-item" data-panel="functions">
+                    <span class="icon">⚡</span>机理函数
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- 概览面板 -->
+            <section class="panel-section active" id="panel-overview">
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card concept">
+                        <div class="value" id="stat-concept">-</div>
+                        <div class="label">概念实体</div>
+                    </div>
+                    <div class="stat-card logical">
+                        <div class="value" id="stat-logical">-</div>
+                        <div class="label">逻辑实体</div>
+                    </div>
+                    <div class="stat-card physical">
+                        <div class="value" id="stat-physical">-</div>
+                        <div class="label">物理实体</div>
+                    </div>
+                    <div class="stat-card object">
+                        <div class="value" id="stat-object">-</div>
+                        <div class="label">业务对象</div>
+                    </div>
+                </div>
+
+                <div class="layer-visualization">
+                    <h2>三层本体架构</h2>
+                    <div class="layer-stack">
+                        <div class="layer-row concept">
+                            <div class="layer-label">概念层</div>
+                            <div class="layer-desc">业务场景定义，包含业务对象、数据域、核心概念实体</div>
+                            <div class="layer-count" id="layer-concept-count">0 个实体</div>
+                        </div>
+                        <div class="layer-row logical">
+                            <div class="layer-label">逻辑层</div>
+                            <div class="layer-desc">交互表单定义，包含逻辑实体、属性、数据类型</div>
+                            <div class="layer-count" id="layer-logical-count">0 个实体</div>
+                        </div>
+                        <div class="layer-row physical">
+                            <div class="layer-label">物理层</div>
+                            <div class="layer-desc">客观实体定义，包含物理表、字段、存储结构</div>
+                            <div class="layer-count" id="layer-physical-count">0 个实体</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3>按数据域分布</h3>
+                    </div>
+                    <div class="panel-body" id="domain-distribution">
+                        <div class="loading"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 概念实体面板 -->
+            <section class="panel-section" id="panel-concept">
+                <div class="search-box">
+                    <input type="text" id="concept-search" placeholder="搜索概念实体...">
+                    <button onclick="searchConcept()">搜索</button>
+                </div>
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3>概念实体列表</h3>
+                    </div>
+                    <div class="panel-body" id="concept-list">
+                        <div class="loading"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 逻辑实体面板 -->
+            <section class="panel-section" id="panel-logical">
+                <div class="search-box">
+                    <input type="text" id="logical-search" placeholder="搜索逻辑实体...">
+                    <button onclick="searchLogical()">搜索</button>
+                </div>
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3>逻辑实体列表</h3>
+                    </div>
+                    <div class="panel-body" id="logical-list">
+                        <div class="loading"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 物理实体面板 -->
+            <section class="panel-section" id="panel-physical">
+                <div class="search-box">
+                    <input type="text" id="physical-search" placeholder="搜索物理实体...">
+                    <button onclick="searchPhysical()">搜索</button>
+                </div>
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3>物理实体列表</h3>
+                    </div>
+                    <div class="panel-body" id="physical-list">
+                        <div class="loading"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 业务对象面板 -->
+            <section class="panel-section" id="panel-objects">
+                <div class="search-box">
+                    <input type="text" id="object-search" placeholder="搜索业务对象...">
+                    <select id="object-type-filter" style="width: 150px;">
+                        <option value="">全部类型</option>
+                        <option value="project">项目</option>
+                        <option value="asset">资产</option>
+                        <option value="contract">合同</option>
+                        <option value="document">文档</option>
+                    </select>
+                    <button onclick="searchObjects()">搜索</button>
+                </div>
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3>业务对象列表</h3>
+                    </div>
+                    <div class="panel-body" id="object-list">
+                        <div class="loading"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 业务规则面板 -->
+            <section class="panel-section" id="panel-rules">
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3>业务规则列表</h3>
+                    </div>
+                    <div class="panel-body" id="rules-list">
+                        <div class="loading"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 穿透查询面板 -->
+            <section class="panel-section" id="panel-penetration">
+                <div class="penetration-panel">
+                    <div class="query-form">
+                        <h3 style="margin-bottom: 1rem; color: #e0e0e0;">穿透查询</h3>
+                        <div class="form-group">
+                            <label>查询方向</label>
+                            <select id="penetration-direction">
+                                <option value="up">向上穿透 (物理→概念)</option>
+                                <option value="down">向下穿透 (概念→物理)</option>
+                                <option value="horizontal">水平穿透 (跨阶段)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>起始层级</label>
+                            <select id="penetration-layer">
+                                <option value="concept">概念层</option>
+                                <option value="logical">逻辑层</option>
+                                <option value="physical">物理层</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>实体编码</label>
+                            <input type="text" id="penetration-entity" placeholder="输入实体编码">
+                        </div>
+                        <button class="btn-primary" onclick="executePenetration()">执行穿透查询</button>
+                        <button class="btn-secondary" onclick="clearPenetration()">清除结果</button>
+                    </div>
+                    <div class="trace-result" id="penetration-result">
+                        <div class="empty-state">
+                            <div class="icon">🔍</div>
+                            <p>选择查询参数并执行穿透查询</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 机理函数面板 -->
+            <section class="panel-section" id="panel-functions">
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3>机理函数库</h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="function-grid" id="function-list">
+                            <div class="loading"><div class="loading-spinner"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-panel" style="margin-top: 1.5rem;">
+                    <div class="panel-header">
+                        <h3>表达式计算器</h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label>数学表达式</label>
+                            <input type="text" id="expression-input" placeholder="例如: voltage * current 或 sqrt(P/R)">
+                        </div>
+                        <div class="form-group">
+                            <label>变量 (JSON格式)</label>
+                            <input type="text" id="expression-vars" placeholder='例如: {"voltage": 220, "current": 10}'>
+                        </div>
+                        <button class="btn-primary" onclick="evaluateExpression()" style="width: auto; padding: 0.75rem 2rem;">计算</button>
+                        <div id="expression-result" style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 6px; display: none;">
+                            <strong>结果:</strong> <span id="expression-value"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // 导航切换
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                document.querySelectorAll('.panel-section').forEach(p => p.classList.remove('active'));
+                item.classList.add('active');
+                const panelId = 'panel-' + item.dataset.panel;
+                document.getElementById(panelId).classList.add('active');
+
+                // 加载对应面板数据
+                loadPanelData(item.dataset.panel);
+            });
+        });
+
+        // 加载面板数据
+        function loadPanelData(panel) {
+            switch(panel) {
+                case 'overview': loadOverview(); break;
+                case 'concept': loadConcept(); break;
+                case 'logical': loadLogical(); break;
+                case 'physical': loadPhysical(); break;
+                case 'objects': loadObjects(); break;
+                case 'rules': loadRules(); break;
+                case 'functions': loadFunctions(); break;
+            }
+        }
+
+        // 加载概览数据
+        async function loadOverview() {
+            try {
+                const resp = await fetch('/api/olm/ontology/stats');
+                const data = await resp.json();
+
+                document.getElementById('stat-concept').textContent = data.concept_count || 0;
+                document.getElementById('stat-logical').textContent = data.logical_count || 0;
+                document.getElementById('stat-physical').textContent = data.physical_count || 0;
+
+                document.getElementById('layer-concept-count').textContent = (data.concept_count || 0) + ' 个实体';
+                document.getElementById('layer-logical-count').textContent = (data.logical_count || 0) + ' 个实体';
+                document.getElementById('layer-physical-count').textContent = (data.physical_count || 0) + ' 个实体';
+
+                // 加载对象数量
+                const objResp = await fetch('/api/olm/objects?limit=1');
+                const objData = await objResp.json();
+                document.getElementById('stat-object').textContent = objData.count || 0;
+
+                // 按域分布
+                if (data.concept_by_domain && data.concept_by_domain.length > 0) {
+                    let html = '<table class="data-table"><thead><tr><th>数据域</th><th>实体数量</th></tr></thead><tbody>';
+                    data.concept_by_domain.forEach(d => {
+                        html += `<tr><td>${d.data_domain || '未分类'}</td><td>${d.cnt}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    document.getElementById('domain-distribution').innerHTML = html;
+                } else {
+                    document.getElementById('domain-distribution').innerHTML = '<div class="empty-state"><p>暂无数据域分布数据</p></div>';
+                }
+            } catch(e) {
+                console.error('加载概览失败:', e);
+            }
+        }
+
+        // 加载概念实体
+        async function loadConcept(search = '') {
+            const container = document.getElementById('concept-list');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+
+            try {
+                const url = '/api/olm/ontology/concept' + (search ? `?search=${encodeURIComponent(search)}` : '');
+                const resp = await fetch(url);
+                const data = await resp.json();
+
+                if (data.entities && data.entities.length > 0) {
+                    let html = '<table class="data-table"><thead><tr><th>编码</th><th>名称</th><th>数据域</th><th>业务对象</th><th>类型</th></tr></thead><tbody>';
+                    data.entities.forEach(e => {
+                        const badge = e.is_core ? '<span class="badge core">核心</span>' : '<span class="badge normal">普通</span>';
+                        html += `<tr>
+                            <td style="font-family: monospace;">${e.entity_code || ''}</td>
+                            <td>${e.entity_name || ''}</td>
+                            <td>${e.data_domain || '-'}</td>
+                            <td>${e.business_object_name || '-'}</td>
+                            <td>${badge}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="empty-state"><p>暂无概念实体数据</p></div>';
+                }
+            } catch(e) {
+                container.innerHTML = `<div class="empty-state"><p>加载失败: ${e.message}</p></div>`;
+            }
+        }
+
+        function searchConcept() {
+            const search = document.getElementById('concept-search').value;
+            loadConcept(search);
+        }
+
+        // 加载逻辑实体
+        async function loadLogical(search = '') {
+            const container = document.getElementById('logical-list');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+
+            try {
+                const url = '/api/olm/ontology/logical' + (search ? `?search=${encodeURIComponent(search)}` : '');
+                const resp = await fetch(url);
+                const data = await resp.json();
+
+                if (data.entities && data.entities.length > 0) {
+                    let html = '<table class="data-table"><thead><tr><th>编码</th><th>名称</th><th>关联概念</th><th>数据域</th></tr></thead><tbody>';
+                    data.entities.forEach(e => {
+                        html += `<tr>
+                            <td style="font-family: monospace;">${e.entity_code || ''}</td>
+                            <td>${e.entity_name || ''}</td>
+                            <td>${e.concept_entity_code || '-'}</td>
+                            <td>${e.data_domain || '-'}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="empty-state"><p>暂无逻辑实体数据</p></div>';
+                }
+            } catch(e) {
+                container.innerHTML = `<div class="empty-state"><p>加载失败: ${e.message}</p></div>`;
+            }
+        }
+
+        function searchLogical() {
+            const search = document.getElementById('logical-search').value;
+            loadLogical(search);
+        }
+
+        // 加载物理实体
+        async function loadPhysical(search = '') {
+            const container = document.getElementById('physical-list');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+
+            try {
+                const url = '/api/olm/ontology/physical' + (search ? `?search=${encodeURIComponent(search)}` : '');
+                const resp = await fetch(url);
+                const data = await resp.json();
+
+                if (data.entities && data.entities.length > 0) {
+                    let html = '<table class="data-table"><thead><tr><th>编码</th><th>名称</th><th>关联逻辑</th><th>数据域</th></tr></thead><tbody>';
+                    data.entities.forEach(e => {
+                        html += `<tr>
+                            <td style="font-family: monospace;">${e.entity_code || ''}</td>
+                            <td>${e.entity_name || ''}</td>
+                            <td>${e.logical_entity_code || '-'}</td>
+                            <td>${e.data_domain || '-'}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="empty-state"><p>暂无物理实体数据</p></div>';
+                }
+            } catch(e) {
+                container.innerHTML = `<div class="empty-state"><p>加载失败: ${e.message}</p></div>`;
+            }
+        }
+
+        function searchPhysical() {
+            const search = document.getElementById('physical-search').value;
+            loadPhysical(search);
+        }
+
+        // 加载业务对象
+        async function loadObjects(search = '', type = '') {
+            const container = document.getElementById('object-list');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+
+            try {
+                let url = '/api/olm/objects?limit=100';
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+                if (type) url += `&type=${type}`;
+
+                const resp = await fetch(url);
+                const data = await resp.json();
+
+                if (data.objects && data.objects.length > 0) {
+                    let html = '<table class="data-table"><thead><tr><th>编码</th><th>名称</th><th>类型</th><th>数据项</th><th>类别</th></tr></thead><tbody>';
+                    data.objects.forEach(o => {
+                        const dataItems = Array.isArray(o.data_items) ? o.data_items.slice(0, 3).join(', ') : '-';
+                        const badge = o.is_core_object ? '<span class="badge core">核心</span>' : '<span class="badge normal">普通</span>';
+                        html += `<tr>
+                            <td style="font-family: monospace;">${o.object_code || ''}</td>
+                            <td>${o.object_name || ''}</td>
+                            <td>${o.object_type || '-'}</td>
+                            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${dataItems}</td>
+                            <td>${badge}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="empty-state"><p>暂无业务对象数据</p></div>';
+                }
+            } catch(e) {
+                container.innerHTML = `<div class="empty-state"><p>加载失败: ${e.message}</p></div>`;
+            }
+        }
+
+        function searchObjects() {
+            const search = document.getElementById('object-search').value;
+            const type = document.getElementById('object-type-filter').value;
+            loadObjects(search, type);
+        }
+
+        // 加载业务规则
+        async function loadRules() {
+            const container = document.getElementById('rules-list');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+
+            try {
+                const resp = await fetch('/api/olm/rules');
+                const data = await resp.json();
+
+                if (data.rules && data.rules.length > 0) {
+                    let html = '<table class="data-table"><thead><tr><th>编码</th><th>名称</th><th>类型</th><th>描述</th><th>数字化</th></tr></thead><tbody>';
+                    data.rules.forEach(r => {
+                        const digitized = r.is_digitized ? '✅' : '❌';
+                        html += `<tr>
+                            <td style="font-family: monospace;">${r.rule_code || ''}</td>
+                            <td>${r.rule_name || ''}</td>
+                            <td>${r.rule_type || '-'}</td>
+                            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">${r.rule_description || '-'}</td>
+                            <td>${digitized}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="empty-state"><p>暂无业务规则数据</p></div>';
+                }
+            } catch(e) {
+                container.innerHTML = `<div class="empty-state"><p>加载失败: ${e.message}</p></div>`;
+            }
+        }
+
+        // 加载机理函数
+        async function loadFunctions() {
+            const container = document.getElementById('function-list');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+
+            try {
+                const resp = await fetch('/api/olm/functions');
+                const data = await resp.json();
+
+                if (data.functions && data.functions.length > 0) {
+                    let html = '';
+                    data.functions.forEach(f => {
+                        const inputs = f.inputs.map(i => i.name).join(', ');
+                        html += `<div class="function-card">
+                            <h4>${f.code}</h4>
+                            <p>${f.description}</p>
+                            <div class="formula">输入: ${inputs}</div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="empty-state"><p>暂无机理函数</p></div>';
+                }
+            } catch(e) {
+                container.innerHTML = `<div class="empty-state"><p>加载失败: ${e.message}</p></div>`;
+            }
+        }
+
+        // 执行穿透查询
+        async function executePenetration() {
+            const direction = document.getElementById('penetration-direction').value;
+            const layer = document.getElementById('penetration-layer').value;
+            const entityCode = document.getElementById('penetration-entity').value.trim();
+
+            if (!entityCode) {
+                alert('请输入实体编码');
+                return;
+            }
+
+            const container = document.getElementById('penetration-result');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+
+            try {
+                const resp = await fetch(`/api/olm/penetration/${direction}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ layer, entity_code: entityCode })
+                });
+                const data = await resp.json();
+
+                if (data.error) {
+                    container.innerHTML = `<div class="empty-state"><p>查询失败: ${data.error}</p></div>`;
+                    return;
+                }
+
+                if (data.paths && data.paths.length > 0) {
+                    let html = `<div style="margin-bottom: 1rem; color: #888;">找到 ${data.result_count} 条路径，耗时 ${data.execution_time_ms}ms</div>`;
+                    html += '<div class="trace-path">';
+
+                    const path = data.paths[0];  // 显示第一条路径
+                    path.nodes.forEach((node, idx) => {
+                        html += `<div class="trace-node">
+                            <div class="node-layer">${node.layer}</div>
+                            <div class="node-name">${node.entity_name}</div>
+                        </div>`;
+                        if (idx < path.nodes.length - 1) {
+                            html += '<div class="trace-connector"></div>';
+                        }
+                    });
+
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="empty-state"><p>未找到穿透路径</p></div>';
+                }
+            } catch(e) {
+                container.innerHTML = `<div class="empty-state"><p>查询失败: ${e.message}</p></div>`;
+            }
+        }
+
+        function clearPenetration() {
+            document.getElementById('penetration-result').innerHTML = `<div class="empty-state">
+                <div class="icon">🔍</div>
+                <p>选择查询参数并执行穿透查询</p>
+            </div>`;
+        }
+
+        // 表达式计算
+        async function evaluateExpression() {
+            const expression = document.getElementById('expression-input').value.trim();
+            const varsStr = document.getElementById('expression-vars').value.trim();
+
+            if (!expression) {
+                alert('请输入表达式');
+                return;
+            }
+
+            let variables = {};
+            if (varsStr) {
+                try {
+                    variables = JSON.parse(varsStr);
+                } catch(e) {
+                    alert('变量格式错误，请使用JSON格式');
+                    return;
+                }
+            }
+
+            try {
+                const resp = await fetch('/api/olm/functions/expression', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ expression, variables })
+                });
+                const data = await resp.json();
+
+                const resultDiv = document.getElementById('expression-result');
+                const valueSpan = document.getElementById('expression-value');
+
+                if (data.success) {
+                    valueSpan.textContent = data.result;
+                    valueSpan.style.color = '#96e6a1';
+                } else {
+                    valueSpan.textContent = '错误: ' + data.message;
+                    valueSpan.style.color = '#ff6b6b';
+                }
+                resultDiv.style.display = 'block';
+            } catch(e) {
+                alert('计算失败: ' + e.message);
+            }
+        }
+
+        // 初始加载
+        loadOverview();
+    </script>
+</body>
+</html>

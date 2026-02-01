@@ -49,6 +49,14 @@ load_dotenv()  # loads .env if present
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
+# 注册对象生命周期管理器 API Blueprint
+try:
+    from olm_api import olm_api
+    app.register_blueprint(olm_api)
+    print(" * Object Lifecycle Manager API registered")
+except ImportError as e:
+    print(f" * WARNING: OLM API not loaded: {e}")
+
 # ---------------- Config ----------------
 MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
