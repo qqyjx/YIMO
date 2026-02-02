@@ -589,19 +589,40 @@
             }
         };
 
+        // 当前选中的域
+        let currentDomain = '';
+
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             loadDomains();
-            loadFromAPI();
+            // 延迟加载数据，等待域列表加载完成
+            setTimeout(() => {
+                currentDomain = getSelectedDomains()[0] || '';
+                loadFromAPI();
+            }, 500);
             renderObjectCards();
             updateStats();
             initSankeyChart();
+
+            // 监听域选择变化
+            document.getElementById('domainCheckboxes').addEventListener('change', function(e) {
+                if (e.target.classList.contains('domain-checkbox')) {
+                    // 单选模式：取消其他选中
+                    document.querySelectorAll('.domain-checkbox').forEach(cb => {
+                        if (cb !== e.target) cb.checked = false;
+                    });
+                    currentDomain = e.target.checked ? e.target.value : '';
+                    loadFromAPI();
+                }
+            });
         });
 
-        // 从API加载数据
+        // 从API加载数据（支持domain过滤）
         async function loadFromAPI() {
             try {
-                const response = await fetch('/api/olm/extracted-objects');
+                const domain = currentDomain || getSelectedDomains()[0] || '';
+                const url = domain ? `/api/olm/extracted-objects?domain=${domain}` : '/api/olm/extracted-objects';
+                const response = await fetch(url);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.objects && data.objects.length > 0) {
@@ -610,6 +631,12 @@
                             icon: getObjectIcon(obj.object_code),
                             stats: obj.stats || { concept: 0, logical: 0, physical: 0 }
                         }));
+                        renderObjectCards();
+                        updateStats();
+                        initSankeyChart();
+                    } else {
+                        // 无数据时显示空状态
+                        extractedObjects = [];
                         renderObjectCards();
                         updateStats();
                         initSankeyChart();
@@ -698,10 +725,12 @@
             document.getElementById('selected-object-name').textContent = obj.object_name;
             document.getElementById('relation-panel').style.display = 'block';
 
-            // 尝试从API获取关联数据
+            // 尝试从API获取关联数据（传递domain参数）
             let relations = relationData[code];
             try {
-                const response = await fetch(`/api/olm/object-relations/${code}`);
+                const domain = currentDomain || '';
+                const url = domain ? `/api/olm/object-relations/${code}?domain=${domain}` : `/api/olm/object-relations/${code}`;
+                const response = await fetch(url);
                 if (response.ok) {
                     const data = await response.json();
                     relations = data;
@@ -888,26 +917,28 @@
             }
         }
 
-        // 导出结果
+        // 导出结果（支持domain过滤）
         async function exportResults() {
             try {
-                const response = await fetch('/api/olm/export-objects');
+                const domain = currentDomain || '';
+                const url = domain ? `/api/olm/export-objects?domain=${domain}` : '/api/olm/export-objects';
+                const response = await fetch(url);
                 if (response.ok) {
                     const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
+                    const downloadUrl = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'extracted_objects.json';
+                    a.href = downloadUrl;
+                    a.download = domain ? `extracted_objects_${domain}.json` : 'extracted_objects_all.json';
                     a.click();
                 }
             } catch (err) {
                 // 降级：导出本地数据
-                const data = JSON.stringify({ objects: extractedObjects, relations: relationData }, null, 2);
+                const data = JSON.stringify({ objects: extractedObjects, relations: relationData, domain: currentDomain }, null, 2);
                 const blob = new Blob([data], { type: 'application/json' });
-                const url = window.URL.createObjectURL(blob);
+                const downloadUrl = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url;
-                a.download = 'extracted_objects.json';
+                a.href = downloadUrl;
+                a.download = currentDomain ? `extracted_objects_${currentDomain}.json` : 'extracted_objects.json';
                 a.click();
             }
         }

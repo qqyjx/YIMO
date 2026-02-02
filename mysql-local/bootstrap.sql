@@ -121,11 +121,12 @@ CREATE TABLE IF NOT EXISTS `semantic_fingerprints` (
 -- 1. 抽取的对象表（高度抽象的核心对象）
 CREATE TABLE IF NOT EXISTS `extracted_objects` (
     `object_id` INT AUTO_INCREMENT PRIMARY KEY,
-    `object_code` VARCHAR(64) NOT NULL UNIQUE COMMENT '对象编码，如 OBJ_PROJECT, OBJ_DEVICE',
+    `object_code` VARCHAR(64) NOT NULL COMMENT '对象编码，如 OBJ_PROJECT, OBJ_DEVICE',
     `object_name` VARCHAR(256) NOT NULL COMMENT '对象名称，如 项目、设备',
     `object_name_en` VARCHAR(256) COMMENT '对象英文名称',
     `parent_object_id` INT DEFAULT NULL COMMENT '父对象ID，支持对象层次结构',
     `object_type` ENUM('CORE', 'DERIVED', 'AUXILIARY') DEFAULT 'CORE' COMMENT '对象类型：核心/派生/辅助',
+    `data_domain` VARCHAR(128) DEFAULT 'default' COMMENT '数据域编码，如 shupeidian, jicai',
     `description` TEXT COMMENT '对象描述',
     `extraction_source` VARCHAR(64) COMMENT '抽取来源：SEMANTIC_CLUSTER_LLM/SEMANTIC_CLUSTER_RULE/MANUAL',
     `extraction_confidence` DECIMAL(5,4) DEFAULT 0.0 COMMENT '抽取置信度 0-1',
@@ -136,8 +137,10 @@ CREATE TABLE IF NOT EXISTS `extracted_objects` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`parent_object_id`) REFERENCES `extracted_objects`(`object_id`) ON DELETE SET NULL,
+    UNIQUE KEY `uk_code_domain` (`object_code`, `data_domain`),
     INDEX `idx_object_name` (`object_name`),
     INDEX `idx_object_type` (`object_type`),
+    INDEX `idx_data_domain` (`data_domain`),
     INDEX `idx_is_verified` (`is_verified`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='抽取的核心对象表';
@@ -210,13 +213,14 @@ CREATE TABLE IF NOT EXISTS `object_entity_relations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='对象与三层架构实体关联关系表';
 
--- 5. 对象关联统计视图
+-- 5. 对象关联统计视图（全局）
 CREATE OR REPLACE VIEW `v_object_relation_stats` AS
 SELECT
     o.`object_id`,
     o.`object_code`,
     o.`object_name`,
     o.`object_type`,
+    o.`data_domain`,
     COUNT(DISTINCT CASE WHEN r.`entity_layer` = 'CONCEPT' THEN r.`entity_name` END) AS `concept_entity_count`,
     COUNT(DISTINCT CASE WHEN r.`entity_layer` = 'LOGICAL' THEN r.`entity_name` END) AS `logical_entity_count`,
     COUNT(DISTINCT CASE WHEN r.`entity_layer` = 'PHYSICAL' THEN r.`entity_name` END) AS `physical_entity_count`,
@@ -225,12 +229,28 @@ SELECT
     GROUP_CONCAT(DISTINCT r.`data_domain`) AS `related_domains`
 FROM `extracted_objects` o
 LEFT JOIN `object_entity_relations` r ON o.`object_id` = r.`object_id`
-GROUP BY o.`object_id`, o.`object_code`, o.`object_name`, o.`object_type`;
+GROUP BY o.`object_id`, o.`object_code`, o.`object_name`, o.`object_type`, o.`data_domain`;
+
+-- 5.1 按数据域统计视图
+CREATE OR REPLACE VIEW `v_domain_stats` AS
+SELECT
+    COALESCE(o.`data_domain`, 'default') AS `data_domain`,
+    COUNT(DISTINCT o.`object_id`) AS `object_count`,
+    COUNT(DISTINCT r.`relation_id`) AS `relation_count`,
+    COUNT(DISTINCT CASE WHEN r.`entity_layer` = 'CONCEPT' THEN r.`entity_name` END) AS `concept_entity_count`,
+    COUNT(DISTINCT CASE WHEN r.`entity_layer` = 'LOGICAL' THEN r.`entity_name` END) AS `logical_entity_count`,
+    COUNT(DISTINCT CASE WHEN r.`entity_layer` = 'PHYSICAL' THEN r.`entity_name` END) AS `physical_entity_count`,
+    AVG(r.`relation_strength`) AS `avg_relation_strength`
+FROM `extracted_objects` o
+LEFT JOIN `object_entity_relations` r ON o.`object_id` = r.`object_id`
+GROUP BY o.`data_domain`;
 
 -- 6. 对象抽取批次记录表
 CREATE TABLE IF NOT EXISTS `object_extraction_batches` (
     `batch_id` INT AUTO_INCREMENT PRIMARY KEY,
     `batch_code` VARCHAR(64) NOT NULL UNIQUE COMMENT '批次编码',
+    `data_domain` VARCHAR(128) NOT NULL DEFAULT 'default' COMMENT '数据域编码',
+    `data_domain_name` VARCHAR(256) COMMENT '数据域名称',
     `extraction_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `source_files` JSON COMMENT '输入文件列表',
     `llm_model` VARCHAR(128) COMMENT '使用的大模型',
@@ -241,6 +261,7 @@ CREATE TABLE IF NOT EXISTS `object_extraction_batches` (
     `error_message` TEXT,
     `created_by` VARCHAR(128),
     INDEX `idx_batch_code` (`batch_code`),
+    INDEX `idx_data_domain` (`data_domain`),
     INDEX `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='对象抽取批次记录表';
@@ -258,17 +279,45 @@ CREATE TABLE IF NOT EXISTS `object_batch_mapping` (
 COMMENT='对象与抽取批次关联表';
 
 -- ============================================================================
--- 初始化核心对象（预置常见对象，可由大模型扩展）
+-- 数据库升级脚本（支持现有数据库添加 data_domain 字段）
 -- ============================================================================
-INSERT INTO `extracted_objects` (`object_code`, `object_name`, `object_name_en`, `object_type`, `description`, `extraction_source`, `extraction_confidence`, `is_verified`) VALUES
-('OBJ_PROJECT', '项目', 'Project', 'CORE', '电网建设项目，包括输变电工程项目、配网工程项目等', 'MANUAL', 1.0, TRUE),
-('OBJ_DEVICE', '设备', 'Device', 'CORE', '电网设备，包括变压器、断路器、线路等各类电气设备', 'MANUAL', 1.0, TRUE),
-('OBJ_ASSET', '资产', 'Asset', 'CORE', '固定资产，包括设备资产、房屋资产等', 'MANUAL', 1.0, TRUE),
-('OBJ_CONTRACT', '合同', 'Contract', 'CORE', '各类业务合同，包括工程合同、采购合同等', 'MANUAL', 1.0, TRUE),
-('OBJ_PERSONNEL', '人员', 'Personnel', 'CORE', '相关人员，包括项目人员、运维人员等', 'MANUAL', 1.0, TRUE),
-('OBJ_ORGANIZATION', '组织', 'Organization', 'CORE', '组织机构，包括部门、单位、项目部等', 'MANUAL', 1.0, TRUE),
-('OBJ_DOCUMENT', '文档', 'Document', 'AUXILIARY', '各类业务文档，包括设计文档、验收文档等', 'MANUAL', 1.0, TRUE),
-('OBJ_PROCESS', '流程', 'Process', 'AUXILIARY', '业务流程，包括审批流程、验收流程等', 'MANUAL', 1.0, TRUE)
+-- 为 extracted_objects 表添加 data_domain 字段（如果不存在）
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+                   WHERE table_schema = 'eav_db'
+                   AND table_name = 'extracted_objects'
+                   AND column_name = 'data_domain');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE extracted_objects ADD COLUMN data_domain VARCHAR(128) DEFAULT ''default'' COMMENT ''数据域编码'' AFTER object_type, ADD INDEX idx_data_domain (data_domain)',
+    'SELECT ''Column data_domain already exists''');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 为 object_extraction_batches 表添加 data_domain 字段（如果不存在）
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+                   WHERE table_schema = 'eav_db'
+                   AND table_name = 'object_extraction_batches'
+                   AND column_name = 'data_domain');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE object_extraction_batches ADD COLUMN data_domain VARCHAR(128) DEFAULT ''default'' COMMENT ''数据域编码'' AFTER batch_code, ADD COLUMN data_domain_name VARCHAR(256) COMMENT ''数据域名称'' AFTER data_domain, ADD INDEX idx_data_domain (data_domain)',
+    'SELECT ''Column data_domain already exists in batches''');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- ============================================================================
+-- 初始化核心对象（预置常见对象，可由大模型扩展）
+-- 注意：这些是默认域的对象，各域可以有自己的对象实例
+-- ============================================================================
+INSERT INTO `extracted_objects` (`object_code`, `object_name`, `object_name_en`, `object_type`, `data_domain`, `description`, `extraction_source`, `extraction_confidence`, `is_verified`) VALUES
+('OBJ_PROJECT', '项目', 'Project', 'CORE', 'default', '电网建设项目，包括输变电工程项目、配网工程项目等', 'MANUAL', 1.0, TRUE),
+('OBJ_DEVICE', '设备', 'Device', 'CORE', 'default', '电网设备，包括变压器、断路器、线路等各类电气设备', 'MANUAL', 1.0, TRUE),
+('OBJ_ASSET', '资产', 'Asset', 'CORE', 'default', '固定资产，包括设备资产、房屋资产等', 'MANUAL', 1.0, TRUE),
+('OBJ_CONTRACT', '合同', 'Contract', 'CORE', 'default', '各类业务合同，包括工程合同、采购合同等', 'MANUAL', 1.0, TRUE),
+('OBJ_PERSONNEL', '人员', 'Personnel', 'CORE', 'default', '相关人员，包括项目人员、运维人员等', 'MANUAL', 1.0, TRUE),
+('OBJ_ORGANIZATION', '组织', 'Organization', 'CORE', 'default', '组织机构，包括部门、单位、项目部等', 'MANUAL', 1.0, TRUE),
+('OBJ_DOCUMENT', '文档', 'Document', 'AUXILIARY', 'default', '各类业务文档，包括设计文档、验收文档等', 'MANUAL', 1.0, TRUE),
+('OBJ_PROCESS', '流程', 'Process', 'AUXILIARY', 'default', '业务流程，包括审批流程、验收流程等', 'MANUAL', 1.0, TRUE)
 ON DUPLICATE KEY UPDATE `object_name` = VALUES(`object_name`);
 
 -- ============================================================================
