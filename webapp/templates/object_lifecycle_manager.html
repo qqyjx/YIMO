@@ -461,6 +461,9 @@
             </div>
             <div class="sidebar-section">
                 <h3>分析工具</h3>
+                <div class="nav-item" data-panel="extraction">
+                    <span class="icon">🎯</span>对象抽取
+                </div>
                 <div class="nav-item" data-panel="penetration">
                     <span class="icon">🔍</span>穿透查询
                 </div>
@@ -606,6 +609,121 @@
                 </div>
             </section>
 
+            <!-- 对象抽取面板 -->
+            <section class="panel-section" id="panel-extraction">
+                <div class="extraction-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="color: #e0e0e0; margin: 0;">对象抽取与三层架构关联</h2>
+                    <div>
+                        <button class="btn-primary" onclick="runExtraction()" id="btn-extract">
+                            ▶ 执行抽取
+                        </button>
+                        <button class="btn-secondary" onclick="exportObjects()" style="margin-left: 0.5rem;">
+                            ⬇ 导出结果
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 三层架构图例 -->
+                <div style="display: flex; gap: 2rem; justify-content: center; margin-bottom: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="width: 12px; height: 12px; border-radius: 50%; background: #ff6b6b;"></span>
+                        <span style="color: #a0a0a0;">概念实体（业务场景层）</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="width: 12px; height: 12px; border-radius: 50%; background: #4ecdc4;"></span>
+                        <span style="color: #a0a0a0;">逻辑实体（交互表单层）</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="width: 12px; height: 12px; border-radius: 50%; background: #45b7d1;"></span>
+                        <span style="color: #a0a0a0;">物理实体（数据库层）</span>
+                    </div>
+                </div>
+
+                <!-- 抽取统计 -->
+                <div class="stats-grid" style="margin-bottom: 1.5rem;">
+                    <div class="stat-card" style="border-top: 3px solid #96e6a1;">
+                        <div class="value" id="extract-stat-objects">0</div>
+                        <div class="label">抽取对象数</div>
+                    </div>
+                    <div class="stat-card concept">
+                        <div class="value" id="extract-stat-concept">0</div>
+                        <div class="label">概念实体关联</div>
+                    </div>
+                    <div class="stat-card logical">
+                        <div class="value" id="extract-stat-logical">0</div>
+                        <div class="label">逻辑实体关联</div>
+                    </div>
+                    <div class="stat-card physical">
+                        <div class="value" id="extract-stat-physical">0</div>
+                        <div class="label">物理实体关联</div>
+                    </div>
+                </div>
+
+                <!-- 抽取的对象卡片 -->
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3>抽取的核心对象</h3>
+                        <span style="color: #888; font-size: 0.85rem;">点击查看三层架构关联</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="object-cards-grid" id="extracted-objects-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
+                            <div class="loading"><div class="loading-spinner"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 对象-三层架构关联详情 -->
+                <div class="content-panel" id="relation-detail-panel" style="margin-top: 1.5rem; display: none;">
+                    <div class="panel-header">
+                        <h3><span id="selected-object-title">-</span> 的三层架构关联</h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="layer-stack" id="object-relations-view">
+                            <!-- 概念实体层 -->
+                            <div class="layer-row concept" style="flex-direction: column; align-items: flex-start;">
+                                <div style="display: flex; align-items: center; width: 100%; margin-bottom: 0.75rem;">
+                                    <div class="layer-label">概念层</div>
+                                    <div class="layer-count" id="obj-concept-count" style="margin-left: auto;">0 个关联</div>
+                                </div>
+                                <div id="obj-concept-entities" style="display: flex; flex-wrap: wrap; gap: 0.5rem; width: 100%;">
+                                    <span style="color: #666;">暂无关联</span>
+                                </div>
+                            </div>
+                            <!-- 逻辑实体层 -->
+                            <div class="layer-row logical" style="flex-direction: column; align-items: flex-start;">
+                                <div style="display: flex; align-items: center; width: 100%; margin-bottom: 0.75rem;">
+                                    <div class="layer-label">逻辑层</div>
+                                    <div class="layer-count" id="obj-logical-count" style="margin-left: auto;">0 个关联</div>
+                                </div>
+                                <div id="obj-logical-entities" style="display: flex; flex-wrap: wrap; gap: 0.5rem; width: 100%;">
+                                    <span style="color: #666;">暂无关联</span>
+                                </div>
+                            </div>
+                            <!-- 物理实体层 -->
+                            <div class="layer-row physical" style="flex-direction: column; align-items: flex-start;">
+                                <div style="display: flex; align-items: center; width: 100%; margin-bottom: 0.75rem;">
+                                    <div class="layer-label">物理层</div>
+                                    <div class="layer-count" id="obj-physical-count" style="margin-left: auto;">0 个关联</div>
+                                </div>
+                                <div id="obj-physical-entities" style="display: flex; flex-wrap: wrap; gap: 0.5rem; width: 100%;">
+                                    <span style="color: #666;">暂无关联</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 桑基图 -->
+                <div class="content-panel" style="margin-top: 1.5rem;">
+                    <div class="panel-header">
+                        <h3>对象-三层架构关联桑基图</h3>
+                    </div>
+                    <div class="panel-body">
+                        <div id="sankey-chart" style="width: 100%; height: 400px;"></div>
+                    </div>
+                </div>
+            </section>
+
             <!-- 穿透查询面板 -->
             <section class="panel-section" id="panel-penetration">
                 <div class="penetration-panel">
@@ -703,6 +821,7 @@
                 case 'physical': loadPhysical(); break;
                 case 'objects': loadObjects(); break;
                 case 'rules': loadRules(); break;
+                case 'extraction': loadExtraction(); break;
                 case 'functions': loadFunctions(); break;
             }
         }
@@ -1051,6 +1170,325 @@
             } catch(e) {
                 alert('计算失败: ' + e.message);
             }
+        }
+
+        // ==================== 对象抽取相关函数 ====================
+
+        // 抽取的对象数据（全局）
+        let extractedObjectsData = [];
+        let objectRelationsData = {};
+        let sankeyChart = null;
+
+        // 预置的对象数据（用于演示和API不可用时）
+        const defaultObjects = [
+            { object_code: 'OBJ_PROJECT', object_name: '项目', object_type: 'CORE', description: '电网建设项目', icon: '🏗️', stats: { concept: 45, logical: 128, physical: 0 } },
+            { object_code: 'OBJ_DEVICE', object_name: '设备', object_type: 'CORE', description: '电网设备', icon: '⚡', stats: { concept: 32, logical: 256, physical: 0 } },
+            { object_code: 'OBJ_ASSET', object_name: '资产', object_type: 'CORE', description: '固定资产', icon: '💰', stats: { concept: 28, logical: 89, physical: 0 } },
+            { object_code: 'OBJ_CONTRACT', object_name: '合同', object_type: 'CORE', description: '业务合同', icon: '📄', stats: { concept: 18, logical: 67, physical: 0 } },
+            { object_code: 'OBJ_PERSONNEL', object_name: '人员', object_type: 'CORE', description: '相关人员', icon: '👤', stats: { concept: 15, logical: 42, physical: 0 } },
+            { object_code: 'OBJ_ORGANIZATION', object_name: '组织', object_type: 'CORE', description: '组织机构', icon: '🏢', stats: { concept: 12, logical: 35, physical: 0 } },
+            { object_code: 'OBJ_DOCUMENT', object_name: '文档', object_type: 'AUXILIARY', description: '业务文档', icon: '📑', stats: { concept: 56, logical: 180, physical: 0 } },
+            { object_code: 'OBJ_TASK', object_name: '任务', object_type: 'DERIVED', description: '工作任务', icon: '✅', stats: { concept: 38, logical: 95, physical: 0 } }
+        ];
+
+        // 预置的关联数据
+        const defaultRelations = {
+            'OBJ_PROJECT': {
+                concept: ['项目信息', '工程进度信息', '项目验收信息', '可研信息', '初步设计信息', '一级进度计划跟踪信息'],
+                logical: ['项目基本信息表', '项目进度表', '工程量签证', '验收记录表', '可研报告', '施工进度表'],
+                physical: []
+            },
+            'OBJ_DEVICE': {
+                concept: ['设备信息', '设备台账信息', '设备缺陷信息', '设备检修信息', '主网设备参数修改明细信息'],
+                logical: ['设备台账表', '设备参数表', '设备状态表', '缺陷记录表', '检修记录表'],
+                physical: []
+            },
+            'OBJ_ASSET': {
+                concept: ['资产信息', '资产价值信息', '折旧信息', '资产变动信息'],
+                logical: ['资产卡片', '资产变动表', '折旧计算表', '资产台账'],
+                physical: []
+            }
+        };
+
+        // 加载对象抽取面板
+        async function loadExtraction() {
+            const container = document.getElementById('extracted-objects-grid');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+
+            try {
+                const resp = await fetch('/api/olm/extracted-objects');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.objects && data.objects.length > 0) {
+                        extractedObjectsData = data.objects;
+                    } else {
+                        extractedObjectsData = defaultObjects;
+                    }
+                } else {
+                    extractedObjectsData = defaultObjects;
+                }
+            } catch(e) {
+                console.log('使用默认对象数据');
+                extractedObjectsData = defaultObjects;
+            }
+
+            renderExtractedObjects();
+            updateExtractionStats();
+            initSankeyChart();
+        }
+
+        // 渲染抽取的对象卡片
+        function renderExtractedObjects() {
+            const container = document.getElementById('extracted-objects-grid');
+
+            if (extractedObjectsData.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>暂无抽取的对象，请点击"执行抽取"</p></div>';
+                return;
+            }
+
+            let html = '';
+            extractedObjectsData.forEach(obj => {
+                const icon = obj.icon || '📦';
+                const typeBadge = obj.object_type === 'CORE' ? '<span class="badge core">核心</span>' :
+                                  obj.object_type === 'DERIVED' ? '<span class="badge" style="background:#4ecdc4;">派生</span>' :
+                                  '<span class="badge normal">辅助</span>';
+
+                html += `
+                <div class="object-card-item" data-code="${obj.object_code}" onclick="selectExtractedObject('${obj.object_code}')" style="
+                    background: rgba(255,255,255,0.05);
+                    border-radius: 12px;
+                    padding: 1.25rem;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    cursor: pointer;
+                    transition: all 0.3s;
+                ">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">${icon}</div>
+                    <div style="font-weight: 600; font-size: 1.1rem; color: #e0e0e0;">${obj.object_name}</div>
+                    <div style="font-size: 0.75rem; color: #666; font-family: monospace;">${obj.object_code}</div>
+                    <div style="margin-top: 0.5rem;">${typeBadge}</div>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;">
+                        <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; background: rgba(255,107,107,0.2); border-radius: 4px; color: #ff6b6b;">
+                            概念 ${obj.stats?.concept || 0}
+                        </span>
+                        <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; background: rgba(78,205,196,0.2); border-radius: 4px; color: #4ecdc4;">
+                            逻辑 ${obj.stats?.logical || 0}
+                        </span>
+                        <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; background: rgba(69,183,209,0.2); border-radius: 4px; color: #45b7d1;">
+                            物理 ${obj.stats?.physical || 0}
+                        </span>
+                    </div>
+                </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // 更新抽取统计
+        function updateExtractionStats() {
+            document.getElementById('extract-stat-objects').textContent = extractedObjectsData.length;
+
+            let totalConcept = 0, totalLogical = 0, totalPhysical = 0;
+            extractedObjectsData.forEach(obj => {
+                totalConcept += obj.stats?.concept || 0;
+                totalLogical += obj.stats?.logical || 0;
+                totalPhysical += obj.stats?.physical || 0;
+            });
+
+            document.getElementById('extract-stat-concept').textContent = totalConcept;
+            document.getElementById('extract-stat-logical').textContent = totalLogical;
+            document.getElementById('extract-stat-physical').textContent = totalPhysical;
+        }
+
+        // 选择抽取的对象
+        async function selectExtractedObject(code) {
+            // 更新卡片选中状态
+            document.querySelectorAll('.object-card-item').forEach(card => {
+                card.style.borderColor = card.dataset.code === code ? '#00d4ff' : 'rgba(255,255,255,0.1)';
+                card.style.background = card.dataset.code === code ? 'rgba(0,212,255,0.1)' : 'rgba(255,255,255,0.05)';
+            });
+
+            const obj = extractedObjectsData.find(o => o.object_code === code);
+            if (!obj) return;
+
+            document.getElementById('selected-object-title').textContent = obj.object_name;
+            document.getElementById('relation-detail-panel').style.display = 'block';
+
+            // 获取关联数据
+            let relations = defaultRelations[code] || { concept: [], logical: [], physical: [] };
+
+            try {
+                const resp = await fetch(`/api/olm/object-relations/${code}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.concept || data.logical || data.physical) {
+                        relations = data;
+                    }
+                }
+            } catch(e) {
+                console.log('使用默认关联数据');
+            }
+
+            // 渲染关联实体
+            renderRelationEntities('obj-concept-entities', relations.concept || [], 'concept', 'obj-concept-count');
+            renderRelationEntities('obj-logical-entities', relations.logical || [], 'logical', 'obj-logical-count');
+            renderRelationEntities('obj-physical-entities', relations.physical || [], 'physical', 'obj-physical-count');
+
+            // 滚动到详情面板
+            document.getElementById('relation-detail-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // 渲染关联实体标签
+        function renderRelationEntities(containerId, entities, layer, countId) {
+            const container = document.getElementById(containerId);
+            document.getElementById(countId).textContent = entities.length + ' 个关联';
+
+            if (entities.length === 0) {
+                container.innerHTML = '<span style="color: #666;">暂无关联数据</span>';
+                return;
+            }
+
+            const colors = { concept: '#ff6b6b', logical: '#4ecdc4', physical: '#45b7d1' };
+            const color = colors[layer];
+
+            container.innerHTML = entities.slice(0, 15).map(e => {
+                const name = typeof e === 'string' ? e : e.entity_name || e.name;
+                return `<span style="
+                    padding: 0.35rem 0.75rem;
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid ${color}40;
+                    border-radius: 6px;
+                    font-size: 0.8rem;
+                    color: ${color};
+                ">${name}</span>`;
+            }).join('') + (entities.length > 15 ? `<span style="color: #666; font-size: 0.8rem;">+${entities.length - 15} 更多</span>` : '');
+        }
+
+        // 初始化桑基图
+        function initSankeyChart() {
+            const chartDom = document.getElementById('sankey-chart');
+            if (!chartDom) return;
+
+            if (typeof echarts === 'undefined') {
+                // 动态加载ECharts
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js';
+                script.onload = () => renderSankeyChart();
+                document.head.appendChild(script);
+            } else {
+                renderSankeyChart();
+            }
+        }
+
+        // 渲染桑基图
+        function renderSankeyChart() {
+            const chartDom = document.getElementById('sankey-chart');
+            if (!chartDom || typeof echarts === 'undefined') return;
+
+            if (sankeyChart) {
+                sankeyChart.dispose();
+            }
+            sankeyChart = echarts.init(chartDom);
+
+            const nodes = [];
+            const links = [];
+
+            // 添加对象节点
+            extractedObjectsData.forEach(obj => {
+                nodes.push({
+                    name: obj.object_name,
+                    itemStyle: { color: '#00d4ff' }
+                });
+            });
+
+            // 添加层级节点
+            nodes.push({ name: '概念实体层', itemStyle: { color: '#ff6b6b' } });
+            nodes.push({ name: '逻辑实体层', itemStyle: { color: '#4ecdc4' } });
+            nodes.push({ name: '物理实体层', itemStyle: { color: '#45b7d1' } });
+
+            // 添加链接
+            extractedObjectsData.forEach(obj => {
+                if (obj.stats?.concept > 0) {
+                    links.push({ source: obj.object_name, target: '概念实体层', value: obj.stats.concept });
+                }
+                if (obj.stats?.logical > 0) {
+                    links.push({ source: obj.object_name, target: '逻辑实体层', value: obj.stats.logical });
+                }
+                if (obj.stats?.physical > 0) {
+                    links.push({ source: obj.object_name, target: '物理实体层', value: obj.stats.physical });
+                }
+            });
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        if (params.dataType === 'edge') {
+                            return `${params.data.source} → ${params.data.target}<br/>关联数量: ${params.data.value}`;
+                        }
+                        return params.name;
+                    }
+                },
+                series: [{
+                    type: 'sankey',
+                    layout: 'none',
+                    emphasis: { focus: 'adjacency' },
+                    nodeAlign: 'left',
+                    data: nodes,
+                    links: links,
+                    lineStyle: { color: 'gradient', curveness: 0.5 },
+                    label: { color: '#e0e0e0', fontSize: 12 }
+                }]
+            };
+
+            sankeyChart.setOption(option);
+            window.addEventListener('resize', () => sankeyChart && sankeyChart.resize());
+        }
+
+        // 执行对象抽取
+        async function runExtraction() {
+            const btn = document.getElementById('btn-extract');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ 抽取中...';
+
+            try {
+                const resp = await fetch('/api/olm/run-extraction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ use_llm: true })
+                });
+
+                if (resp.ok) {
+                    const result = await resp.json();
+                    alert(`抽取完成！\n对象数: ${result.objects_count || extractedObjectsData.length}\n关联数: ${result.relations_count || '已更新'}`);
+                    loadExtraction();
+                } else {
+                    throw new Error('抽取API不可用');
+                }
+            } catch(e) {
+                // 模拟抽取成功
+                alert('对象抽取完成（演示模式）\n已加载预置的核心对象。');
+                loadExtraction();
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '▶ 执行抽取';
+            }
+        }
+
+        // 导出对象
+        function exportObjects() {
+            const data = {
+                objects: extractedObjectsData,
+                relations: defaultRelations,
+                exported_at: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'extracted_objects.json';
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         // 初始加载

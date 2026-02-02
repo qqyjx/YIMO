@@ -1,0 +1,60 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4f46e5', 'secondaryColor': '#818cf8', 'tertiaryColor': '#c7d2fe'}}}%%
+flowchart TB
+    subgraph Phase1["阶段一：数据采集与预处理"]
+        A1[("📁 DATA目录<br/>Excel文件")] --> A2["读取数据架构表"]
+        A2 --> A3["DA-01 概念实体清单<br/>(787行)"]
+        A2 --> A4["DA-02 逻辑实体清单<br/>(145,476行)"]
+        A2 --> A5["DA-03 物理实体清单<br/>(待补充)"]
+        A3 --> A6["提取实体名称集合"]
+        A4 --> A6
+        A5 --> A6
+        A6 --> A7["数据清洗<br/>去重、去噪、标准化"]
+    end
+
+    subgraph Phase2["阶段二：候选对象识别"]
+        A7 --> B1["名词短语提取<br/>(NLP分词)"]
+        B1 --> B2["高频词统计<br/>TF-IDF分析"]
+        B2 --> B3["候选对象列表<br/>(约100-500个)"]
+    end
+
+    subgraph Phase3["阶段三：大模型对象抽取"]
+        B3 --> C1["构造提示词<br/>Prompt Engineering"]
+        C1 --> C2{"调用大模型<br/>(DeepSeek/GPT)"}
+        C2 --> C3["对象识别与归类"]
+        C3 --> C4["输出核心对象列表<br/>项目、设备、人员..."]
+        C4 --> C5["对象层次结构<br/>父子关系"]
+        C5 --> C6["对象属性推断"]
+    end
+
+    subgraph Phase4["阶段四：关联关系构建"]
+        C4 --> D1["语义相似度计算<br/>(SBERT向量)"]
+        D1 --> D2["对象-概念实体<br/>关联矩阵"]
+        D1 --> D3["对象-逻辑实体<br/>关联矩阵"]
+        D1 --> D4["对象-物理实体<br/>关联矩阵"]
+        D2 --> D5["关联强度评分<br/>(0-1)"]
+        D3 --> D5
+        D4 --> D5
+        D5 --> D6["三层关联关系表"]
+    end
+
+    subgraph Phase5["阶段五：验证与入库"]
+        D6 --> E1{"人工审核<br/>核心对象确认"}
+        E1 -->|"通过"| E2["写入MySQL<br/>extracted_objects表"]
+        E1 -->|"调整"| C1
+        E2 --> E3["写入MySQL<br/>object_entity_relations表"]
+        E3 --> E4["生成关联统计报告"]
+    end
+
+    subgraph Phase6["阶段六：前端可视化"]
+        E4 --> F1["对象卡片视图"]
+        F1 --> F2["三层关联图谱"]
+        F2 --> F3["桑基图展示<br/>对象→概念→逻辑→物理"]
+        F3 --> F4["关联详情下钻"]
+    end
+
+    style Phase1 fill:#e0f2fe,stroke:#0284c7
+    style Phase2 fill:#fef3c7,stroke:#d97706
+    style Phase3 fill:#fce7f3,stroke:#db2777
+    style Phase4 fill:#d1fae5,stroke:#059669
+    style Phase5 fill:#ede9fe,stroke:#7c3aed
+    style Phase6 fill:#fee2e2,stroke:#dc2626
