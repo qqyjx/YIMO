@@ -1,65 +1,57 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Minimal Flask webapp to browse EAV semantic tables and provide
-Deepseek API proxy + simple RAG (FAISS + SBERT).
+"""YIMO Flask Web 应用 - 对象抽取与三层架构关联
 
-Endpoints
-- GET /            : Dashboard, dataset list & quick stats.
-- GET /dataset/<int:dsid>/attributes : JSON list of attributes.
-- GET /dataset/<int:dsid>/attribute/<int:aid>/canon : JSON list of canon values.
-- GET /dataset/<int:dsid>/attribute/<int:aid>/mapping?limit=... : Mapping rows.
-- POST /deepseek/chat : Proxy a chat completion to Deepseek API.
-- POST /rag/query : Run RAG over semantic canon texts (per dataset) and call Deepseek.
+Endpoints:
+- GET /            : 主界面 (v10.0)
+- GET /extraction  : 对象抽取与三层架构关联页面
+- GET /health      : 健康检查
+- POST /rag/query  : RAG 查询接口
+- POST /deepseek/chat : Deepseek API 代理
 
-RAG minimal design
-- Build (in-memory) FAISS index of canonical texts for requested dataset (lazy cache).
-- Embed by sentence-transformers (shibing624/text2vec-base-chinese by default). 
-- Top-K retrieval -> join canonical_texts into a context -> ask Deepseek.
-
-Security NOTE: This is a local development script; do NOT expose without adding auth & rate limiting.
+作者: YIMO Team
+日期: 2026-02
 """
 import os
-import time
 import json
 from functools import lru_cache
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Sequence, cast
 from flask import Flask, request, jsonify, render_template
 import pymysql
 import requests
 import numpy as np
 import importlib
 from importlib import util as importlib_util
-from typing import Sequence, cast
 
-# Optional imports via importlib to reduce static unresolved warnings
+# Optional imports
 _faiss_spec = importlib_util.find_spec("faiss")
-faiss = importlib.import_module("faiss") if _faiss_spec else None  # type: ignore
+faiss = importlib.import_module("faiss") if _faiss_spec else None
 
 _dotenv_spec = importlib_util.find_spec("dotenv")
 if _dotenv_spec:
-    from dotenv import load_dotenv  # type: ignore
-else:  # fallback noop
+    from dotenv import load_dotenv
+else:
     def load_dotenv():
         return False
 
 from sentence_transformers import SentenceTransformer
 
-load_dotenv()  # loads .env if present
+load_dotenv()
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-# 注册对象生命周期管理器 API Blueprint
+# 注册对象抽取 API Blueprint
 try:
     from olm_api import olm_api
     app.register_blueprint(olm_api)
-    print(" * Object Lifecycle Manager API registered")
+    print(" * Object Extraction API registered")
 except ImportError as e:
-    print(f" * WARNING: OLM API not loaded: {e}")
+    print(f" * WARNING: Object Extraction API not loaded: {e}")
 
-# ---------------- Config ----------------
+# =================== 配置 ===================
 MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
-MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3307"))
 MYSQL_DB = os.getenv("MYSQL_DB", "eav_db")
 MYSQL_USER = os.getenv("MYSQL_USER", "eav_user")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "eavpass123")
@@ -67,13 +59,13 @@ TABLE_PREFIX = os.getenv("TABLE_PREFIX", "eav")
 MODEL_NAME = os.getenv("EMBED_MODEL", "shibing624/text2vec-base-chinese")
 MODEL_CACHE = os.getenv("MODEL_CACHE", "./models")
 DEEPSEEK_API_BASE = os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1")
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")  # Set via .env or environment variable
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 RAG_TOP_K = int(os.getenv("RAG_TOP_K", "5"))
 
 os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", MODEL_CACHE)
 os.environ.setdefault("HF_HOME", MODEL_CACHE)
 
-# ---------------- DB Helpers ----------------
+# =================== 数据库 ===================
 
 def get_conn():
     return pymysql.connect(
@@ -91,38 +83,26 @@ def get_conn():
 def get_model():
     return SentenceTransformer(MODEL_NAME, cache_folder=MODEL_CACHE)
 
-# ---------------- Simple Queries ----------------
+# =================== EAV 查询 ===================
 
 def list_datasets() -> Sequence[Dict[str, Any]]:
     with get_conn() as conn, conn.cursor() as cur:
         cur.execute(f"SELECT id,name,source_file,imported_at FROM {TABLE_PREFIX}_datasets ORDER BY id")
-    rows = cur.fetchall()
+        rows = cur.fetchall()
     return cast(Sequence[Dict[str, Any]], list(rows))
 
 def list_attributes(dataset_id: int) -> Sequence[Dict[str, Any]]:
     with get_conn() as conn, conn.cursor() as cur:
-        cur.execute(f"SELECT id,name,display_name,data_type FROM {TABLE_PREFIX}_attributes WHERE dataset_id=%s ORDER BY id", (dataset_id,))
-    rows = cur.fetchall()
+        cur.execute(f"SELECT id,name,data_type FROM {TABLE_PREFIX}_attributes WHERE dataset_id=%s ORDER BY id", (dataset_id,))
+        rows = cur.fetchall()
     return cast(Sequence[Dict[str, Any]], list(rows))
 
-def list_canon(dataset_id: int, attribute_id: int, limit: int = 200) -> Sequence[Dict[str, Any]]:
-    with get_conn() as conn, conn.cursor() as cur:
-        cur.execute(f"SELECT id,canonical_text,cluster_size,created_at FROM {TABLE_PREFIX}_semantic_canon WHERE dataset_id=%s AND attribute_id=%s ORDER BY cluster_size DESC, id LIMIT %s", (dataset_id, attribute_id, limit))
-    rows = cur.fetchall()
-    return cast(Sequence[Dict[str, Any]], list(rows))
-
-def list_mapping(dataset_id: int, attribute_id: int, limit: int = 500) -> Sequence[Dict[str, Any]]:
-    with get_conn() as conn, conn.cursor() as cur:
-        cur.execute(f"SELECT from_text,canonical_id,similarity,freq,created_at FROM {TABLE_PREFIX}_semantic_mapping WHERE dataset_id=%s AND attribute_id=%s ORDER BY freq DESC, similarity DESC LIMIT %s", (dataset_id, attribute_id, limit))
-    rows = cur.fetchall()
-    return cast(Sequence[Dict[str, Any]], list(rows))
-
-# ---------------- RAG Index Cache ----------------
+# =================== RAG ===================
 @dataclass
 class RagIndex:
     dsid: int
     texts: List[str]
-    index: Any  # faiss.IndexFlatIP
+    index: Any
     emb: np.ndarray
 
 _rag_cache: Dict[int, RagIndex] = {}
@@ -131,11 +111,13 @@ def build_rag_index(dataset_id: int) -> RagIndex:
     if dataset_id in _rag_cache:
         return _rag_cache[dataset_id]
     if faiss is None:
-        raise RuntimeError("FAISS not installed; install faiss-cpu to enable RAG")
+        raise RuntimeError("FAISS not installed")
     with get_conn() as conn, conn.cursor() as cur:
-        cur.execute(f"SELECT canonical_text FROM {TABLE_PREFIX}_semantic_canon WHERE dataset_id=%s LIMIT 50000", (dataset_id,))
+        cur.execute(f"SELECT canon_text FROM {TABLE_PREFIX}_semantic_canon LIMIT 50000")
         rows = cur.fetchall()
-    texts = [r['canonical_text'] for r in rows if r.get('canonical_text')]
+    texts = [r['canon_text'] for r in rows if r.get('canon_text')]
+    if not texts:
+        texts = ["无数据"]
     model = get_model()
     emb = model.encode(texts, batch_size=256, convert_to_numpy=True, normalize_embeddings=True, show_progress_bar=False)
     emb = emb.astype('float32')
@@ -145,7 +127,7 @@ def build_rag_index(dataset_id: int) -> RagIndex:
     _rag_cache[dataset_id] = ri
     return ri
 
-# ---------------- Deepseek Proxy ----------------
+# =================== Deepseek API ===================
 
 def call_deepseek(messages: List[Dict[str, str]], model: str = "deepseek-chat") -> Dict[str, Any]:
     if not DEEPSEEK_API_KEY:
@@ -162,44 +144,45 @@ def call_deepseek(messages: List[Dict[str, str]], model: str = "deepseek-chat") 
     except Exception as e:
         return {"error": str(e)}
 
-# ---------------- Routes ----------------
+# =================== 路由 ===================
+
 @app.route('/')
 def home():
     try:
         ds = list_datasets()
         stats = []
         with get_conn() as conn, conn.cursor() as cur:
-            cur.execute(f"SELECT dataset_id, COUNT(*) c FROM {TABLE_PREFIX}_semantic_canon GROUP BY dataset_id")
-            canon_counts = {r['dataset_id']: r['c'] for r in cur.fetchall()}
-            cur.execute(f"SELECT dataset_id, COUNT(*) c FROM {TABLE_PREFIX}_semantic_mapping GROUP BY dataset_id")
-            map_counts = {r['dataset_id']: r['c'] for r in cur.fetchall()}
+            cur.execute(f"SELECT COUNT(*) c FROM {TABLE_PREFIX}_semantic_canon")
+            canon_count = cur.fetchone()['c']
+            cur.execute(f"SELECT COUNT(*) c FROM {TABLE_PREFIX}_semantic_mapping")
+            map_count = cur.fetchone()['c']
+
         for d in ds:
             stats.append({
                 'id': d['id'],
                 'name': d['name'],
                 'source_file': d.get('source_file'),
-                'canon': canon_counts.get(d['id'], 0),
-                'mapping': map_counts.get(d['id'], 0),
+                'canon': canon_count,
+                'mapping': map_count,
             })
-        
-        # Template selection logic
+
+        # 默认使用 v10.0 模板
         v = request.args.get('v', '10.0')
-        # Allow alphanumeric and dots
         if not all(c.isalnum() or c == '.' for c in v):
-             v = '10.0'
-        
+            v = '10.0'
+
         template_name = f"{v}.html"
         folder = app.template_folder if app.template_folder else 'templates'
         if not os.path.exists(os.path.join(folder, template_name)):
-             template_name = 'home.html'
-            
+            template_name = 'home.html'
+
         return render_template(template_name, stats=stats)
     except Exception as e:
-        # Render minimal inline message to avoid template dependency when DB is down
         return (
-            f"<h2>Webapp running</h2>"
-            f"<p>But failed to query MySQL: {str(e)}</p>"
-            f"<p>Please set .env (MYSQL_HOST/PORT/DB/USER/PASSWORD, TABLE_PREFIX) and ensure DB is reachable.</p>",
+            f"<h2>YIMO 对象抽取与三层架构关联系统</h2>"
+            f"<p>数据库连接失败: {str(e)}</p>"
+            f"<p>请检查 .env 配置 (MYSQL_HOST/PORT/DB/USER/PASSWORD)</p>"
+            f"<p><a href='/extraction'>进入对象抽取页面</a></p>",
             200,
             {"Content-Type": "text/html; charset=utf-8"}
         )
@@ -208,19 +191,14 @@ def home():
 def health():
     return jsonify({"status": "ok", "faiss": bool(faiss is not None)})
 
+@app.route('/extraction')
+def extraction_page():
+    """对象抽取与三层架构关联页面"""
+    return render_template('object_extraction.html')
+
 @app.route('/dataset/<int:dsid>/attributes')
 def api_attributes(dsid: int):
     return jsonify(list_attributes(dsid))
-
-@app.route('/dataset/<int:dsid>/attribute/<int:aid>/canon')
-def api_canon(dsid: int, aid: int):
-    limit = int(request.args.get('limit', 200))
-    return jsonify(list_canon(dsid, aid, limit))
-
-@app.route('/dataset/<int:dsid>/attribute/<int:aid>/mapping')
-def api_mapping(dsid: int, aid: int):
-    limit = int(request.args.get('limit', 500))
-    return jsonify(list_mapping(dsid, aid, limit))
 
 @app.route('/deepseek/chat', methods=['POST'])
 def api_deepseek_chat():
@@ -241,7 +219,7 @@ def api_rag_query():
         top_k = 50
     if not query:
         return jsonify({'error': 'query empty'}), 400
-    # Build / fetch index
+
     ri = build_rag_index(dsid)
     model = get_model()
     q_emb = model.encode([query], convert_to_numpy=True, normalize_embeddings=True)[0].astype('float32')
@@ -257,369 +235,38 @@ def api_rag_query():
     return jsonify({"query": query, "retrieved": retrieved, "llm": llm_resp})
 
 
-# ============================================================================
-# 生命周期管理器 API - "一模到底"
-# ============================================================================
-
-@app.route('/lifecycle')
-def lifecycle_manager():
-    """生命周期管理器页面"""
-    return render_template('lifecycle_manager.html')
-
-
-@app.route('/api/lifecycle/assets')
-def api_lifecycle_assets():
-    """获取所有全局资产列表"""
-    try:
-        with get_conn() as conn, conn.cursor() as cur:
-            cur.execute("""
-                SELECT global_uid, asset_name, asset_type, asset_class, 
-                       trust_score, fusion_status, source_count,
-                       first_seen_stage, latest_stage, created_at
-                FROM global_asset_index
-                ORDER BY trust_score DESC, source_count DESC
-                LIMIT 500
-            """)
-            assets = cur.fetchall()
-        
-        # Convert datetime to string for JSON
-        for a in assets:
-            if a.get('created_at'):
-                a['created_at'] = a['created_at'].isoformat()
-        
-        return jsonify({"assets": list(assets), "total": len(assets)})
-    except Exception as e:
-        return jsonify({"assets": [], "error": str(e)})
-
-
-@app.route('/api/lifecycle/graph/<global_uid>')
-def api_lifecycle_graph(global_uid: str):
-    """获取资产的生命周期图数据"""
-    try:
-        with get_conn() as conn, conn.cursor() as cur:
-            # 获取资产基本信息
-            cur.execute("""
-                SELECT global_uid, asset_name, asset_type, asset_class,
-                       trust_score, fusion_status, golden_attributes,
-                       source_count, first_seen_stage, latest_stage
-                FROM global_asset_index
-                WHERE global_uid = %s
-            """, (global_uid,))
-            asset = cur.fetchone()
-            
-            if not asset:
-                return jsonify({"error": "Asset not found"}), 404
-            
-            # 解析 golden_attributes JSON
-            if asset.get('golden_attributes'):
-                try:
-                    import json
-                    asset['golden_attributes'] = json.loads(asset['golden_attributes'])
-                except:
-                    asset['golden_attributes'] = {}
-            
-            # 获取关联的实体和阶段数据
-            cur.execute("""
-                SELECT m.entity_id, m.lifecycle_stage, m.confidence, m.mapping_method,
-                       m.mapping_reason, e.external_id, d.name as dataset_name
-                FROM entity_global_mapping m
-                JOIN eav_entities e ON e.id = m.entity_id
-                JOIN eav_datasets d ON d.id = e.dataset_id
-                WHERE m.global_uid = %s
-                ORDER BY m.lifecycle_stage, m.confidence DESC
-            """, (global_uid,))
-            mappings = cur.fetchall()
-            
-            # 按阶段组织数据
-            stages = {}
-            for m in mappings:
-                stage = m['lifecycle_stage']
-                if stage not in stages:
-                    stages[stage] = {"entities": []}
-                
-                # 获取实体属性
-                cur.execute(f"""
-                    SELECT a.display_name, v.raw_text, v.value_text, v.value_number
-                    FROM {TABLE_PREFIX}_values v
-                    JOIN {TABLE_PREFIX}_attributes a ON a.id = v.attribute_id
-                    WHERE v.entity_id = %s
-                    LIMIT 20
-                """, (m['entity_id'],))
-                attrs = {}
-                for row in cur.fetchall():
-                    val = row['raw_text'] or row['value_text'] or str(row['value_number'] or '')
-                    if val and row['display_name'] != '__sheet__':
-                        attrs[row['display_name']] = val
-                
-                stages[stage]["entities"].append({
-                    "entity_id": m['entity_id'],
-                    "external_id": m['external_id'],
-                    "dataset_name": m['dataset_name'],
-                    "confidence": float(m['confidence']) if m['confidence'] else 0,
-                    "mapping_method": m['mapping_method'],
-                    "attributes": attrs
-                })
-            
-            # 获取异常
-            cur.execute("""
-                SELECT anomaly_type, severity, attribute_name, description, suggestion
-                FROM data_anomalies
-                WHERE global_uid = %s AND status = 'open'
-                ORDER BY 
-                    CASE severity 
-                        WHEN 'critical' THEN 1 
-                        WHEN 'error' THEN 2 
-                        WHEN 'warning' THEN 3 
-                        ELSE 4 
-                    END
-                LIMIT 10
-            """, (global_uid,))
-            anomalies = cur.fetchall()
-            
-            result = {
-                "global_uid": asset['global_uid'],
-                "asset_name": asset['asset_name'],
-                "asset_type": asset['asset_type'],
-                "asset_class": asset['asset_class'],
-                "trust_score": float(asset['trust_score']) if asset['trust_score'] else 0,
-                "fusion_status": asset['fusion_status'],
-                "golden_attributes": asset.get('golden_attributes', {}),
-                "source_count": asset['source_count'],
-                "stages": stages,
-                "anomalies": list(anomalies)
-            }
-            
-            return jsonify(result)
-            
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/api/lifecycle/stats')
-def api_lifecycle_stats():
-    """获取生命周期统计数据"""
-    try:
-        with get_conn() as conn, conn.cursor() as cur:
-            stats = {}
-            
-            # 总资产数
-            cur.execute("SELECT COUNT(*) as cnt FROM global_asset_index")
-            stats['total_assets'] = cur.fetchone()['cnt']
-            
-            # 按融合状态统计
-            cur.execute("""
-                SELECT fusion_status, COUNT(*) as cnt 
-                FROM global_asset_index 
-                GROUP BY fusion_status
-            """)
-            stats['by_fusion_status'] = {r['fusion_status']: r['cnt'] for r in cur.fetchall()}
-            
-            # 按阶段统计
-            cur.execute("""
-                SELECT lifecycle_stage, COUNT(DISTINCT global_uid) as cnt
-                FROM entity_global_mapping
-                GROUP BY lifecycle_stage
-            """)
-            stats['by_stage'] = {r['lifecycle_stage']: r['cnt'] for r in cur.fetchall()}
-            
-            # 平均信任分
-            cur.execute("SELECT AVG(trust_score) as avg_trust FROM global_asset_index")
-            row = cur.fetchone()
-            stats['avg_trust_score'] = float(row['avg_trust']) if row['avg_trust'] else 0
-            
-            # 异常统计
-            cur.execute("""
-                SELECT anomaly_type, COUNT(*) as cnt
-                FROM data_anomalies
-                WHERE status = 'open'
-                GROUP BY anomaly_type
-            """)
-            stats['open_anomalies'] = {r['anomaly_type']: r['cnt'] for r in cur.fetchall()}
-            
-            return jsonify(stats)
-            
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/anomalies')
-def anomalies_page():
-    """异常监控页面"""
-    try:
-        with get_conn() as conn, conn.cursor() as cur:
-            cur.execute("""
-                SELECT a.*, g.asset_name
-                FROM data_anomalies a
-                LEFT JOIN global_asset_index g ON g.global_uid = a.global_uid
-                WHERE a.status = 'open'
-                ORDER BY 
-                    CASE a.severity 
-                        WHEN 'critical' THEN 1 
-                        WHEN 'error' THEN 2 
-                        WHEN 'warning' THEN 3 
-                        ELSE 4 
-                    END,
-                    a.created_at DESC
-                LIMIT 100
-            """)
-            anomalies = cur.fetchall()
-            
-            # Convert datetime
-            for a in anomalies:
-                if a.get('created_at'):
-                    a['created_at'] = a['created_at'].strftime('%Y-%m-%d %H:%M')
-            
-        return render_template('anomalies.html', anomalies=anomalies)
-    except Exception as e:
-        return f"<h2>异常监控</h2><p>加载失败: {e}</p><p>请确保已运行 bootstrap.sql 和一致性监控脚本</p>"
-
-# ---------------- Templates ----------------
-# Basic Jinja template
+# =================== 基础模板 ===================
 HOME_HTML = """<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <title>EAV 语义库概览</title>
+  <title>YIMO 对象抽取与三层架构关联</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 1.5rem; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 4px 8px; }
-    th { background: #f5f5f5; }
-    .small { font-size: 12px; color: #666; }
-    .mono { font-family: monospace; }
-        .row { display: flex; gap: 1rem; align-items: center; }
-        .col { flex: 1; }
-        textarea { width: 100%; height: 120px; }
-        input[type="text"] { width: 100%; }
-        pre { background: #f7f7f7; padding: 8px; overflow-x: auto; }
-        .muted { color:#888; font-size: 12px; }
-        .btn { padding: 6px 12px; cursor: pointer; }
+    body { font-family: Arial, sans-serif; margin: 1.5rem; background: #1e1b4b; color: #e2e8f0; }
+    h1 { color: #818cf8; }
+    a { color: #818cf8; }
+    .card { background: rgba(30, 27, 75, 0.6); padding: 1.5rem; border-radius: 12px; margin: 1rem 0; }
+    .btn { padding: 12px 24px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4); }
   </style>
 </head>
 <body>
-<h1>EAV 语义库概览</h1>
-<table>
-  <thead>
-    <tr><th>ID</th><th>Name</th><th>Source File</th><th>Canon Rows</th><th>Mapping Rows</th></tr>
-  </thead>
-  <tbody>
-  {% for row in stats %}
-    <tr>
-      <td>{{ row.id }}</td>
-      <td>{{ row.name }}</td>
-      <td class="small">{{ row.source_file }}</td>
-      <td>{{ row.canon }}</td>
-      <td>{{ row.mapping }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
-
-<h2>RAG 检索 + LLM 回答</h2>
-<div class="row">
-    <div class="col" style="max-width:220px;">
-        <label>选择数据集：</label>
-        <select id="dsid">
-            {% for row in stats %}
-                <option value="{{ row.id }}">[{{ row.id }}] {{ row.name }}</option>
-            {% endfor %}
-        </select>
-        <p class="muted">注意：首次检索会构建索引，较慢；随后相同 dataset 会缓存。</p>
-    </div>
-    <div class="col">
-        <label>问题（将基于所选数据集的 canonical_text 进行 Top-K 检索）：</label>
-        <input id="rag_q" type="text" placeholder="例如：某字段的含义？或如何映射X到标准值？" />
-        <div style="margin-top:8px;">
-            <button class="btn" onclick="doRag()">提交 RAG 查询</button>
-        </div>
-    </div>
-</div>
-<div class="row" style="margin-top:12px;">
-    <div class="col">
-        <h3>检索到的上下文</h3>
-        <pre id="rag_ctx">(尚无)</pre>
-    </div>
-    <div class="col">
-        <h3>LLM 回答</h3>
-        <pre id="rag_ans">(尚无)</pre>
-    </div>
-    <div class="col" style="max-width:220px;">
-        <h3>诊断</h3>
-        <pre id="rag_dbg" class="muted">(等待查询)</pre>
-    </div>
-</div>
-
-<h2>直接调用 LLM API（无检索）</h2>
-<div class="row">
-    <div class="col">
-        <label>对话消息（JSON 数组），例如：[{"role":"user","content":"你好"}]</label>
-        <textarea id="chat_msgs">[{"role":"user","content":"你好，做一个自我介绍。"}]</textarea>
-        <div style="margin-top:8px;">
-            <button class="btn" onclick="doChat()">发送</button>
-        </div>
-    </div>
-    <div class="col">
-        <h3>响应</h3>
-        <pre id="chat_resp">(尚无)</pre>
-    </div>
-</div>
-
-<script>
-async function doRag(){
-    const dsid = document.getElementById('dsid').value;
-    const q = document.getElementById('rag_q').value.trim();
-    if(!q){ alert('请输入问题'); return; }
-    document.getElementById('rag_dbg').textContent = '检索中...';
-    try{
-        const resp = await fetch('/rag/query', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dataset_id: Number(dsid), query: q })
-        });
-        const data = await resp.json();
-        if(data.error){
-            document.getElementById('rag_dbg').textContent = '错误: ' + data.error;
-            return;
-        }
-        document.getElementById('rag_ctx').textContent = (data.retrieved||[]).join('\n\n');
-        const llm = data.llm || {};
-        // deepseek 返回结构兼容 openai 格式
-        let text = '';
-        try { text = llm.choices[0].message.content; } catch(e) { text = JSON.stringify(llm, null, 2); }
-        document.getElementById('rag_ans').textContent = text;
-        document.getElementById('rag_dbg').textContent = 'OK';
-    }catch(err){
-        document.getElementById('rag_dbg').textContent = '异常: ' + err;
-    }
-}
-
-async function doChat(){
-    let msgsRaw = document.getElementById('chat_msgs').value;
-    let msgs;
-    try{ msgs = JSON.parse(msgsRaw); }
-    catch(e){ alert('消息 JSON 解析失败: ' + e); return; }
-    const resp = await fetch('/deepseek/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: msgs, model: 'deepseek-chat' })
-    });
-    const data = await resp.json();
-    if(data.error){
-        document.getElementById('chat_resp').textContent = '错误: ' + data.error;
-        return;
-    }
-    let text = '';
-    try { text = data.choices[0].message.content; } catch(e) { text = JSON.stringify(data, null, 2); }
-    document.getElementById('chat_resp').textContent = text;
-}
-</script>
+  <h1>🎯 YIMO 对象抽取与三层架构关联系统</h1>
+  <div class="card">
+    <h2>快速入口</h2>
+    <p><a href="/extraction">→ 对象抽取与三层架构关联</a></p>
+    <p><a href="/?v=10.0">→ 主控制台 (v10.0)</a></p>
+  </div>
+  <div class="card">
+    <h2>系统状态</h2>
+    <p>数据集数量: {{ stats|length }}</p>
+    {% for row in stats %}
+    <p>- {{ row.name }} (规范值: {{ row.canon }})</p>
+    {% endfor %}
+  </div>
 </body>
 </html>"""
 
-# Instead of separate file, register the template programmatically
-# Prefer filesystem templates; also write HOME_HTML into templates/home.html on first run if missing.
 TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "templates", "home.html")
 if not os.path.exists(TEMPLATE_PATH):
     try:
