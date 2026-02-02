@@ -191,6 +191,29 @@ def home():
 def health():
     return jsonify({"status": "ok", "faiss": bool(faiss is not None)})
 
+
+@app.route('/api/domains')
+def api_domains():
+    """获取可用的数据域列表"""
+    from pathlib import Path
+    data_dir = Path(__file__).parent.parent / "DATA"
+    domain_names = {
+        "shupeidian": "输配电",
+        "jicai": "计划财务",
+        "yingxiao": "营销",
+        "caiwu": "财务",
+        "renliziyuan": "人力资源",
+    }
+    domains = []
+    if data_dir.exists():
+        for d in sorted(data_dir.iterdir()):
+            if d.is_dir() and not d.name.startswith('.'):
+                domains.append({
+                    "code": d.name,
+                    "name": domain_names.get(d.name, d.name)
+                })
+    return jsonify(domains)
+
 @app.route('/extraction')
 def extraction_page():
     """对象抽取与三层架构关联页面"""

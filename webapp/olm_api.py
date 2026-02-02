@@ -191,17 +191,24 @@ def api_relation_stats():
 
 @olm_api.route('/api/olm/run-extraction', methods=['POST'])
 def api_run_extraction():
-    """执行对象抽取"""
+    """执行对象抽取
+
+    请求参数:
+        use_llm (bool): 是否使用LLM命名，默认False
+        target_clusters (int): 目标聚类数，默认15
+        domains (list): 要处理的数据域列表，如 ['shupeidian', 'jicai']，默认 ['shupeidian']
+    """
     try:
         data = request.json or {}
         use_llm = data.get('use_llm', False)
         target_clusters = data.get('target_clusters', 15)
+        domains = data.get('domains', ['shupeidian'])
 
         # 导入抽取模块
         from object_extractor import SemanticObjectExtractionPipeline
 
-        # 获取数据目录
-        data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'DATA')
+        # 获取项目根目录
+        project_root = os.path.dirname(os.path.dirname(__file__))
 
         # 配置数据库
         db_config = {
@@ -212,19 +219,34 @@ def api_run_extraction():
             'database': os.getenv("MYSQL_DB", "eav_db")
         }
 
-        # 执行抽取
-        pipeline = SemanticObjectExtractionPipeline(
-            data_dir=data_dir,
-            db_config=db_config,
-            target_clusters=target_clusters
-        )
-        result = pipeline.run(use_llm=use_llm)
+        # 合并结果
+        total_objects = []
+        total_relations = 0
+        all_clusters = []
+
+        # 对每个域执行抽取
+        for domain in domains:
+            data_dir = os.path.join(project_root, 'DATA', domain)
+            if not os.path.exists(data_dir):
+                continue
+
+            pipeline = SemanticObjectExtractionPipeline(
+                data_dir=data_dir,
+                db_config=db_config,
+                target_clusters=target_clusters
+            )
+            result = pipeline.run(use_llm=use_llm)
+
+            total_objects.extend(result.get('objects', []))
+            total_relations += result.get('relations_count', 0)
+            all_clusters.extend(result.get('clusters', []))
 
         return jsonify({
             'success': True,
-            'objects_count': len(result.get('objects', [])),
-            'relations_count': result.get('relations_count', 0),
-            'clusters': result.get('clusters', [])
+            'objects_count': len(total_objects),
+            'relations_count': total_relations,
+            'clusters': all_clusters,
+            'domains_processed': domains
         })
 
     except ImportError as e:

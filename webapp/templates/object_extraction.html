@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>对象抽取与三层架构关联 - YIMO</title>
+    <title>一模到底本体管理 - DataMind</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -372,15 +372,30 @@
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="page-title">
                     <i class="bi bi-diagram-3"></i>
-                    对象抽取与三层架构关联
+                    一模到底本体管理
                 </h1>
-                <div class="action-buttons">
-                    <button class="btn-action btn-primary-custom" onclick="runExtraction()">
-                        <i class="bi bi-play-fill"></i> 执行抽取
-                    </button>
-                    <button class="btn-action btn-secondary-custom" onclick="exportResults()">
-                        <i class="bi bi-download"></i> 导出结果
-                    </button>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="domain-selector d-flex align-items-center gap-2" style="background:rgba(255,255,255,0.1); padding:0.5rem 1rem; border-radius:8px;">
+                        <span style="font-size:0.9rem; color:#94a3b8;">数据域：</span>
+                        <div id="domainCheckboxes" class="d-flex gap-3">
+                            <label class="d-flex align-items-center gap-1" style="cursor:pointer; color:#e2e8f0;">
+                                <input type="checkbox" class="domain-checkbox" value="shupeidian" checked style="accent-color:#6366f1;">
+                                <span>输配电</span>
+                            </label>
+                            <label class="d-flex align-items-center gap-1" style="cursor:pointer; color:#e2e8f0;">
+                                <input type="checkbox" class="domain-checkbox" value="jicai" style="accent-color:#6366f1;">
+                                <span>计划财务</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-action btn-primary-custom" onclick="runExtraction()">
+                            <i class="bi bi-play-fill"></i> 执行抽取
+                        </button>
+                        <button class="btn-action btn-secondary-custom" onclick="exportResults()">
+                            <i class="bi bi-download"></i> 导出结果
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -576,6 +591,7 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
+            loadDomains();
             loadFromAPI();
             renderObjectCards();
             updateStats();
@@ -812,9 +828,41 @@
             window.addEventListener('resize', () => chart.resize());
         }
 
+        // 获取选中的域
+        function getSelectedDomains() {
+            const checkboxes = document.querySelectorAll('.domain-checkbox:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        // 加载域列表
+        async function loadDomains() {
+            try {
+                const resp = await fetch('/api/domains');
+                const domains = await resp.json();
+                const container = document.getElementById('domainCheckboxes');
+                if (domains.length > 0) {
+                    container.innerHTML = domains.map((d, i) => `
+                        <label class="d-flex align-items-center gap-1" style="cursor:pointer; color:#e2e8f0;">
+                            <input type="checkbox" class="domain-checkbox" value="${d.code}" ${i === 0 ? 'checked' : ''} style="accent-color:#6366f1;">
+                            <span>${d.name}</span>
+                        </label>
+                    `).join('');
+                }
+            } catch(e) {
+                console.log('使用默认域列表');
+            }
+        }
+
         // 执行抽取
         async function runExtraction() {
             const btn = event.target.closest('button');
+            const domains = getSelectedDomains();
+
+            if (domains.length === 0) {
+                alert('请至少选择一个数据域');
+                return;
+            }
+
             btn.disabled = true;
             btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 抽取中...';
 
@@ -822,7 +870,7 @@
                 const response = await fetch('/api/olm/run-extraction', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ use_llm: true })
+                    body: JSON.stringify({ use_llm: true, domains: domains })
                 });
 
                 if (response.ok) {

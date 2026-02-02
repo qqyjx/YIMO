@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YIMO | 对象抽取与三层架构关联</title>
+    <title>DataMind | 一模到底本体管理</title>
     <style>
         /* --- Global Variables & Reset --- */
         :root {
@@ -415,35 +415,33 @@
     <!-- Navigation -->
     <header>
         <nav>
-            <div class="logo">YIMO.</div>
+            <div class="logo">DataMind</div>
             <div class="nav-links">
                 <a href="#" onclick="window.scrollTo(0,0)">首页</a>
                 <a href="#" onclick="openModal('modal-datasets')">数据集</a>
-                <a href="#" onclick="openModal('modal-rag')">RAG 检索</a>
-                <a href="#" onclick="openModal('modal-extraction')" style="color:var(--primary); font-weight:600;">对象抽取</a>
+                <a href="#" onclick="openModal('modal-extraction')" style="color:var(--primary); font-weight:600;">本体管理</a>
             </div>
-            <button class="btn-nav" onclick="openModal('modal-extraction')">对象抽取</button>
+            <button class="btn-nav" onclick="openModal('modal-extraction')">本体管理</button>
         </nav>
     </header>
 
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
-            <h1>对象抽取与<br>三层架构关联</h1>
+            <h1>一模到底<br>本体管理</h1>
             <p>从数据架构表单中智能抽取高度抽象的"对象"，并建立与概念实体、逻辑实体、物理实体的关联关系。采用 SBERT 语义聚类 + 大模型归纳命名算法。</p>
             <div class="hero-btns">
-                <button class="btn-hero btn-primary" onclick="openModal('modal-extraction')">开始对象抽取</button>
+                <button class="btn-hero btn-primary" onclick="openModal('modal-extraction')">开始本体管理</button>
                 <button class="btn-hero btn-secondary" onclick="openModal('modal-datasets')">查看数据集</button>
-                <button class="btn-hero btn-secondary" onclick="openModal('modal-rag')">RAG 检索</button>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
     <footer>
-        <div class="logo" style="margin-bottom: 1rem;">YIMO.</div>
-        <p style="color:var(--text-muted);">对象抽取与三层架构关联系统</p>
-        <p style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);">&copy; 2026 YIMO Platform</p>
+        <div class="logo" style="margin-bottom: 1rem;">DataMind</div>
+        <p style="color:var(--text-muted);">一模到底本体管理系统</p>
+        <p style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);">&copy; 2026 DataMind Platform</p>
     </footer>
 
     <!-- Modals -->
@@ -476,51 +474,11 @@
         </div>
     </div>
 
-    <!-- RAG Modal -->
-    <div id="modal-rag" class="modal-overlay" onclick="closeModal(event, 'modal-rag')">
-        <div class="modal-card" style="max-width:900px;">
-            <div class="modal-header">
-                <h2>RAG 智能检索</h2>
-                <button class="close-btn" onclick="closeModal(null, 'modal-rag')">&times;</button>
-            </div>
-            <div class="modal-body" style="padding:1.5rem;">
-                <div class="grid-2">
-                    <div>
-                        <div class="form-group">
-                            <label>选择数据集</label>
-                            <select id="dsid" class="form-control">
-                                {% for row in stats %}
-                                <option value="{{ row.id }}">[{{ row.id }}] {{ row.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>问题</label>
-                            <input id="rag_q" type="text" class="form-control" placeholder="例如：字段 X 的含义？" />
-                        </div>
-                        <button class="btn-hero btn-primary" style="width:100%" onclick="doRag()">提交查询</button>
-                        <div id="rag_dbg" style="margin-top:1rem; color:var(--text-muted); font-size:0.85rem;">就绪</div>
-                    </div>
-                    <div>
-                        <div class="form-group">
-                            <label>检索上下文</label>
-                            <div id="rag_ctx" class="result-box" style="height:120px; overflow-y:auto;">(暂无)</div>
-                        </div>
-                        <div class="form-group">
-                            <label>LLM 回答</label>
-                            <div id="rag_ans" class="result-box" style="height:120px; overflow-y:auto;">(暂无)</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Object Extraction Modal -->
     <div id="modal-extraction" class="modal-overlay" onclick="closeModal(event, 'modal-extraction')">
         <div class="modal-card">
             <div class="modal-header">
-                <h2>对象抽取与三层架构关联</h2>
+                <h2>一模到底本体管理</h2>
                 <button class="close-btn" onclick="closeModal(null, 'modal-extraction')">&times;</button>
             </div>
             <div class="modal-body">
@@ -557,6 +515,23 @@
                     <div class="stats-card" style="background:linear-gradient(135deg, var(--physical-color), #fbbf24); color:white;">
                         <div class="stats-value" id="stat-physical">-</div>
                         <div class="stats-label" style="color:rgba(255,255,255,0.8);">物理实体</div>
+                    </div>
+                </div>
+
+                <!-- 域选择 -->
+                <div style="padding:1rem 1.5rem; background:#f8fafc; border-bottom:1px solid var(--border);">
+                    <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+                        <span style="font-weight:500; color:var(--text-main);">选择数据域：</span>
+                        <div id="domainCheckboxes" style="display:flex; gap:1rem; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
+                                <input type="checkbox" class="domain-checkbox" value="shupeidian" checked>
+                                <span>输配电</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
+                                <input type="checkbox" class="domain-checkbox" value="jicai">
+                                <span>计划财务</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -599,11 +574,31 @@
     </div>
 
     <script>
+        // 加载域列表
+        async function loadDomains() {
+            try {
+                const resp = await fetch('/api/domains');
+                const domains = await resp.json();
+                const container = document.getElementById('domainCheckboxes');
+                if (domains.length > 0) {
+                    container.innerHTML = domains.map((d, i) => `
+                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
+                            <input type="checkbox" class="domain-checkbox" value="${d.code}" ${i === 0 ? 'checked' : ''}>
+                            <span>${d.name}</span>
+                        </label>
+                    `).join('');
+                }
+            } catch(e) {
+                console.log('使用默认域列表');
+            }
+        }
+
         // Modal Logic
         function openModal(id) {
             document.getElementById(id).classList.add('active');
             document.body.style.overflow = 'hidden';
             if (id === 'modal-extraction') {
+                loadDomains();
                 loadExtractedObjects();
             }
         }
@@ -736,8 +731,20 @@
             }
         }
 
+        function getSelectedDomains() {
+            const checkboxes = document.querySelectorAll('.domain-checkbox:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
         async function runExtraction() {
             const btn = document.getElementById('btn-extract');
+            const domains = getSelectedDomains();
+
+            if (domains.length === 0) {
+                alert('请至少选择一个数据域');
+                return;
+            }
+
             btn.disabled = true;
             btn.textContent = '抽取中...';
 
@@ -745,7 +752,7 @@
                 const resp = await fetch('/api/olm/run-extraction', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ use_llm: false, target_clusters: 15 })
+                    body: JSON.stringify({ use_llm: false, target_clusters: 15, domains: domains })
                 });
                 const data = await resp.json();
 
@@ -777,36 +784,6 @@
             }
         }
 
-        // ============ RAG ============
-        async function doRag() {
-            const dsid = document.getElementById('dsid').value;
-            const q = document.getElementById('rag_q').value.trim();
-            if (!q) { alert('请输入问题'); return; }
-
-            const dbg = document.getElementById('rag_dbg');
-            dbg.textContent = '搜索中...';
-
-            try {
-                const resp = await fetch('/rag/query', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ dataset_id: Number(dsid), query: q })
-                });
-                const data = await resp.json();
-                if (data.error) {
-                    dbg.textContent = '错误: ' + data.error;
-                    return;
-                }
-                document.getElementById('rag_ctx').textContent = (data.retrieved || []).join('\n\n');
-                const llm = data.llm || {};
-                let text = '';
-                try { text = llm.choices[0].message.content; } catch(e) { text = JSON.stringify(llm, null, 2); }
-                document.getElementById('rag_ans').textContent = text;
-                dbg.textContent = '成功';
-            } catch(err) {
-                dbg.textContent = '异常: ' + err;
-            }
-        }
     </script>
 </body>
 </html>
