@@ -77,19 +77,40 @@ def extraction_page():
 
 @olm_api.route('/api/olm/extracted-objects')
 def api_extracted_objects():
-    """获取抽取的对象列表"""
+    """获取抽取的对象列表
+
+    Query参数:
+        domain (str): 数据域过滤，如 'shupeidian'，默认返回所有域
+    """
     try:
-        result = execute_query("""
-            SELECT o.*,
-                   (SELECT COUNT(*) FROM object_entity_relations r
-                    WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
-                   (SELECT COUNT(*) FROM object_entity_relations r
-                    WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
-                   (SELECT COUNT(*) FROM object_entity_relations r
-                    WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
-            FROM extracted_objects o
-            ORDER BY o.object_type, o.object_name
-        """)
+        domain = request.args.get('domain', '')
+
+        # 构建查询SQL（支持domain过滤）
+        if domain:
+            result = execute_query("""
+                SELECT o.*,
+                       (SELECT COUNT(*) FROM object_entity_relations r
+                        WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
+                       (SELECT COUNT(*) FROM object_entity_relations r
+                        WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
+                       (SELECT COUNT(*) FROM object_entity_relations r
+                        WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
+                FROM extracted_objects o
+                WHERE o.data_domain = %s
+                ORDER BY o.object_type, o.object_name
+            """, (domain,))
+        else:
+            result = execute_query("""
+                SELECT o.*,
+                       (SELECT COUNT(*) FROM object_entity_relations r
+                        WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
+                       (SELECT COUNT(*) FROM object_entity_relations r
+                        WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
+                       (SELECT COUNT(*) FROM object_entity_relations r
+                        WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
+                FROM extracted_objects o
+                ORDER BY o.data_domain, o.object_type, o.object_name
+            """)
 
         if isinstance(result, dict) and 'error' in result:
             return jsonify({'objects': [], 'error': result['error']})
@@ -109,55 +130,71 @@ def api_extracted_objects():
             }
             objects.append(row)
 
-        return jsonify({'objects': objects, 'total': len(objects)})
+        return jsonify({'objects': objects, 'total': len(objects), 'domain': domain or 'all'})
     except Exception as e:
         return jsonify({'objects': [], 'error': str(e)})
 
 
 @olm_api.route('/api/olm/object-relations/<object_code>')
 def api_object_relations(object_code):
-    """获取对象与三层架构的关联关系"""
+    """获取对象与三层架构的关联关系
+
+    Query参数:
+        domain (str): 数据域过滤，默认返回所有域的关联
+    """
     try:
-        # 获取对象ID
-        obj_result = execute_query(
-            "SELECT object_id FROM extracted_objects WHERE object_code = %s",
-            (object_code,)
-        )
+        domain = request.args.get('domain', '')
+
+        # 获取对象ID（支持域限定）
+        if domain:
+            obj_result = execute_query(
+                "SELECT object_id, data_domain FROM extracted_objects WHERE object_code = %s AND data_domain = %s",
+                (object_code, domain)
+            )
+        else:
+            obj_result = execute_query(
+                "SELECT object_id, data_domain FROM extracted_objects WHERE object_code = %s",
+                (object_code,)
+            )
 
         if not obj_result or isinstance(obj_result, dict):
             return jsonify({'error': 'Object not found'}), 404
 
         object_id = obj_result[0]['object_id']
 
-        # 获取各层关联
-        concept_result = execute_query("""
-            SELECT entity_name, entity_code, relation_strength, data_domain
-            FROM object_entity_relations
-            WHERE object_id = %s AND entity_layer = 'CONCEPT'
-            ORDER BY relation_strength DESC
-            LIMIT 50
-        """, (object_id,))
+        # 构建关联查询（支持domain过滤）
+        domain_filter = " AND r.data_domain = %s" if domain else ""
+        params = (object_id, domain) if domain else (object_id,)
 
-        logical_result = execute_query("""
+        concept_result = execute_query(f"""
             SELECT entity_name, entity_code, relation_strength, data_domain
-            FROM object_entity_relations
-            WHERE object_id = %s AND entity_layer = 'LOGICAL'
+            FROM object_entity_relations r
+            WHERE object_id = %s AND entity_layer = 'CONCEPT'{domain_filter}
             ORDER BY relation_strength DESC
             LIMIT 50
-        """, (object_id,))
+        """, params)
 
-        physical_result = execute_query("""
+        logical_result = execute_query(f"""
             SELECT entity_name, entity_code, relation_strength, data_domain
-            FROM object_entity_relations
-            WHERE object_id = %s AND entity_layer = 'PHYSICAL'
+            FROM object_entity_relations r
+            WHERE object_id = %s AND entity_layer = 'LOGICAL'{domain_filter}
             ORDER BY relation_strength DESC
             LIMIT 50
-        """, (object_id,))
+        """, params)
+
+        physical_result = execute_query(f"""
+            SELECT entity_name, entity_code, relation_strength, data_domain
+            FROM object_entity_relations r
+            WHERE object_id = %s AND entity_layer = 'PHYSICAL'{domain_filter}
+            ORDER BY relation_strength DESC
+            LIMIT 50
+        """, params)
 
         return jsonify({
             'concept': concept_result if not isinstance(concept_result, dict) else [],
             'logical': logical_result if not isinstance(logical_result, dict) else [],
-            'physical': physical_result if not isinstance(physical_result, dict) else []
+            'physical': physical_result if not isinstance(physical_result, dict) else [],
+            'domain': domain or 'all'
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -165,12 +202,25 @@ def api_object_relations(object_code):
 
 @olm_api.route('/api/olm/relation-stats')
 def api_relation_stats():
-    """获取对象关联统计"""
+    """获取对象关联统计
+
+    Query参数:
+        domain (str): 数据域过滤
+    """
     try:
-        result = execute_query("""
-            SELECT * FROM v_object_relation_stats
-            ORDER BY total_entity_count DESC
-        """)
+        domain = request.args.get('domain', '')
+
+        if domain:
+            result = execute_query("""
+                SELECT * FROM v_object_relation_stats
+                WHERE data_domain = %s
+                ORDER BY total_entity_count DESC
+            """, (domain,))
+        else:
+            result = execute_query("""
+                SELECT * FROM v_object_relation_stats
+                ORDER BY data_domain, total_entity_count DESC
+            """)
 
         if isinstance(result, dict) and 'error' in result:
             return jsonify({'stats': [], 'error': result['error']})
@@ -180,7 +230,7 @@ def api_relation_stats():
             if row.get('avg_relation_strength'):
                 row['avg_relation_strength'] = float(row['avg_relation_strength'])
 
-        return jsonify({'stats': result, 'total': len(result)})
+        return jsonify({'stats': result, 'total': len(result), 'domain': domain or 'all'})
     except Exception as e:
         return jsonify({'stats': [], 'error': str(e)})
 
@@ -197,18 +247,21 @@ def api_run_extraction():
         use_llm (bool): 是否使用LLM命名，默认False
         target_clusters (int): 目标聚类数，默认15
         domains (list): 要处理的数据域列表，如 ['shupeidian', 'jicai']，默认 ['shupeidian']
+        excel_files (dict): 可选，指定每个域的Excel文件列表，如 {'shupeidian': ['1.xlsx', '2.xlsx']}
     """
     try:
         data = request.json or {}
         use_llm = data.get('use_llm', False)
         target_clusters = data.get('target_clusters', 15)
         domains = data.get('domains', ['shupeidian'])
+        excel_files_map = data.get('excel_files', {})  # 每个域对应的文件列表
 
         # 导入抽取模块
         from object_extractor import SemanticObjectExtractionPipeline
 
         # 获取项目根目录
         project_root = os.path.dirname(os.path.dirname(__file__))
+        data_dir = os.path.join(project_root, 'DATA')
 
         # 配置数据库
         db_config = {
@@ -223,30 +276,38 @@ def api_run_extraction():
         total_objects = []
         total_relations = 0
         all_clusters = []
+        processed_domains = []
 
-        # 对每个域执行抽取
+        # 对每个域执行抽取（所有文件都在DATA目录下）
         for domain in domains:
-            data_dir = os.path.join(project_root, 'DATA', domain)
-            if not os.path.exists(data_dir):
-                continue
+            # 获取该域的文件列表（从请求参数或使用默认配置）
+            domain_files = excel_files_map.get(domain, None)
 
             pipeline = SemanticObjectExtractionPipeline(
                 data_dir=data_dir,
                 db_config=db_config,
-                target_clusters=target_clusters
+                target_clusters=target_clusters,
+                data_domain=domain,
+                excel_files=domain_files  # 如果为None，将使用DOMAIN_CONFIG配置
             )
             result = pipeline.run(use_llm=use_llm)
 
             total_objects.extend(result.get('objects', []))
             total_relations += result.get('relations_count', 0)
             all_clusters.extend(result.get('clusters', []))
+            processed_domains.append({
+                'domain': domain,
+                'domain_name': result.get('data_domain_name', ''),
+                'objects_count': len(result.get('objects', [])),
+                'relations_count': result.get('relations_count', 0)
+            })
 
         return jsonify({
             'success': True,
             'objects_count': len(total_objects),
             'relations_count': total_relations,
             'clusters': all_clusters,
-            'domains_processed': domains
+            'domains_processed': processed_domains
         })
 
     except ImportError as e:
@@ -265,21 +326,39 @@ def api_run_extraction():
 
 @olm_api.route('/api/olm/export-objects')
 def api_export_objects():
-    """导出抽取的对象和关联关系"""
-    try:
-        # 获取对象
-        objects = execute_query("""
-            SELECT * FROM extracted_objects ORDER BY object_type, object_name
-        """)
+    """导出抽取的对象和关联关系
 
-        # 获取关联关系
-        relations = execute_query("""
-            SELECT o.object_code, r.entity_layer, r.entity_name, r.entity_code,
-                   r.relation_type, r.relation_strength, r.data_domain
-            FROM object_entity_relations r
-            JOIN extracted_objects o ON o.object_id = r.object_id
-            ORDER BY o.object_code, r.entity_layer, r.relation_strength DESC
-        """)
+    Query参数:
+        domain (str): 数据域过滤，默认导出所有域
+    """
+    try:
+        domain = request.args.get('domain', '')
+
+        # 获取对象（支持domain过滤）
+        if domain:
+            objects = execute_query("""
+                SELECT * FROM extracted_objects WHERE data_domain = %s
+                ORDER BY object_type, object_name
+            """, (domain,))
+            relations = execute_query("""
+                SELECT o.object_code, o.data_domain as object_domain, r.entity_layer, r.entity_name, r.entity_code,
+                       r.relation_type, r.relation_strength, r.data_domain
+                FROM object_entity_relations r
+                JOIN extracted_objects o ON o.object_id = r.object_id
+                WHERE o.data_domain = %s
+                ORDER BY o.object_code, r.entity_layer, r.relation_strength DESC
+            """, (domain,))
+        else:
+            objects = execute_query("""
+                SELECT * FROM extracted_objects ORDER BY data_domain, object_type, object_name
+            """)
+            relations = execute_query("""
+                SELECT o.object_code, o.data_domain as object_domain, r.entity_layer, r.entity_name, r.entity_code,
+                       r.relation_type, r.relation_strength, r.data_domain
+                FROM object_entity_relations r
+                JOIN extracted_objects o ON o.object_id = r.object_id
+                ORDER BY o.data_domain, o.object_code, r.entity_layer, r.relation_strength DESC
+            """)
 
         # 处理日期时间
         if not isinstance(objects, dict):
@@ -295,14 +374,16 @@ def api_export_objects():
 
         export_data = {
             'export_time': datetime.now().isoformat(),
+            'domain': domain or 'all',
             'objects': objects if not isinstance(objects, dict) else [],
             'relations': relations if not isinstance(relations, dict) else []
         }
 
+        filename = f'extracted_objects_{domain}.json' if domain else 'extracted_objects_all.json'
         return Response(
             json.dumps(export_data, ensure_ascii=False, indent=2),
             mimetype='application/json',
-            headers={'Content-Disposition': 'attachment; filename=extracted_objects.json'}
+            headers={'Content-Disposition': f'attachment; filename={filename}'}
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -314,21 +395,29 @@ def api_export_objects():
 
 @olm_api.route('/api/olm/objects', methods=['POST'])
 def api_create_object():
-    """创建新对象"""
+    """创建新对象
+
+    请求参数:
+        object_code (str): 对象编码
+        object_name (str): 对象名称
+        data_domain (str): 数据域，默认'default'
+        ...其他字段
+    """
     try:
         data = request.json or {}
 
         object_code = data.get('object_code')
         object_name = data.get('object_name')
+        data_domain = data.get('data_domain', 'default')
 
         if not object_code or not object_name:
             return jsonify({'error': 'Missing object_code or object_name'}), 400
 
         sql = """
             INSERT INTO extracted_objects
-            (object_code, object_name, object_name_en, object_type, description,
+            (object_code, object_name, object_name_en, object_type, data_domain, description,
              extraction_source, extraction_confidence, is_verified)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
         result = execute_query(sql, (
@@ -336,6 +425,7 @@ def api_create_object():
             object_name,
             data.get('object_name_en', ''),
             data.get('object_type', 'CORE'),
+            data_domain,
             data.get('description', ''),
             'MANUAL',
             1.0,
@@ -345,7 +435,7 @@ def api_create_object():
         if isinstance(result, dict) and 'error' in result:
             return jsonify(result), 500
 
-        return jsonify({'success': True, 'object_id': result})
+        return jsonify({'success': True, 'object_id': result, 'data_domain': data_domain})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -445,44 +535,100 @@ def api_extraction_batches():
 
 @olm_api.route('/api/olm/stats')
 def api_stats():
-    """获取系统统计信息"""
+    """获取系统统计信息
+
+    Query参数:
+        domain (str): 数据域过滤，默认返回全局统计
+    """
     try:
-        stats = {}
+        domain = request.args.get('domain', '')
+        stats = {'domain': domain or 'all'}
 
         # 对象统计
-        result = execute_query("SELECT COUNT(*) as cnt FROM extracted_objects")
+        if domain:
+            result = execute_query("SELECT COUNT(*) as cnt FROM extracted_objects WHERE data_domain = %s", (domain,))
+        else:
+            result = execute_query("SELECT COUNT(*) as cnt FROM extracted_objects")
         stats['objects_count'] = result[0]['cnt'] if result and not isinstance(result, dict) else 0
 
         # 关联关系统计
-        result = execute_query("SELECT COUNT(*) as cnt FROM object_entity_relations")
+        if domain:
+            result = execute_query("""
+                SELECT COUNT(*) as cnt FROM object_entity_relations r
+                JOIN extracted_objects o ON o.object_id = r.object_id
+                WHERE o.data_domain = %s
+            """, (domain,))
+        else:
+            result = execute_query("SELECT COUNT(*) as cnt FROM object_entity_relations")
         stats['relations_count'] = result[0]['cnt'] if result and not isinstance(result, dict) else 0
 
         # 按层级统计关联
-        result = execute_query("""
-            SELECT entity_layer, COUNT(*) as cnt
-            FROM object_entity_relations
-            GROUP BY entity_layer
-        """)
+        if domain:
+            result = execute_query("""
+                SELECT r.entity_layer, COUNT(*) as cnt
+                FROM object_entity_relations r
+                JOIN extracted_objects o ON o.object_id = r.object_id
+                WHERE o.data_domain = %s
+                GROUP BY r.entity_layer
+            """, (domain,))
+        else:
+            result = execute_query("""
+                SELECT entity_layer, COUNT(*) as cnt
+                FROM object_entity_relations
+                GROUP BY entity_layer
+            """)
         if result and not isinstance(result, dict):
             stats['relations_by_layer'] = {r['entity_layer']: r['cnt'] for r in result}
         else:
             stats['relations_by_layer'] = {}
 
         # 按对象类型统计
-        result = execute_query("""
-            SELECT object_type, COUNT(*) as cnt
-            FROM extracted_objects
-            GROUP BY object_type
-        """)
+        if domain:
+            result = execute_query("""
+                SELECT object_type, COUNT(*) as cnt
+                FROM extracted_objects
+                WHERE data_domain = %s
+                GROUP BY object_type
+            """, (domain,))
+        else:
+            result = execute_query("""
+                SELECT object_type, COUNT(*) as cnt
+                FROM extracted_objects
+                GROUP BY object_type
+            """)
         if result and not isinstance(result, dict):
             stats['objects_by_type'] = {r['object_type']: r['cnt'] for r in result}
         else:
             stats['objects_by_type'] = {}
 
         # 批次统计
-        result = execute_query("SELECT COUNT(*) as cnt FROM object_extraction_batches")
+        if domain:
+            result = execute_query("SELECT COUNT(*) as cnt FROM object_extraction_batches WHERE data_domain = %s", (domain,))
+        else:
+            result = execute_query("SELECT COUNT(*) as cnt FROM object_extraction_batches")
         stats['batches_count'] = result[0]['cnt'] if result and not isinstance(result, dict) else 0
 
         return jsonify(stats)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/domain-stats')
+def api_domain_stats():
+    """获取各数据域的统计信息"""
+    try:
+        result = execute_query("""
+            SELECT * FROM v_domain_stats ORDER BY object_count DESC
+        """)
+
+        if isinstance(result, dict) and 'error' in result:
+            return jsonify({'stats': [], 'error': result['error']})
+
+        # 处理 Decimal 类型
+        for row in result:
+            if row.get('avg_relation_strength'):
+                row['avg_relation_strength'] = float(row['avg_relation_strength'])
+
+        return jsonify({'stats': result, 'total': len(result)})
+    except Exception as e:
+        return jsonify({'stats': [], 'error': str(e)})

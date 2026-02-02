@@ -134,23 +134,113 @@ class EntityRelation:
 
 
 # ============================================================
+# 数据域配置
+# ============================================================
+
+# 数据域定义（可通过配置扩展）
+# 所有域的Excel文件统一存放在DATA目录下
+DOMAIN_CONFIG = {
+    "shupeidian": {
+        "name": "输配电",
+        "files": ["1.xlsx", "2.xlsx", "3.xlsx"],  # 输配电域的三份Excel
+        "sheet_config": {
+            "concept": "DA-01 数据实体清单-概念实体清单",
+            "logical": "DA-02 数据实体清单-逻辑实体清单",
+            "physical": "DA-03数据实体清单-物理实体清单"
+        }
+    },
+    "jicai": {
+        "name": "集采",
+        "files": [],  # 待配置：集采域的Excel文件
+        "sheet_config": {
+            "concept": "DA-01 数据实体清单-概念实体清单",
+            "logical": "DA-02 数据实体清单-逻辑实体清单",
+            "physical": "DA-03数据实体清单-物理实体清单"
+        }
+    },
+    "yingxiao": {
+        "name": "营销",
+        "files": [],  # 待配置
+        "sheet_config": {
+            "concept": "DA-01 数据实体清单-概念实体清单",
+            "logical": "DA-02 数据实体清单-逻辑实体清单",
+            "physical": "DA-03数据实体清单-物理实体清单"
+        }
+    },
+    "caiwu": {
+        "name": "财务",
+        "files": [],  # 待配置
+        "sheet_config": {
+            "concept": "DA-01 数据实体清单-概念实体清单",
+            "logical": "DA-02 数据实体清单-逻辑实体清单",
+            "physical": "DA-03数据实体清单-物理实体清单"
+        }
+    },
+    "renliziyuan": {
+        "name": "人力资源",
+        "files": [],  # 待配置
+        "sheet_config": {
+            "concept": "DA-01 数据实体清单-概念实体清单",
+            "logical": "DA-02 数据实体清单-逻辑实体清单",
+            "physical": "DA-03数据实体清单-物理实体清单"
+        }
+    },
+    "default": {
+        "name": "默认",
+        "files": ["2.xlsx"],  # 默认使用2.xlsx
+        "sheet_config": {
+            "concept": "DA-01 数据实体清单-概念实体清单",
+            "logical": "DA-02 数据实体清单-逻辑实体清单",
+            "physical": "DA-03数据实体清单-物理实体清单"
+        }
+    }
+}
+
+
+def get_domain_name(domain_code: str) -> str:
+    """获取数据域的中文名称"""
+    config = DOMAIN_CONFIG.get(domain_code, DOMAIN_CONFIG["default"])
+    return config.get("name", domain_code)
+
+
+# ============================================================
 # 数据读取器
 # ============================================================
 
 class DataArchitectureReader:
-    """数据架构读取器"""
+    """数据架构读取器 - 支持多数据域"""
 
-    def __init__(self, data_dir: str = "DATA"):
+    def __init__(self, data_dir: str = "DATA", data_domain: str = "default",
+                 excel_files: List[str] = None, domain_config: Dict = None):
+        """
+        初始化数据读取器
+
+        Args:
+            data_dir: 数据目录路径
+            data_domain: 数据域编码
+            excel_files: 指定的Excel文件列表（如果为None则自动查找）
+            domain_config: 自定义域配置（覆盖默认配置）
+        """
         self.data_dir = Path(data_dir)
+        self.data_domain = data_domain
+        self.excel_files = excel_files
         self.entities: List[EntityInfo] = []
+
+        # 获取域配置
+        self.config = domain_config or DOMAIN_CONFIG.get(data_domain, DOMAIN_CONFIG["default"])
 
     def read_all(self) -> List[EntityInfo]:
         """读取所有三层架构实体"""
-        print("[INFO] 开始读取三层架构数据...")
+        print(f"[INFO] 开始读取三层架构数据 (数据域: {self.data_domain})...")
 
-        # 读取 2.xlsx - 数据架构
-        data_file = self.data_dir / "2.xlsx"
-        if data_file.exists():
+        # 确定要读取的文件列表
+        files_to_read = self._get_files_to_read()
+
+        if not files_to_read:
+            print(f"[WARN] 数据目录 {self.data_dir} 中未找到数据文件")
+            return self.entities
+
+        for data_file in files_to_read:
             print(f"  读取 {data_file}...")
             self._read_concept_entities(data_file)
             self._read_logical_entities(data_file)
@@ -161,7 +251,7 @@ class DataArchitectureReader:
         logical_count = len([e for e in self.entities if e.layer == "LOGICAL"])
         physical_count = len([e for e in self.entities if e.layer == "PHYSICAL"])
 
-        print(f"[INFO] 数据读取完成:")
+        print(f"[INFO] 数据读取完成 (域: {self.data_domain}):")
         print(f"  - 概念实体: {concept_count} 条")
         print(f"  - 逻辑实体: {logical_count} 条")
         print(f"  - 物理实体: {physical_count} 条")
@@ -169,69 +259,113 @@ class DataArchitectureReader:
 
         return self.entities
 
+    def _get_files_to_read(self) -> List[Path]:
+        """确定要读取的文件列表"""
+        files = []
+
+        # 如果明确指定了文件列表（命令行参数或API调用）
+        if self.excel_files:
+            for f in self.excel_files:
+                file_path = Path(f) if Path(f).is_absolute() else self.data_dir / f
+                if file_path.exists():
+                    files.append(file_path)
+                else:
+                    print(f"[WARN] 文件不存在: {file_path}")
+            return files
+
+        # 根据域配置获取文件列表
+        config_files = self.config.get("files", [])
+
+        if config_files:
+            # 使用配置中指定的文件列表
+            for f in config_files:
+                file_path = self.data_dir / f
+                if file_path.exists():
+                    files.append(file_path)
+                else:
+                    print(f"[WARN] 配置文件不存在: {file_path}")
+        else:
+            # 没有配置文件列表，读取目录下所有xlsx文件
+            files = list(self.data_dir.glob("*.xlsx"))
+            print(f"[INFO] 数据域 {self.data_domain} 未配置文件列表，读取所有xlsx文件")
+
+        # 排序以保证一致性
+        files.sort(key=lambda x: x.name)
+        return files
+
     def _read_concept_entities(self, file_path: Path):
         """读取概念实体清单"""
+        sheet_name = self.config.get("sheet_config", {}).get("concept", "DA-01 数据实体清单-概念实体清单")
         try:
-            df = pd.read_excel(file_path, sheet_name='DA-01 数据实体清单-概念实体清单')
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
             seen = set()
             for idx, row in df.iterrows():
                 name = str(row.get("概念实体", "")).strip()
                 if name and name != "nan" and name not in seen:
                     seen.add(name)
+                    # 优先使用Excel中的数据域，如果为空则使用配置的数据域
+                    excel_domain = str(row.get("数据域", "")).strip()
+                    domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
                     self.entities.append(EntityInfo(
                         name=name,
                         layer="CONCEPT",
                         code=str(row.get("概念实体编号", "")).strip(),
-                        data_domain=str(row.get("数据域", "")).strip(),
+                        data_domain=domain,
                         data_subdomain=str(row.get("数据子域", "")).strip(),
                         source_file=str(file_path.name),
-                        source_sheet="DA-01 概念实体清单",
+                        source_sheet=sheet_name,
                         source_row=idx + 2
                     ))
         except Exception as e:
-            print(f"[ERROR] 读取概念实体失败: {e}")
+            print(f"[ERROR] 读取概念实体失败 ({file_path.name}): {e}")
 
     def _read_logical_entities(self, file_path: Path):
         """读取逻辑实体清单"""
+        sheet_name = self.config.get("sheet_config", {}).get("logical", "DA-02 数据实体清单-逻辑实体清单")
         try:
-            df = pd.read_excel(file_path, sheet_name='DA-02 数据实体清单-逻辑实体清单')
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
             seen = set()
             for idx, row in df.iterrows():
                 name = str(row.get("逻辑实体名称", "")).strip()
                 if name and name != "nan" and name not in seen:
                     seen.add(name)
+                    excel_domain = str(row.get("数据域", "")).strip()
+                    domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
                     self.entities.append(EntityInfo(
                         name=name,
                         layer="LOGICAL",
                         code=str(row.get("逻辑实体编码", "")).strip(),
-                        data_domain=str(row.get("数据域", "")).strip(),
+                        data_domain=domain,
                         source_file=str(file_path.name),
-                        source_sheet="DA-02 逻辑实体清单",
+                        source_sheet=sheet_name,
                         source_row=idx + 2
                     ))
         except Exception as e:
-            print(f"[ERROR] 读取逻辑实体失败: {e}")
+            print(f"[ERROR] 读取逻辑实体失败 ({file_path.name}): {e}")
 
     def _read_physical_entities(self, file_path: Path):
         """读取物理实体清单"""
+        sheet_name = self.config.get("sheet_config", {}).get("physical", "DA-03数据实体清单-物理实体清单")
         try:
-            df = pd.read_excel(file_path, sheet_name='DA-03数据实体清单-物理实体清单')
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
             seen = set()
             for idx, row in df.iterrows():
                 name = str(row.get("物理实体名称", "")).strip()
                 if name and name != "nan" and name not in seen:
                     seen.add(name)
+                    excel_domain = str(row.get("数据域", "")).strip()
+                    domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
                     self.entities.append(EntityInfo(
                         name=name,
                         layer="PHYSICAL",
                         code=str(row.get("物理实体编码", "")).strip(),
-                        data_domain=str(row.get("数据域", "")).strip(),
+                        data_domain=domain,
                         source_file=str(file_path.name),
-                        source_sheet="DA-03 物理实体清单",
+                        source_sheet=sheet_name,
                         source_row=idx + 2
                     ))
         except Exception as e:
-            print(f"[ERROR] 读取物理实体失败: {e}")
+            print(f"[ERROR] 读取物理实体失败 ({file_path.name}): {e}")
 
 
 # ============================================================
@@ -721,10 +855,11 @@ class ClusterRelationBuilder:
 # ============================================================
 
 class DatabaseWriter:
-    """数据库写入器"""
+    """数据库写入器 - 支持多数据域"""
 
     def __init__(self, host: str = "localhost", port: int = 3307,
-                 user: str = "root", password: str = "", database: str = "yimo"):
+                 user: str = "root", password: str = "", database: str = "yimo",
+                 data_domain: str = "default"):
         self.db_config = {
             "host": host,
             "port": port,
@@ -733,20 +868,25 @@ class DatabaseWriter:
             "database": database,
             "charset": "utf8mb4"
         }
+        self.data_domain = data_domain
+        self.data_domain_name = get_domain_name(data_domain)
 
     def write_objects(self, objects: List[ExtractedObject], batch_id: int) -> Dict[str, int]:
-        """写入对象到数据库"""
+        """写入对象到数据库（支持数据域）"""
         object_ids = {}
 
         with pymysql.connect(**self.db_config) as conn:
             with conn.cursor() as cursor:
                 for obj in objects:
                     try:
+                        # 对象编码需要加上域前缀以支持多域唯一性
+                        domain_object_code = f"{obj.object_code}_{self.data_domain}" if self.data_domain != "default" else obj.object_code
+
                         sql = """
                         INSERT INTO extracted_objects
-                        (object_code, object_name, object_name_en, object_type, description,
-                         extraction_source, extraction_confidence, llm_reasoning, is_verified)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        (object_code, object_name, object_name_en, object_type, data_domain,
+                         description, extraction_source, extraction_confidence, llm_reasoning, is_verified)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ON DUPLICATE KEY UPDATE
                         object_name = VALUES(object_name),
                         description = VALUES(description),
@@ -755,13 +895,16 @@ class DatabaseWriter:
                         llm_reasoning = VALUES(llm_reasoning)
                         """
                         cursor.execute(sql, (
-                            obj.object_code, obj.object_name, obj.object_name_en,
-                            obj.object_type, obj.description, obj.extraction_source,
+                            domain_object_code, obj.object_name, obj.object_name_en,
+                            obj.object_type, self.data_domain, obj.description, obj.extraction_source,
                             obj.extraction_confidence, obj.llm_reasoning, False
                         ))
 
-                        cursor.execute("SELECT object_id FROM extracted_objects WHERE object_code = %s",
-                                     (obj.object_code,))
+                        # 查询时使用域限定
+                        cursor.execute(
+                            "SELECT object_id FROM extracted_objects WHERE object_code = %s AND data_domain = %s",
+                            (domain_object_code, self.data_domain)
+                        )
                         result = cursor.fetchone()
                         if result:
                             object_ids[obj.object_code] = result[0]
@@ -784,7 +927,7 @@ class DatabaseWriter:
 
                 conn.commit()
 
-        print(f"[INFO] 成功写入 {len(object_ids)} 个对象")
+        print(f"[INFO] 成功写入 {len(object_ids)} 个对象 (域: {self.data_domain})")
         return object_ids
 
     def write_relations(self, relations: List[EntityRelation], object_ids: Dict[str, int]):
@@ -826,16 +969,16 @@ class DatabaseWriter:
         return count
 
     def create_batch(self, source_files: List[str], llm_model: str = "") -> int:
-        """创建抽取批次"""
-        batch_code = f"SEMANTIC_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        """创建抽取批次（支持数据域）"""
+        batch_code = f"SEMANTIC_{self.data_domain}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
         with pymysql.connect(**self.db_config) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
                 INSERT INTO object_extraction_batches
-                (batch_code, source_files, llm_model, status)
-                VALUES (%s, %s, %s, 'RUNNING')
-                """, (batch_code, json.dumps(source_files), llm_model))
+                (batch_code, data_domain, data_domain_name, source_files, llm_model, status)
+                VALUES (%s, %s, %s, %s, %s, 'RUNNING')
+                """, (batch_code, self.data_domain, self.data_domain_name, json.dumps(source_files), llm_model))
                 conn.commit()
                 return cursor.lastrowid
 
@@ -856,13 +999,27 @@ class DatabaseWriter:
 # ============================================================
 
 class SemanticObjectExtractionPipeline:
-    """语义聚类对象抽取流水线"""
+    """语义聚类对象抽取流水线 - 支持多数据域"""
 
     def __init__(self, data_dir: str = "DATA", db_config: Dict = None,
-                 target_clusters: int = TARGET_CLUSTER_COUNT):
+                 target_clusters: int = TARGET_CLUSTER_COUNT,
+                 data_domain: str = "default", excel_files: List[str] = None):
+        """
+        初始化流水线
+
+        Args:
+            data_dir: 数据目录路径
+            db_config: 数据库配置
+            target_clusters: 目标聚类数量
+            data_domain: 数据域编码
+            excel_files: 指定的Excel文件列表（覆盖域配置）
+        """
         self.data_dir = data_dir
         self.db_config = db_config or {}
         self.target_clusters = target_clusters
+        self.data_domain = data_domain
+        self.data_domain_name = get_domain_name(data_domain)
+        self.excel_files = excel_files
 
     def run(self, use_llm: bool = True) -> Dict:
         """执行抽取流水线"""
@@ -870,16 +1027,21 @@ class SemanticObjectExtractionPipeline:
         print("语义聚类对象抽取流水线启动")
         print("=" * 60)
         print(f"算法：自下而上的归纳抽取")
+        print(f"数据域：{self.data_domain} ({self.data_domain_name})")
         print(f"目标聚类数：{self.target_clusters}")
         print()
 
-        # 1. 读取三层架构数据
-        reader = DataArchitectureReader(self.data_dir)
+        # 1. 读取三层架构数据（支持多数据域）
+        reader = DataArchitectureReader(
+            data_dir=self.data_dir,
+            data_domain=self.data_domain,
+            excel_files=self.excel_files
+        )
         entities = reader.read_all()
 
         if not entities:
             print("[ERROR] 没有读取到任何实体数据")
-            return {"objects": [], "relations_count": 0, "stats": {}}
+            return {"objects": [], "relations_count": 0, "stats": {}, "data_domain": self.data_domain}
 
         # 2. 语义聚类
         extractor = SemanticClusterExtractor(target_clusters=self.target_clusters)
@@ -912,11 +1074,15 @@ class SemanticObjectExtractionPipeline:
             print(f"  {obj_code}:")
             print(f"    概念实体: {obj_stats['concept']} | 逻辑实体: {obj_stats['logical']} | 物理实体: {obj_stats['physical']}")
 
-        # 6. 写入数据库
+        # 6. 写入数据库（支持数据域）
         if self.db_config:
             try:
-                writer = DatabaseWriter(**self.db_config)
-                source_files = [f for f in os.listdir(self.data_dir) if f.endswith('.xlsx')]
+                # 传递data_domain到DatabaseWriter
+                db_config_with_domain = {**self.db_config, "data_domain": self.data_domain}
+                writer = DatabaseWriter(**db_config_with_domain)
+
+                # 获取实际读取的文件列表
+                source_files = self.excel_files or [f for f in os.listdir(self.data_dir) if f.endswith('.xlsx')]
                 batch_id = writer.create_batch(source_files, "deepseek-chat")
                 object_ids = writer.write_objects(objects, batch_id)
                 rel_count = writer.write_relations(relations, object_ids)
@@ -928,7 +1094,9 @@ class SemanticObjectExtractionPipeline:
             "objects": [asdict(o) for o in objects],
             "clusters": [{k: v for k, v in c.items() if k != "all_entities"} for c in clusters],
             "relations_count": len(relations),
-            "stats": stats
+            "stats": stats,
+            "data_domain": self.data_domain,
+            "data_domain_name": self.data_domain_name
         }
 
     def _compute_stats(self, objects: List[ExtractedObject], relations: List[EntityRelation]) -> Dict:
@@ -955,8 +1123,10 @@ class SemanticObjectExtractionPipeline:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="语义聚类对象抽取器")
+    parser = argparse.ArgumentParser(description="语义聚类对象抽取器 - 支持多数据域")
     parser.add_argument("--data-dir", default="DATA", help="数据目录")
+    parser.add_argument("--data-domain", default="default", help="数据域编码 (如 shupeidian, jicai)")
+    parser.add_argument("--excel-files", nargs="+", default=None, help="指定要读取的Excel文件列表 (覆盖域配置)")
     parser.add_argument("--target-clusters", type=int, default=TARGET_CLUSTER_COUNT, help="目标聚类数量")
     parser.add_argument("--db-host", default="localhost", help="数据库主机")
     parser.add_argument("--db-port", type=int, default=3307, help="数据库端口")
@@ -966,8 +1136,19 @@ if __name__ == "__main__":
     parser.add_argument("--use-llm", action="store_true", help="使用大模型命名")
     parser.add_argument("--no-db", action="store_true", help="不写入数据库")
     parser.add_argument("--output", "-o", default=None, help="输出JSON文件路径")
+    parser.add_argument("--list-domains", action="store_true", help="列出所有可用的数据域配置")
 
     args = parser.parse_args()
+
+    # 列出可用的数据域
+    if args.list_domains:
+        print("可用的数据域配置:")
+        print("-" * 50)
+        for code, config in DOMAIN_CONFIG.items():
+            files = config.get("files", [])
+            files_str = ", ".join(files) if files else "(未配置文件)"
+            print(f"  {code:15s} | {config['name']:10s} | {files_str}")
+        exit(0)
 
     db_config = None
     if not args.no_db:
@@ -980,9 +1161,11 @@ if __name__ == "__main__":
         }
 
     pipeline = SemanticObjectExtractionPipeline(
-        args.data_dir,
-        db_config,
-        target_clusters=args.target_clusters
+        data_dir=args.data_dir,
+        db_config=db_config,
+        target_clusters=args.target_clusters,
+        data_domain=args.data_domain,
+        excel_files=args.excel_files
     )
     result = pipeline.run(use_llm=args.use_llm)
 
@@ -990,6 +1173,7 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("抽取结果摘要")
     print("=" * 60)
+    print(f"数据域: {result.get('data_domain', 'default')} ({result.get('data_domain_name', '')})")
     print(f"核心对象数量: {len(result['objects'])}")
     print(f"关联关系数量: {result['relations_count']}")
 
