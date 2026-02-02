@@ -296,6 +296,7 @@ flowchart TB
 ```bash
 # 1. 初始化数据库（包含生命周期表）
 mysql -u root -p eav_db < mysql-local/bootstrap.sql
+mysql -u root -p eav_db < mysql-local/object_extraction.sql  # 对象抽取表
 
 # 2. 按阶段导入数据
 python scripts/import_all.py --stage planning --incremental ./dataset/可研/
@@ -314,8 +315,149 @@ cd webapp && ./start_web.sh
 
 # 访问
 # http://localhost:5000/lifecycle  - 统一本体可视化
+# http://localhost:5000/olm        - 对象生命周期管理器（含对象抽取）
 # http://localhost:5000/anomalies  - 异常监控
 ```
+
+---
+
+## 🎯 对象抽取与三层架构关联
+
+### 核心概念
+
+**对象 (Object)** 是从数据架构中抽取的高度抽象概念，如"项目"、"设备"、"资产"、"合同"等。这些对象是贯穿三层架构（概念实体、逻辑实体、物理实体）的核心业务实体。
+
+**三层架构**：
+
+| 层级 | 英文 | 说明 | Excel来源 |
+|------|------|------|-----------|
+| 概念实体 | Concept Entity | 业务场景层，定义业务概念 | DA-01 概念实体清单 |
+| 逻辑实体 | Logical Entity | 交互表单层，定义数据项和属性 | DA-02 逻辑实体清单 |
+| 物理实体 | Physical Entity | 数据库层，定义存储结构 | DA-03 物理实体清单 |
+
+> 📄 算法流程图：[figures/architecture/object_extraction_algorithm.mmd](figures/architecture/object_extraction_algorithm.mmd)
+
+```mermaid
+%%{init: {'theme': 'base'}}%%
+flowchart TB
+    subgraph Phase1["阶段一：数据采集"]
+        A1[("DATA目录<br/>Excel文件")] --> A2["读取三层架构表"]
+        A2 --> A3["概念实体清单"]
+        A2 --> A4["逻辑实体清单"]
+        A2 --> A5["物理实体清单"]
+    end
+
+    subgraph Phase2["阶段二：候选识别"]
+        A3 & A4 & A5 --> B1["名词短语提取<br/>NLP分词"]
+        B1 --> B2["领域关键词匹配"]
+        B2 --> B3["候选对象列表"]
+    end
+
+    subgraph Phase3["阶段三：大模型抽取"]
+        B3 --> C1["构造提示词"]
+        C1 --> C2{"调用大模型<br/>DeepSeek/GPT"}
+        C2 --> C3["输出核心对象<br/>项目、设备、人员..."]
+    end
+
+    subgraph Phase4["阶段四：关联构建"]
+        C3 --> D1["语义相似度计算<br/>SBERT向量"]
+        D1 --> D2["对象-概念实体<br/>关联矩阵"]
+        D1 --> D3["对象-逻辑实体<br/>关联矩阵"]
+        D1 --> D4["对象-物理实体<br/>关联矩阵"]
+        D2 & D3 & D4 --> D5["三层关联关系表"]
+    end
+
+    subgraph Phase5["阶段五：验证入库"]
+        D5 --> E1["人工审核"]
+        E1 --> E2["写入MySQL"]
+        E2 --> E3["前端可视化"]
+    end
+
+    style Phase1 fill:#e0f2fe
+    style Phase2 fill:#fef3c7
+    style Phase3 fill:#fce7f3
+    style Phase4 fill:#d1fae5
+    style Phase5 fill:#ede9fe
+```
+
+### 对象抽取算法
+
+对象抽取使用**大模型 + 规则**混合方案：
+
+1. **数据采集**：读取 DATA 目录下的数据架构 Excel（DA-01、DA-02、DA-03）
+2. **候选识别**：通过 NLP 分词和领域关键词匹配，识别候选对象（如"项目"、"设备"相关实体）
+3. **大模型抽取**：调用 DeepSeek/GPT 分析实体名称，抽取高度抽象的核心对象
+4. **关联构建**：使用 SBERT 语义相似度计算对象与三层架构实体的关联强度
+5. **验证入库**：人工审核后写入 MySQL，支持前端可视化展示
+
+### 核心数据库表
+
+```sql
+-- 抽取的对象表
+CREATE TABLE extracted_objects (
+    object_id INT AUTO_INCREMENT PRIMARY KEY,
+    object_code VARCHAR(64) NOT NULL UNIQUE,  -- 如 OBJ_PROJECT
+    object_name VARCHAR(256) NOT NULL,         -- 如 项目
+    object_type ENUM('CORE', 'DERIVED', 'AUXILIARY'),
+    description TEXT,
+    extraction_source VARCHAR(64),             -- LLM/RULE/MANUAL
+    extraction_confidence DECIMAL(5,4),
+    is_verified BOOLEAN DEFAULT FALSE
+);
+
+-- 对象与三层架构关联关系表
+CREATE TABLE object_entity_relations (
+    relation_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    object_id INT NOT NULL,
+    entity_layer ENUM('CONCEPT', 'LOGICAL', 'PHYSICAL'),
+    entity_name VARCHAR(512),
+    relation_type ENUM('DIRECT', 'INDIRECT', 'DERIVED'),
+    relation_strength DECIMAL(5,4),            -- 关联强度 0-1
+    match_method ENUM('EXACT', 'CONTAINS', 'SEMANTIC', 'LLM'),
+    FOREIGN KEY (object_id) REFERENCES extracted_objects(object_id)
+);
+```
+
+### 使用方法
+
+```bash
+# 方式一：命令行运行
+python scripts/object_extractor.py --data-dir DATA --use-llm --no-db
+
+# 方式二：Web界面操作
+# 1. 访问 http://localhost:5000/olm
+# 2. 点击侧边栏 "对象抽取"
+# 3. 点击 "执行抽取" 按钮
+# 4. 查看抽取结果和三层架构关联关系
+# 5. 点击对象卡片查看详细关联
+```
+
+### 前端界面功能
+
+访问 `http://localhost:5000/olm` → 点击 **对象抽取** 面板：
+
+| 功能 | 说明 |
+|------|------|
+| 对象卡片 | 展示抽取的核心对象（项目、设备、资产...） |
+| 三层关联视图 | 点击对象查看其与概念/逻辑/物理实体的关联 |
+| 桑基图 | 可视化对象与三层架构的关联流向 |
+| 执行抽取 | 触发大模型对象抽取流程 |
+| 导出结果 | 导出抽取结果为 JSON 文件 |
+
+### 预置核心对象
+
+系统预置以下核心对象（可通过大模型扩展）：
+
+| 对象编码 | 对象名称 | 类型 | 说明 |
+|----------|----------|------|------|
+| OBJ_PROJECT | 项目 | CORE | 电网建设项目 |
+| OBJ_DEVICE | 设备 | CORE | 电气设备 |
+| OBJ_ASSET | 资产 | CORE | 固定资产 |
+| OBJ_CONTRACT | 合同 | CORE | 业务合同 |
+| OBJ_PERSONNEL | 人员 | CORE | 相关人员 |
+| OBJ_ORGANIZATION | 组织 | CORE | 组织机构 |
+| OBJ_DOCUMENT | 文档 | AUXILIARY | 业务文档 |
+| OBJ_TASK | 任务 | DERIVED | 工作任务 |
 
 ---
 
@@ -332,8 +474,10 @@ YIMO/
 │   ├── eav_semantic_dedupe.py  # SBERT 语义去重主脚本
 │   ├── import_all.py         # 批量导入入口（支持阶段标记）
 │   │
-│   ├── agent_lifecycle_fusion.py   # 🆕 LLM驱动的本体融合代理
-│   ├── aiops_consistency_monitor.py # 🆕 AIOps数据一致性监控
+│   ├── object_extractor.py        # 🆕 对象抽取器（大模型+规则）
+│   ├── object_lifecycle_manager.py # 三层本体模型管理
+│   ├── agent_lifecycle_fusion.py   # LLM驱动的本体融合代理
+│   ├── aiops_consistency_monitor.py # AIOps数据一致性监控
 │   │
 │   ├── auto_finalize_global.py # 全局去重自动收尾脚本
 │   ├── check_db_semantic.py    # 数据库健康检查
@@ -524,6 +668,15 @@ DEEPSEEK_API_KEY=your_api_key
 
 ## 📝 变更日志
 
+### v2.1.0 (2026-02) - 对象抽取与三层架构关联
+
+- ✅ **对象抽取器**：从DATA表单中抽取高度抽象的核心对象（项目、设备、资产等）
+- ✅ **大模型抽取算法**：支持 DeepSeek/GPT 进行智能对象识别
+- ✅ **三层架构关联**：建立对象与概念实体、逻辑实体、物理实体的关联关系
+- ✅ **关联强度计算**：使用 SBERT 语义相似度计算关联强度
+- ✅ **前端可视化**：对象卡片、三层关联视图、桑基图展示
+- ✅ **算法流程图**：完整的对象抽取算法文档
+
 ### v2.0.0 (2026-01) - 一模到底
 
 - ✅ **全生命周期本体管理器**：规划→设计→建设→运维→财务全链路
@@ -556,6 +709,7 @@ DEEPSEEK_API_KEY=your_api_key
 | 功能 | URL | 说明 |
 |------|-----|------|
 | 主界面 | `/?v=10.0` | EAV数据浏览 + 一模到底入口 |
+| 对象生命周期管理器 | `/olm` | 三层本体管理 + 对象抽取 |
 | 统一本体可视化 | `/lifecycle` | 全生命周期资产追踪（独立页面） |
 | 异常监控 | `/anomalies` | 数据质量告警面板 |
 | 健康检查 | `/health` | 系统状态API |
