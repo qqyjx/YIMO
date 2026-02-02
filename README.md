@@ -337,40 +337,44 @@ cd webapp && ./start_web.sh
 
 > 📄 算法流程图：[figures/architecture/object_extraction_algorithm.mmd](figures/architecture/object_extraction_algorithm.mmd)
 
+### 对象抽取算法：自下而上的语义聚类
+
+采用**自下而上的归纳抽取**方法（而非自上而下的预定义匹配）：
+
+```
+实体名称收集 → SBERT向量化 → 语义聚类 → 大模型归纳命名 → 核心对象输出
+```
+
+**算法流程**：
+
 ```mermaid
 %%{init: {'theme': 'base'}}%%
 flowchart TB
     subgraph Phase1["阶段一：数据采集"]
-        A1[("DATA目录<br/>Excel文件")] --> A2["读取三层架构表"]
-        A2 --> A3["概念实体清单"]
-        A2 --> A4["逻辑实体清单"]
-        A2 --> A5["物理实体清单"]
+        A1[("DATA目录")] --> A2["读取三层架构数据"]
+        A2 --> A3["收集所有唯一实体名称<br/>(~6500个)"]
     end
 
-    subgraph Phase2["阶段二：候选识别"]
-        A3 & A4 & A5 --> B1["名词短语提取<br/>NLP分词"]
-        B1 --> B2["领域关键词匹配"]
-        B2 --> B3["候选对象列表"]
+    subgraph Phase2["阶段二：语义向量化"]
+        A3 --> B1["SBERT向量化<br/>(text2vec-base-chinese)"]
+        B1 --> B2["语义向量矩阵<br/>(N x 768维)"]
     end
 
-    subgraph Phase3["阶段三：大模型抽取"]
-        B3 --> C1["构造提示词"]
-        C1 --> C2{"调用大模型<br/>DeepSeek/GPT"}
-        C2 --> C3["输出核心对象<br/>项目、设备、人员..."]
+    subgraph Phase3["阶段三：层次聚类"]
+        B2 --> C1["AgglomerativeClustering<br/>(余弦距离)"]
+        C1 --> C2["~15个语义聚类"]
+        C2 --> C3["采样代表性实体"]
     end
 
-    subgraph Phase4["阶段四：关联构建"]
-        C3 --> D1["语义相似度计算<br/>SBERT向量"]
-        D1 --> D2["对象-概念实体<br/>关联矩阵"]
-        D1 --> D3["对象-逻辑实体<br/>关联矩阵"]
-        D1 --> D4["对象-物理实体<br/>关联矩阵"]
-        D2 & D3 & D4 --> D5["三层关联关系表"]
+    subgraph Phase4["阶段四：大模型归纳"]
+        C3 --> D1["调用大模型<br/>(DeepSeek)"]
+        D1 --> D2["为每个聚类<br/>归纳抽象对象名"]
+        D2 --> D3["输出核心对象<br/>项目、设备、资产..."]
     end
 
-    subgraph Phase5["阶段五：验证入库"]
-        D5 --> E1["人工审核"]
-        E1 --> E2["写入MySQL"]
-        E2 --> E3["前端可视化"]
+    subgraph Phase5["阶段五：关联构建"]
+        D3 --> E1["基于聚类成员关系<br/>构建对象-实体关联"]
+        E1 --> E2["三层关联关系表"]
     end
 
     style Phase1 fill:#e0f2fe
@@ -380,15 +384,18 @@ flowchart TB
     style Phase5 fill:#ede9fe
 ```
 
-### 对象抽取算法
+**算法特点**：
 
-对象抽取使用**大模型 + 规则**混合方案：
+| 特性 | 旧方法（自上而下） | 新方法（自下而上） |
+|------|-------------------|-------------------|
+| 核心思路 | 预定义关键词 → 匹配分类 | 语义聚类 → LLM归纳命名 |
+| 对象发现 | 只能发现预设的对象 | 自动发现数据中的对象 |
+| 关联关系 | 基于关键词包含匹配 | 基于聚类成员关系 |
+| 扩展性 | 需手动添加关键词 | 自适应新数据 |
 
-1. **数据采集**：读取 DATA 目录下的数据架构 Excel（DA-01、DA-02、DA-03）
-2. **候选识别**：通过 NLP 分词和领域关键词匹配，识别候选对象（如"项目"、"设备"相关实体）
-3. **大模型抽取**：调用 DeepSeek/GPT 分析实体名称，抽取高度抽象的核心对象
-4. **关联构建**：使用 SBERT 语义相似度计算对象与三层架构实体的关联强度
-5. **验证入库**：人工审核后写入 MySQL，支持前端可视化展示
+**示例**：
+- 聚类1: ["项目信息", "工程进度信息", "项目验收信息", "可研信息"] → LLM归纳 → **"项目"**
+- 聚类2: ["设备台账信息", "变压器信息", "断路器状态", "设备检修"] → LLM归纳 → **"设备"**
 
 ### 核心数据库表
 
@@ -421,8 +428,19 @@ CREATE TABLE object_entity_relations (
 ### 使用方法
 
 ```bash
-# 方式一：命令行运行
-python scripts/object_extractor.py --data-dir DATA --use-llm --no-db
+# 方式一：命令行运行（语义聚类抽取）
+python scripts/object_extractor.py \
+    --data-dir DATA \
+    --target-clusters 15 \
+    --use-llm \
+    --no-db \
+    --output result.json
+
+# 参数说明：
+#   --target-clusters  目标聚类数量（默认15，最多20）
+#   --use-llm          使用大模型归纳命名
+#   --no-db            不写入数据库（仅输出JSON）
+#   --output           输出结果到JSON文件
 
 # 方式二：Web界面操作
 # 1. 访问 http://localhost:5000/olm
@@ -668,7 +686,16 @@ DEEPSEEK_API_KEY=your_api_key
 
 ## 📝 变更日志
 
-### v2.1.0 (2026-02) - 对象抽取与三层架构关联
+### v2.2.0 (2026-02) - 语义聚类对象抽取
+
+- ✅ **自下而上的归纳抽取**：从预定义关键词匹配改为语义聚类 + LLM归纳
+- ✅ **SBERT语义向量化**：使用 text2vec-base-chinese 对实体名称向量化
+- ✅ **层次聚类算法**：AgglomerativeClustering 控制聚类数量（~15个）
+- ✅ **大模型归纳命名**：LLM 为每个聚类归纳高度抽象的对象名称
+- ✅ **聚类关联关系**：基于聚类成员关系构建对象-实体关联
+- ✅ **必须对象保证**：确保"项目"等甲方要求的对象存在
+
+### v2.1.0 (2026-01) - 对象抽取与三层架构关联
 
 - ✅ **对象抽取器**：从DATA表单中抽取高度抽象的核心对象（项目、设备、资产等）
 - ✅ **大模型抽取算法**：支持 DeepSeek/GPT 进行智能对象识别

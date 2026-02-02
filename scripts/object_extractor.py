@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-对象抽取器 (Object Extractor)
-==============================
-从DATA表单（数据架构Excel）中抽取高度抽象的"对象"
+对象抽取器 (Object Extractor) - 语义聚类版
+=============================================
+采用"自下而上"的归纳抽取方法：
+1. 收集三层架构所有实体名称
+2. SBERT向量化
+3. 层次聚类（控制聚类数量~20个）
+4. 大模型归纳命名每个聚类
+5. 输出高度抽象的核心对象
 
-核心功能：
-1. 读取三层架构数据（概念实体、逻辑实体、物理实体）
-2. 使用大模型（DeepSeek/GPT）进行对象识别和归类
-3. 计算对象与三层架构实体的关联关系
-4. 将结果写入MySQL数据库
+算法流程：
+实体名称收集 → SBERT向量化 → 语义聚类 → 大模型归纳命名 → 核心对象输出
 
 作者: YIMO Team
-日期: 2025-01
+日期: 2026-02
 """
 
 import os
@@ -22,7 +24,7 @@ import hashlib
 from datetime import datetime
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Set, Optional, Tuple
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import pandas as pd
@@ -36,15 +38,15 @@ try:
     HAS_SBERT = True
 except ImportError:
     HAS_SBERT = False
-    print("[WARN] sentence-transformers not installed, semantic matching disabled")
+    print("[WARN] sentence-transformers not installed, semantic clustering disabled")
 
 try:
-    import jieba
-    import jieba.analyse
-    HAS_JIEBA = True
+    from sklearn.cluster import AgglomerativeClustering
+    from sklearn.metrics.pairwise import cosine_similarity
+    HAS_SKLEARN = True
 except ImportError:
-    HAS_JIEBA = False
-    print("[WARN] jieba not installed, using simple tokenization")
+    HAS_SKLEARN = False
+    print("[WARN] sklearn not installed, clustering disabled")
 
 try:
     import requests
@@ -52,6 +54,29 @@ try:
 except ImportError:
     HAS_REQUESTS = False
     print("[WARN] requests not installed, LLM extraction disabled")
+
+try:
+    from tqdm import tqdm
+    HAS_TQDM = True
+except ImportError:
+    HAS_TQDM = False
+    def tqdm(x, **kwargs):
+        return x
+
+
+# ============================================================
+# 配置常量
+# ============================================================
+
+# 目标聚类数量（高度抽象的对象数量）
+TARGET_CLUSTER_COUNT = 15  # 目标15个左右，最多不超过20个
+MAX_CLUSTER_COUNT = 20
+
+# SBERT模型（中文语义向量）
+SBERT_MODEL_NAME = "shibing624/text2vec-base-chinese"
+
+# 必须包含的对象（甲方明确要求）
+REQUIRED_OBJECTS = ["项目"]
 
 
 # ============================================================
@@ -67,11 +92,27 @@ class ExtractedObject:
     parent_object_code: Optional[str] = None
     object_type: str = "CORE"  # CORE, DERIVED, AUXILIARY
     description: str = ""
-    extraction_source: str = "LLM"
+    extraction_source: str = "SEMANTIC_CLUSTER"  # 新增来源类型
     extraction_confidence: float = 0.0
     llm_reasoning: str = ""
     synonyms: List[str] = field(default_factory=list)
     key_attributes: List[str] = field(default_factory=list)
+    cluster_id: int = -1  # 聚类ID
+    cluster_size: int = 0  # 聚类大小
+    sample_entities: List[str] = field(default_factory=list)  # 聚类样本实体
+
+
+@dataclass
+class EntityInfo:
+    """实体信息"""
+    name: str
+    layer: str  # CONCEPT, LOGICAL, PHYSICAL
+    code: str = ""
+    data_domain: str = ""
+    data_subdomain: str = ""
+    source_file: str = ""
+    source_sheet: str = ""
+    source_row: int = 0
 
 
 @dataclass
@@ -81,9 +122,9 @@ class EntityRelation:
     entity_layer: str  # CONCEPT, LOGICAL, PHYSICAL
     entity_name: str
     entity_code: str = ""
-    relation_type: str = "DIRECT"  # DIRECT, INDIRECT, DERIVED
+    relation_type: str = "CLUSTER"  # CLUSTER（来自同一聚类）
     relation_strength: float = 0.0
-    match_method: str = "EXACT"  # EXACT, CONTAINS, SEMANTIC, LLM
+    match_method: str = "SEMANTIC_CLUSTER"
     semantic_similarity: float = 0.0
     data_domain: str = ""
     data_subdomain: str = ""
@@ -101,14 +142,11 @@ class DataArchitectureReader:
 
     def __init__(self, data_dir: str = "DATA"):
         self.data_dir = Path(data_dir)
-        self.concept_entities: List[Dict] = []
-        self.logical_entities: List[Dict] = []
-        self.physical_entities: List[Dict] = []
-        self.business_objects: List[Dict] = []
+        self.entities: List[EntityInfo] = []
 
-    def read_all(self) -> Dict[str, List[Dict]]:
-        """读取所有数据架构表"""
-        print("[INFO] 开始读取数据架构表...")
+    def read_all(self) -> List[EntityInfo]:
+        """读取所有三层架构实体"""
+        print("[INFO] 开始读取三层架构数据...")
 
         # 读取 2.xlsx - 数据架构
         data_file = self.data_dir / "2.xlsx"
@@ -118,42 +156,38 @@ class DataArchitectureReader:
             self._read_logical_entities(data_file)
             self._read_physical_entities(data_file)
 
-        # 读取 1.xlsx - 业务架构（补充业务对象信息）
-        ba_file = self.data_dir / "1.xlsx"
-        if ba_file.exists():
-            print(f"  读取 {ba_file}...")
-            self._read_business_objects(ba_file)
+        # 统计
+        concept_count = len([e for e in self.entities if e.layer == "CONCEPT"])
+        logical_count = len([e for e in self.entities if e.layer == "LOGICAL"])
+        physical_count = len([e for e in self.entities if e.layer == "PHYSICAL"])
 
         print(f"[INFO] 数据读取完成:")
-        print(f"  - 概念实体: {len(self.concept_entities)} 条")
-        print(f"  - 逻辑实体: {len(self.logical_entities)} 条")
-        print(f"  - 物理实体: {len(self.physical_entities)} 条")
-        print(f"  - 业务对象: {len(self.business_objects)} 条")
+        print(f"  - 概念实体: {concept_count} 条")
+        print(f"  - 逻辑实体: {logical_count} 条")
+        print(f"  - 物理实体: {physical_count} 条")
+        print(f"  - 总计: {len(self.entities)} 条")
 
-        return {
-            "concept": self.concept_entities,
-            "logical": self.logical_entities,
-            "physical": self.physical_entities,
-            "business": self.business_objects
-        }
+        return self.entities
 
     def _read_concept_entities(self, file_path: Path):
         """读取概念实体清单"""
         try:
             df = pd.read_excel(file_path, sheet_name='DA-01 数据实体清单-概念实体清单')
+            seen = set()
             for idx, row in df.iterrows():
-                self.concept_entities.append({
-                    "entity_name": str(row.get("概念实体", "")).strip(),
-                    "entity_code": str(row.get("概念实体编号", "")).strip(),
-                    "business_object": str(row.get("业务对象", "")).strip(),
-                    "data_domain": str(row.get("数据域", "")).strip(),
-                    "data_subdomain": str(row.get("数据子域", "")).strip(),
-                    "is_core": row.get("是否核心概念实体", "") == "是",
-                    "data_classification": str(row.get("数据分类", "")).strip(),
-                    "source_file": str(file_path.name),
-                    "source_sheet": "DA-01 概念实体清单",
-                    "source_row": idx + 2  # Excel行号从2开始（含表头）
-                })
+                name = str(row.get("概念实体", "")).strip()
+                if name and name != "nan" and name not in seen:
+                    seen.add(name)
+                    self.entities.append(EntityInfo(
+                        name=name,
+                        layer="CONCEPT",
+                        code=str(row.get("概念实体编号", "")).strip(),
+                        data_domain=str(row.get("数据域", "")).strip(),
+                        data_subdomain=str(row.get("数据子域", "")).strip(),
+                        source_file=str(file_path.name),
+                        source_sheet="DA-01 概念实体清单",
+                        source_row=idx + 2
+                    ))
         except Exception as e:
             print(f"[ERROR] 读取概念实体失败: {e}")
 
@@ -161,21 +195,20 @@ class DataArchitectureReader:
         """读取逻辑实体清单"""
         try:
             df = pd.read_excel(file_path, sheet_name='DA-02 数据实体清单-逻辑实体清单')
-            # 只取唯一的逻辑实体（去重）
             seen = set()
             for idx, row in df.iterrows():
-                entity_name = str(row.get("逻辑实体名称", "")).strip()
-                if entity_name and entity_name not in seen:
-                    seen.add(entity_name)
-                    self.logical_entities.append({
-                        "entity_name": entity_name,
-                        "entity_code": str(row.get("逻辑实体编码", "")).strip(),
-                        "concept_entity": str(row.get("概念实体", "")).strip(),
-                        "data_domain": str(row.get("数据域", "")).strip(),
-                        "source_file": str(file_path.name),
-                        "source_sheet": "DA-02 逻辑实体清单",
-                        "source_row": idx + 2
-                    })
+                name = str(row.get("逻辑实体名称", "")).strip()
+                if name and name != "nan" and name not in seen:
+                    seen.add(name)
+                    self.entities.append(EntityInfo(
+                        name=name,
+                        layer="LOGICAL",
+                        code=str(row.get("逻辑实体编码", "")).strip(),
+                        data_domain=str(row.get("数据域", "")).strip(),
+                        source_file=str(file_path.name),
+                        source_sheet="DA-02 逻辑实体清单",
+                        source_row=idx + 2
+                    ))
         except Exception as e:
             print(f"[ERROR] 读取逻辑实体失败: {e}")
 
@@ -185,229 +218,255 @@ class DataArchitectureReader:
             df = pd.read_excel(file_path, sheet_name='DA-03数据实体清单-物理实体清单')
             seen = set()
             for idx, row in df.iterrows():
-                entity_name = str(row.get("物理实体名称", "")).strip()
-                if entity_name and entity_name not in seen:
-                    seen.add(entity_name)
-                    self.physical_entities.append({
-                        "entity_name": entity_name,
-                        "entity_code": str(row.get("物理实体编码", "")).strip(),
-                        "logical_entity": str(row.get("逻辑实体名称", "")).strip(),
-                        "data_domain": str(row.get("数据域", "")).strip(),
-                        "source_file": str(file_path.name),
-                        "source_sheet": "DA-03 物理实体清单",
-                        "source_row": idx + 2
-                    })
+                name = str(row.get("物理实体名称", "")).strip()
+                if name and name != "nan" and name not in seen:
+                    seen.add(name)
+                    self.entities.append(EntityInfo(
+                        name=name,
+                        layer="PHYSICAL",
+                        code=str(row.get("物理实体编码", "")).strip(),
+                        data_domain=str(row.get("数据域", "")).strip(),
+                        source_file=str(file_path.name),
+                        source_sheet="DA-03 物理实体清单",
+                        source_row=idx + 2
+                    ))
         except Exception as e:
             print(f"[ERROR] 读取物理实体失败: {e}")
 
-    def _read_business_objects(self, file_path: Path):
-        """读取业务对象清单"""
+
+# ============================================================
+# 语义聚类抽取器（核心算法）
+# ============================================================
+
+class SemanticClusterExtractor:
+    """
+    语义聚类抽取器
+
+    算法流程：
+    1. 收集所有唯一实体名称
+    2. SBERT向量化
+    3. 层次聚类（AgglomerativeClustering）
+    4. 为每个聚类采样代表性实体
+    5. 调用大模型归纳命名
+    """
+
+    def __init__(self,
+                 target_clusters: int = TARGET_CLUSTER_COUNT,
+                 max_clusters: int = MAX_CLUSTER_COUNT,
+                 sbert_model: str = SBERT_MODEL_NAME):
+        self.target_clusters = target_clusters
+        self.max_clusters = max_clusters
+        self.sbert_model_name = sbert_model
+        self.sbert_model = None
+        self.embeddings = None
+        self.entity_names = []
+        self.entity_map: Dict[str, List[EntityInfo]] = defaultdict(list)
+
+    def extract(self, entities: List[EntityInfo]) -> Tuple[List[Dict], Dict[int, List[str]]]:
+        """
+        执行语义聚类抽取
+
+        Returns:
+            clusters: 聚类结果列表，每个元素包含 cluster_id, entities, centroid_entity
+            cluster_entity_map: 聚类ID到实体名称列表的映射
+        """
+        print("[INFO] 开始语义聚类抽取...")
+
+        # 1. 收集唯一实体名称
+        self._collect_unique_names(entities)
+
+        if len(self.entity_names) == 0:
+            print("[WARN] 没有可用的实体名称")
+            return [], {}
+
+        # 2. SBERT向量化
+        self._vectorize_entities()
+
+        # 3. 层次聚类
+        cluster_labels = self._hierarchical_clustering()
+
+        # 4. 构建聚类结果
+        clusters, cluster_entity_map = self._build_cluster_results(cluster_labels)
+
+        print(f"[INFO] 聚类完成，共 {len(clusters)} 个聚类")
+        return clusters, cluster_entity_map
+
+    def _collect_unique_names(self, entities: List[EntityInfo]):
+        """收集唯一的实体名称"""
+        for entity in entities:
+            name = entity.name
+            if name and name not in self.entity_map:
+                self.entity_names.append(name)
+            self.entity_map[name].append(entity)
+
+        print(f"  收集到 {len(self.entity_names)} 个唯一实体名称")
+
+    def _vectorize_entities(self):
+        """SBERT向量化"""
+        if not HAS_SBERT:
+            print("[ERROR] SBERT未安装，无法进行语义聚类")
+            raise RuntimeError("sentence-transformers not installed")
+
+        print(f"  加载SBERT模型: {self.sbert_model_name}...")
         try:
-            df = pd.read_excel(file_path, sheet_name='BA-04 业务对象清单')
-            seen = set()
-            for idx, row in df.iterrows():
-                obj_name = str(row.get("业务对象名称 ", "") or row.get("业务对象名称", "")).strip()
-                if obj_name and obj_name not in seen:
-                    seen.add(obj_name)
-                    self.business_objects.append({
-                        "object_name": obj_name,
-                        "process_name": str(row.get("操作级业务流程名称", "")).strip(),
-                        "step_name": str(row.get("业务步骤", "")).strip(),
-                        "object_type": str(row.get("对象类型（普通对象/核心对象）", "")).strip(),
-                        "source_file": str(file_path.name),
-                        "source_sheet": "BA-04 业务对象清单",
-                        "source_row": idx + 2
-                    })
+            self.sbert_model = SentenceTransformer(self.sbert_model_name)
         except Exception as e:
-            print(f"[ERROR] 读取业务对象失败: {e}")
+            print(f"  模型加载失败，尝试备选模型...")
+            self.sbert_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
+        print(f"  对 {len(self.entity_names)} 个实体名称进行向量化...")
+        self.embeddings = self.sbert_model.encode(
+            self.entity_names,
+            show_progress_bar=HAS_TQDM,
+            batch_size=64
+        )
+        print(f"  向量维度: {self.embeddings.shape}")
+
+    def _hierarchical_clustering(self) -> np.ndarray:
+        """层次聚类"""
+        if not HAS_SKLEARN:
+            print("[ERROR] sklearn未安装，无法进行聚类")
+            raise RuntimeError("sklearn not installed")
+
+        n_samples = len(self.entity_names)
+
+        # 动态确定聚类数量
+        # 如果实体数量少于目标聚类数，则调整
+        n_clusters = min(self.target_clusters, max(5, n_samples // 10))
+        n_clusters = min(n_clusters, self.max_clusters)
+
+        print(f"  执行层次聚类 (n_clusters={n_clusters})...")
+
+        clustering = AgglomerativeClustering(
+            n_clusters=n_clusters,
+            metric='cosine',
+            linkage='average'
+        )
+        labels = clustering.fit_predict(self.embeddings)
+
+        # 统计每个聚类的大小
+        cluster_sizes = Counter(labels)
+        print(f"  聚类大小分布: {dict(sorted(cluster_sizes.items()))}")
+
+        return labels
+
+    def _build_cluster_results(self, labels: np.ndarray) -> Tuple[List[Dict], Dict[int, List[str]]]:
+        """构建聚类结果"""
+        cluster_entity_map: Dict[int, List[str]] = defaultdict(list)
+
+        # 按聚类分组
+        for idx, label in enumerate(labels):
+            cluster_entity_map[int(label)].append(self.entity_names[idx])
+
+        # 构建聚类信息
+        clusters = []
+        for cluster_id, entity_list in cluster_entity_map.items():
+            # 计算聚类中心
+            cluster_indices = [i for i, l in enumerate(labels) if l == cluster_id]
+            cluster_embeddings = self.embeddings[cluster_indices]
+            centroid = np.mean(cluster_embeddings, axis=0)
+
+            # 找到最接近中心的实体作为代表
+            similarities = cosine_similarity([centroid], cluster_embeddings)[0]
+            centroid_idx = cluster_indices[np.argmax(similarities)]
+            centroid_entity = self.entity_names[centroid_idx]
+
+            # 采样代表性实体（用于LLM归纳）
+            sample_size = min(20, len(entity_list))
+            # 优先选择：最接近中心的 + 随机采样
+            sorted_indices = np.argsort(-similarities)
+            sample_entities = [self.entity_names[cluster_indices[i]] for i in sorted_indices[:sample_size]]
+
+            clusters.append({
+                "cluster_id": cluster_id,
+                "size": len(entity_list),
+                "centroid_entity": centroid_entity,
+                "sample_entities": sample_entities,
+                "all_entities": entity_list
+            })
+
+        # 按聚类大小排序
+        clusters.sort(key=lambda x: x["size"], reverse=True)
+
+        return clusters, dict(cluster_entity_map)
 
 
 # ============================================================
-# 候选对象识别器
+# 大模型归纳命名器
 # ============================================================
 
-class CandidateObjectIdentifier:
-    """候选对象识别器"""
-
-    # 电网领域核心对象关键词（用于识别）
-    DOMAIN_KEYWORDS = {
-        "项目": ["项目", "工程", "建设", "施工", "可研", "设计", "验收"],
-        "设备": ["设备", "变压器", "断路器", "线路", "开关", "电缆", "GIS", "主变"],
-        "资产": ["资产", "固定资产", "在建工程", "折旧"],
-        "合同": ["合同", "协议", "招标", "投标", "采购"],
-        "人员": ["人员", "员工", "负责人", "经理", "班组"],
-        "组织": ["组织", "部门", "单位", "公司", "项目部", "班组"],
-        "文档": ["文档", "报告", "清单", "表单", "方案", "计划"],
-        "流程": ["流程", "审批", "评审", "检查", "验收"],
-        "物资": ["物资", "材料", "备品", "备件", "库存"],
-        "任务": ["任务", "工单", "作业", "检修", "巡检"],
-        "费用": ["费用", "成本", "预算", "结算", "支出"],
-        "指标": ["指标", "KPI", "统计", "分析", "评价"]
-    }
-
-    def __init__(self, data: Dict[str, List[Dict]]):
-        self.data = data
-        self.entity_names: List[str] = []
-        self.word_freq: Counter = Counter()
-
-    def identify_candidates(self) -> Tuple[List[str], Dict[str, List[str]]]:
-        """识别候选对象"""
-        print("[INFO] 开始识别候选对象...")
-
-        # 1. 收集所有实体名称
-        self._collect_entity_names()
-
-        # 2. 分词和词频统计
-        self._analyze_word_frequency()
-
-        # 3. 基于关键词匹配识别候选对象
-        candidates = self._match_domain_keywords()
-
-        print(f"[INFO] 识别到 {len(candidates)} 个候选对象类别")
-        return list(candidates.keys()), candidates
-
-    def _collect_entity_names(self):
-        """收集所有实体名称"""
-        for entity in self.data.get("concept", []):
-            name = entity.get("entity_name", "")
-            if name and name != "nan":
-                self.entity_names.append(name)
-
-        for entity in self.data.get("logical", []):
-            name = entity.get("entity_name", "")
-            if name and name != "nan":
-                self.entity_names.append(name)
-
-        for entity in self.data.get("physical", []):
-            name = entity.get("entity_name", "")
-            if name and name != "nan":
-                self.entity_names.append(name)
-
-        for obj in self.data.get("business", []):
-            name = obj.get("object_name", "")
-            if name and name != "nan":
-                self.entity_names.append(name)
-
-        print(f"  收集到 {len(self.entity_names)} 个实体名称")
-
-    def _analyze_word_frequency(self):
-        """分析词频"""
-        if HAS_JIEBA:
-            for name in self.entity_names:
-                words = jieba.cut(name)
-                for word in words:
-                    if len(word) >= 2:
-                        self.word_freq[word] += 1
-        else:
-            # 简单分词
-            for name in self.entity_names:
-                for kw_list in self.DOMAIN_KEYWORDS.values():
-                    for kw in kw_list:
-                        if kw in name:
-                            self.word_freq[kw] += 1
-
-        print(f"  词频统计完成，高频词（前20）:")
-        for word, freq in self.word_freq.most_common(20):
-            print(f"    {word}: {freq}")
-
-    def _match_domain_keywords(self) -> Dict[str, List[str]]:
-        """基于领域关键词匹配"""
-        candidates = {}
-
-        for obj_type, keywords in self.DOMAIN_KEYWORDS.items():
-            matched_entities = []
-            for name in self.entity_names:
-                for kw in keywords:
-                    if kw in name:
-                        matched_entities.append(name)
-                        break
-            if matched_entities:
-                candidates[obj_type] = list(set(matched_entities))[:100]  # 限制每类100个
-
-        return candidates
-
-
-# ============================================================
-# 大模型对象抽取器
-# ============================================================
-
-class LLMObjectExtractor:
-    """大模型对象抽取器"""
+class LLMObjectNamer:
+    """大模型归纳命名器"""
 
     def __init__(self, api_base: str = None, api_key: str = None, model: str = "deepseek-chat"):
         self.api_base = api_base or os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1")
         self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY", "")
         self.model = model
 
-    def extract_objects(self, entity_names: List[str], candidates: Dict[str, List[str]]) -> List[ExtractedObject]:
-        """使用大模型抽取对象"""
-        print("[INFO] 调用大模型进行对象抽取...")
+    def name_clusters(self, clusters: List[Dict]) -> List[ExtractedObject]:
+        """为每个聚类命名"""
+        print("[INFO] 开始大模型归纳命名...")
 
         if not HAS_REQUESTS or not self.api_key:
-            print("[WARN] 大模型API不可用，使用规则抽取")
-            return self._rule_based_extraction(candidates)
-
-        # 构造提示词
-        prompt = self._build_prompt(entity_names, candidates)
+            print("[WARN] 大模型API不可用，使用规则命名")
+            return self._rule_based_naming(clusters)
 
         try:
-            response = self._call_llm(prompt)
-            objects = self._parse_llm_response(response)
+            objects = self._llm_batch_naming(clusters)
+            # 确保必须的对象存在
+            objects = self._ensure_required_objects(objects, clusters)
             return objects
         except Exception as e:
             print(f"[ERROR] 大模型调用失败: {e}")
-            return self._rule_based_extraction(candidates)
+            return self._rule_based_naming(clusters)
 
-    def _build_prompt(self, entity_names: List[str], candidates: Dict[str, List[str]]) -> str:
-        """构建提示词"""
-        # 采样一些实体名称
-        sample_entities = entity_names[:200] if len(entity_names) > 200 else entity_names
+    def _llm_batch_naming(self, clusters: List[Dict]) -> List[ExtractedObject]:
+        """批量调用LLM为聚类命名"""
+        # 构建prompt
+        cluster_samples = []
+        for i, cluster in enumerate(clusters):
+            cluster_samples.append({
+                "cluster_id": i,
+                "size": cluster["size"],
+                "sample_entities": cluster["sample_entities"][:15]  # 限制样本数量
+            })
 
-        prompt = f"""你是一个电力行业数据架构专家。请根据以下数据实体名称，抽取出高度抽象的核心"对象"。
+        prompt = f"""你是一个电力行业数据架构专家。我将给你{len(clusters)}个聚类，每个聚类包含一组语义相似的数据实体名称。
 
-## 背景
-这些数据来自电网企业的数据架构，包含概念实体、逻辑实体和物理实体。
-我们需要从中抽取出核心的业务对象（如"项目"、"设备"、"资产"等），这些对象是高度抽象的概念。
-
-## 实体名称样本（共{len(entity_names)}个）
-{json.dumps(sample_entities[:100], ensure_ascii=False, indent=2)}
-
-## 候选对象及其匹配的实体数量
-{json.dumps({k: len(v) for k, v in candidates.items()}, ensure_ascii=False, indent=2)}
+请为每个聚类归纳出一个**高度抽象的对象名称**。
 
 ## 要求
-1. 必须包含"项目"这个核心对象
-2. 抽取8-15个核心对象
-3. 每个对象需要给出：
-   - object_code: 对象编码（如 OBJ_PROJECT）
-   - object_name: 中文名称
-   - object_name_en: 英文名称
-   - object_type: CORE（核心）/ DERIVED（派生）/ AUXILIARY（辅助）
-   - description: 简要描述
-   - synonyms: 同义词列表
-   - key_attributes: 关键属性列表
-   - confidence: 置信度（0-1）
-   - reasoning: 抽取理由
+1. 对象名称必须是高度抽象的概念，如"项目"、"设备"、"资产"、"人员"等
+2. 不要使用具体的实体名称，如"变压器"、"断路器"等
+3. 必须包含"项目"这个对象（这是甲方明确要求）
+4. 每个对象需要给出中英文名称、简要描述和同义词
+
+## 聚类数据
+```json
+{json.dumps(cluster_samples, ensure_ascii=False, indent=2)}
+```
 
 ## 输出格式
 请直接输出JSON数组，不要有其他内容：
 ```json
 [
   {{
+    "cluster_id": 0,
     "object_code": "OBJ_PROJECT",
     "object_name": "项目",
     "object_name_en": "Project",
     "object_type": "CORE",
-    "description": "电网建设项目...",
+    "description": "电网建设项目，包括输变电工程项目、配网工程项目等",
     "synonyms": ["工程", "建设项目"],
-    "key_attributes": ["项目名称", "项目编号", "建设单位"],
+    "key_attributes": ["项目名称", "项目编号"],
     "confidence": 0.95,
-    "reasoning": "..."
+    "reasoning": "该聚类包含大量项目相关实体如项目信息、工程进度信息等"
   }}
 ]
 ```
 """
-        return prompt
+        response = self._call_llm(prompt)
+        return self._parse_llm_response(response, clusters)
 
     def _call_llm(self, prompt: str) -> str:
         """调用大模型API"""
@@ -418,7 +477,7 @@ class LLMObjectExtractor:
         data = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": "你是一个专业的数据架构师，精通电力行业业务。"},
+                {"role": "system", "content": "你是一个专业的数据架构师，精通电力行业业务。请严格按照JSON格式输出。"},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.3,
@@ -429,253 +488,232 @@ class LLMObjectExtractor:
             f"{self.api_base}/chat/completions",
             headers=headers,
             json=data,
-            timeout=60
+            timeout=120
         )
         response.raise_for_status()
         result = response.json()
         return result["choices"][0]["message"]["content"]
 
-    def _parse_llm_response(self, response: str) -> List[ExtractedObject]:
+    def _parse_llm_response(self, response: str, clusters: List[Dict]) -> List[ExtractedObject]:
         """解析大模型响应"""
         objects = []
 
         # 提取JSON部分
         json_match = re.search(r'\[[\s\S]*\]', response)
         if not json_match:
-            print("[WARN] 无法解析大模型响应，使用规则抽取")
-            return []
+            print("[WARN] 无法解析大模型响应")
+            return self._rule_based_naming(clusters)
 
         try:
             data = json.loads(json_match.group())
             for item in data:
+                cluster_id = item.get("cluster_id", -1)
+                cluster = clusters[cluster_id] if 0 <= cluster_id < len(clusters) else None
+
                 obj = ExtractedObject(
-                    object_code=item.get("object_code", ""),
+                    object_code=item.get("object_code", f"OBJ_{cluster_id}"),
                     object_name=item.get("object_name", ""),
                     object_name_en=item.get("object_name_en", ""),
                     object_type=item.get("object_type", "CORE"),
                     description=item.get("description", ""),
-                    extraction_source="LLM",
+                    extraction_source="SEMANTIC_CLUSTER_LLM",
                     extraction_confidence=float(item.get("confidence", 0.8)),
                     llm_reasoning=item.get("reasoning", ""),
                     synonyms=item.get("synonyms", []),
-                    key_attributes=item.get("key_attributes", [])
+                    key_attributes=item.get("key_attributes", []),
+                    cluster_id=cluster_id,
+                    cluster_size=cluster["size"] if cluster else 0,
+                    sample_entities=cluster["sample_entities"][:10] if cluster else []
                 )
                 objects.append(obj)
+
         except json.JSONDecodeError as e:
             print(f"[ERROR] JSON解析失败: {e}")
+            return self._rule_based_naming(clusters)
 
         return objects
 
-    def _rule_based_extraction(self, candidates: Dict[str, List[str]]) -> List[ExtractedObject]:
-        """基于规则的对象抽取（备选方案）"""
-        print("[INFO] 使用规则进行对象抽取...")
+    def _ensure_required_objects(self, objects: List[ExtractedObject], clusters: List[Dict]) -> List[ExtractedObject]:
+        """确保必须的对象存在"""
+        object_names = {obj.object_name for obj in objects}
 
-        predefined_objects = [
-            ExtractedObject("OBJ_PROJECT", "项目", "Project", object_type="CORE",
-                          description="电网建设项目，包括输变电工程项目、配网工程项目等",
-                          extraction_source="RULE", extraction_confidence=1.0,
-                          synonyms=["工程", "建设项目", "输变电工程"],
-                          key_attributes=["项目名称", "项目编号", "建设单位", "投资金额"]),
+        for required in REQUIRED_OBJECTS:
+            if required not in object_names:
+                print(f"[INFO] 补充必须对象: {required}")
+                # 找到最可能对应的聚类
+                best_cluster = None
+                best_score = 0
+                for cluster in clusters:
+                    score = sum(1 for e in cluster["sample_entities"] if required in e)
+                    if score > best_score:
+                        best_score = score
+                        best_cluster = cluster
 
-            ExtractedObject("OBJ_DEVICE", "设备", "Device", object_type="CORE",
-                          description="电网设备，包括变压器、断路器、线路等",
-                          extraction_source="RULE", extraction_confidence=1.0,
-                          synonyms=["电气设备", "主设备", "一次设备"],
-                          key_attributes=["设备名称", "设备编号", "设备类型", "电压等级"]),
+                objects.append(ExtractedObject(
+                    object_code=f"OBJ_{required.upper()}",
+                    object_name=required,
+                    object_name_en=required.title(),
+                    object_type="CORE",
+                    description=f"核心对象：{required}",
+                    extraction_source="REQUIRED",
+                    extraction_confidence=1.0,
+                    cluster_id=best_cluster["cluster_id"] if best_cluster else -1,
+                    cluster_size=best_cluster["size"] if best_cluster else 0
+                ))
 
-            ExtractedObject("OBJ_ASSET", "资产", "Asset", object_type="CORE",
-                          description="固定资产，包括设备资产、房屋资产等",
-                          extraction_source="RULE", extraction_confidence=1.0,
-                          synonyms=["固定资产", "在建工程"],
-                          key_attributes=["资产名称", "资产编号", "资产原值", "净值"]),
+        return objects
 
-            ExtractedObject("OBJ_CONTRACT", "合同", "Contract", object_type="CORE",
-                          description="各类业务合同",
-                          extraction_source="RULE", extraction_confidence=0.95,
-                          synonyms=["协议", "框架合同"],
-                          key_attributes=["合同名称", "合同编号", "合同金额", "签订日期"]),
+    def _rule_based_naming(self, clusters: List[Dict]) -> List[ExtractedObject]:
+        """基于规则的命名（备选方案）"""
+        print("[INFO] 使用规则进行聚类命名...")
 
-            ExtractedObject("OBJ_PERSONNEL", "人员", "Personnel", object_type="CORE",
-                          description="相关人员",
-                          extraction_source="RULE", extraction_confidence=0.9,
-                          synonyms=["员工", "工作人员", "负责人"],
-                          key_attributes=["姓名", "工号", "部门", "岗位"]),
+        # 关键词到对象的映射
+        keyword_object_map = {
+            "项目": ("OBJ_PROJECT", "项目", "Project", "CORE", "电网建设项目"),
+            "工程": ("OBJ_PROJECT", "项目", "Project", "CORE", "电网建设项目"),
+            "设备": ("OBJ_DEVICE", "设备", "Device", "CORE", "电网设备"),
+            "变压器": ("OBJ_DEVICE", "设备", "Device", "CORE", "电网设备"),
+            "断路器": ("OBJ_DEVICE", "设备", "Device", "CORE", "电网设备"),
+            "资产": ("OBJ_ASSET", "资产", "Asset", "CORE", "固定资产"),
+            "合同": ("OBJ_CONTRACT", "合同", "Contract", "CORE", "业务合同"),
+            "人员": ("OBJ_PERSONNEL", "人员", "Personnel", "CORE", "相关人员"),
+            "员工": ("OBJ_PERSONNEL", "人员", "Personnel", "CORE", "相关人员"),
+            "组织": ("OBJ_ORGANIZATION", "组织", "Organization", "CORE", "组织机构"),
+            "部门": ("OBJ_ORGANIZATION", "组织", "Organization", "CORE", "组织机构"),
+            "文档": ("OBJ_DOCUMENT", "文档", "Document", "AUXILIARY", "业务文档"),
+            "报告": ("OBJ_DOCUMENT", "文档", "Document", "AUXILIARY", "业务文档"),
+            "任务": ("OBJ_TASK", "任务", "Task", "DERIVED", "工作任务"),
+            "工单": ("OBJ_TASK", "任务", "Task", "DERIVED", "工作任务"),
+            "物资": ("OBJ_MATERIAL", "物资", "Material", "CORE", "工程物资"),
+            "材料": ("OBJ_MATERIAL", "物资", "Material", "CORE", "工程物资"),
+            "费用": ("OBJ_COST", "费用", "Cost", "DERIVED", "费用成本"),
+            "预算": ("OBJ_COST", "费用", "Cost", "DERIVED", "费用成本"),
+            "指标": ("OBJ_METRIC", "指标", "Metric", "AUXILIARY", "业务指标"),
+            "统计": ("OBJ_METRIC", "指标", "Metric", "AUXILIARY", "业务指标"),
+            "流程": ("OBJ_PROCESS", "流程", "Process", "AUXILIARY", "业务流程"),
+            "审批": ("OBJ_PROCESS", "流程", "Process", "AUXILIARY", "业务流程"),
+            "系统": ("OBJ_SYSTEM", "系统", "System", "AUXILIARY", "信息系统"),
+            "平台": ("OBJ_SYSTEM", "系统", "System", "AUXILIARY", "信息系统"),
+            "标准": ("OBJ_STANDARD", "标准", "Standard", "AUXILIARY", "技术标准"),
+            "规范": ("OBJ_STANDARD", "标准", "Standard", "AUXILIARY", "技术标准"),
+        }
 
-            ExtractedObject("OBJ_ORGANIZATION", "组织", "Organization", object_type="CORE",
-                          description="组织机构",
-                          extraction_source="RULE", extraction_confidence=0.95,
-                          synonyms=["部门", "单位", "公司", "项目部"],
-                          key_attributes=["组织名称", "组织编码", "上级组织"]),
+        objects = []
+        used_codes = set()
 
-            ExtractedObject("OBJ_DOCUMENT", "文档", "Document", object_type="AUXILIARY",
-                          description="各类业务文档",
-                          extraction_source="RULE", extraction_confidence=0.85,
-                          synonyms=["报告", "清单", "表单", "方案"],
-                          key_attributes=["文档名称", "文档类型", "创建时间"]),
+        for cluster in clusters:
+            # 统计聚类中各关键词的出现次数
+            keyword_counts = Counter()
+            for entity in cluster["sample_entities"]:
+                for keyword in keyword_object_map:
+                    if keyword in entity:
+                        keyword_counts[keyword] += 1
 
-            ExtractedObject("OBJ_TASK", "任务", "Task", object_type="DERIVED",
-                          description="工作任务",
-                          extraction_source="RULE", extraction_confidence=0.85,
-                          synonyms=["工单", "作业", "检修任务", "巡检任务"],
-                          key_attributes=["任务名称", "任务类型", "执行人", "状态"]),
+            if keyword_counts:
+                # 选择出现最多的关键词对应的对象
+                top_keyword = keyword_counts.most_common(1)[0][0]
+                obj_info = keyword_object_map[top_keyword]
+                code, name, name_en, obj_type, desc = obj_info
 
-            ExtractedObject("OBJ_MATERIAL", "物资", "Material", object_type="CORE",
-                          description="工程物资",
-                          extraction_source="RULE", extraction_confidence=0.9,
-                          synonyms=["材料", "备品备件", "库存物资"],
-                          key_attributes=["物资名称", "物资编码", "规格型号", "数量"]),
+                # 避免重复
+                if code not in used_codes:
+                    used_codes.add(code)
+                    objects.append(ExtractedObject(
+                        object_code=code,
+                        object_name=name,
+                        object_name_en=name_en,
+                        object_type=obj_type,
+                        description=desc,
+                        extraction_source="SEMANTIC_CLUSTER_RULE",
+                        extraction_confidence=0.7,
+                        cluster_id=cluster["cluster_id"],
+                        cluster_size=cluster["size"],
+                        sample_entities=cluster["sample_entities"][:10]
+                    ))
+            else:
+                # 无法识别的聚类，使用通用命名
+                generic_code = f"OBJ_CLUSTER_{cluster['cluster_id']}"
+                if generic_code not in used_codes:
+                    used_codes.add(generic_code)
+                    objects.append(ExtractedObject(
+                        object_code=generic_code,
+                        object_name=f"对象{cluster['cluster_id'] + 1}",
+                        object_name_en=f"Object{cluster['cluster_id'] + 1}",
+                        object_type="AUXILIARY",
+                        description=f"自动聚类生成的对象，代表性实体：{cluster['centroid_entity']}",
+                        extraction_source="SEMANTIC_CLUSTER_AUTO",
+                        extraction_confidence=0.5,
+                        cluster_id=cluster["cluster_id"],
+                        cluster_size=cluster["size"],
+                        sample_entities=cluster["sample_entities"][:10]
+                    ))
 
-            ExtractedObject("OBJ_COST", "费用", "Cost", object_type="DERIVED",
-                          description="费用成本",
-                          extraction_source="RULE", extraction_confidence=0.85,
-                          synonyms=["成本", "预算", "结算"],
-                          key_attributes=["费用名称", "费用类型", "金额", "发生日期"]),
-        ]
-
-        return predefined_objects
+        # 确保必须的对象存在
+        return self._ensure_required_objects(objects, clusters)
 
 
 # ============================================================
 # 关联关系构建器
 # ============================================================
 
-class RelationBuilder:
-    """关联关系构建器"""
+class ClusterRelationBuilder:
+    """基于聚类的关联关系构建器"""
 
-    def __init__(self, objects: List[ExtractedObject], data: Dict[str, List[Dict]]):
+    def __init__(self,
+                 objects: List[ExtractedObject],
+                 entities: List[EntityInfo],
+                 cluster_entity_map: Dict[int, List[str]]):
         self.objects = objects
-        self.data = data
-        self.relations: List[EntityRelation] = []
-        self.sbert_model = None
+        self.entities = entities
+        self.cluster_entity_map = cluster_entity_map
 
-        if HAS_SBERT:
-            try:
-                print("[INFO] 加载SBERT模型...")
-                self.sbert_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-            except Exception as e:
-                print(f"[WARN] SBERT模型加载失败: {e}")
+        # 构建实体名称到实体信息的映射
+        self.entity_info_map: Dict[str, List[EntityInfo]] = defaultdict(list)
+        for entity in entities:
+            self.entity_info_map[entity.name].append(entity)
 
     def build_relations(self) -> List[EntityRelation]:
         """构建对象与实体的关联关系"""
         print("[INFO] 开始构建关联关系...")
 
-        # 为每个对象构建关联
+        relations = []
+
         for obj in self.objects:
-            # 1. 概念实体关联
-            self._build_concept_relations(obj)
-
-            # 2. 逻辑实体关联
-            self._build_logical_relations(obj)
-
-            # 3. 物理实体关联
-            self._build_physical_relations(obj)
-
-        print(f"[INFO] 构建完成，共 {len(self.relations)} 条关联关系")
-        return self.relations
-
-    def _build_concept_relations(self, obj: ExtractedObject):
-        """构建与概念实体的关联"""
-        keywords = [obj.object_name] + obj.synonyms
-
-        for entity in self.data.get("concept", []):
-            entity_name = entity.get("entity_name", "")
-            if not entity_name or entity_name == "nan":
+            if obj.cluster_id < 0:
                 continue
 
-            match_method, strength = self._calculate_match(keywords, entity_name)
-            if strength > 0.3:  # 阈值
-                self.relations.append(EntityRelation(
-                    object_code=obj.object_code,
-                    entity_layer="CONCEPT",
-                    entity_name=entity_name,
-                    entity_code=entity.get("entity_code", ""),
-                    relation_type="DIRECT" if strength > 0.7 else "INDIRECT",
-                    relation_strength=strength,
-                    match_method=match_method,
-                    data_domain=entity.get("data_domain", ""),
-                    data_subdomain=entity.get("data_subdomain", ""),
-                    source_file=entity.get("source_file", ""),
-                    source_sheet=entity.get("source_sheet", ""),
-                    source_row=entity.get("source_row", 0)
-                ))
+            # 获取该对象对应聚类的所有实体
+            cluster_entities = self.cluster_entity_map.get(obj.cluster_id, [])
 
-    def _build_logical_relations(self, obj: ExtractedObject):
-        """构建与逻辑实体的关联"""
-        keywords = [obj.object_name] + obj.synonyms
+            for entity_name in cluster_entities:
+                # 获取该实体的详细信息
+                entity_infos = self.entity_info_map.get(entity_name, [])
 
-        for entity in self.data.get("logical", []):
-            entity_name = entity.get("entity_name", "")
-            if not entity_name or entity_name == "nan":
-                continue
+                for entity_info in entity_infos:
+                    # 计算关联强度（基于聚类内位置）
+                    # 样本实体的强度更高
+                    if entity_name in obj.sample_entities:
+                        strength = 0.9
+                    else:
+                        strength = 0.7
 
-            match_method, strength = self._calculate_match(keywords, entity_name)
-            if strength > 0.3:
-                self.relations.append(EntityRelation(
-                    object_code=obj.object_code,
-                    entity_layer="LOGICAL",
-                    entity_name=entity_name,
-                    entity_code=entity.get("entity_code", ""),
-                    relation_type="DIRECT" if strength > 0.7 else "INDIRECT",
-                    relation_strength=strength,
-                    match_method=match_method,
-                    data_domain=entity.get("data_domain", ""),
-                    source_file=entity.get("source_file", ""),
-                    source_sheet=entity.get("source_sheet", ""),
-                    source_row=entity.get("source_row", 0)
-                ))
+                    relations.append(EntityRelation(
+                        object_code=obj.object_code,
+                        entity_layer=entity_info.layer,
+                        entity_name=entity_name,
+                        entity_code=entity_info.code,
+                        relation_type="CLUSTER",
+                        relation_strength=strength,
+                        match_method="SEMANTIC_CLUSTER",
+                        data_domain=entity_info.data_domain,
+                        data_subdomain=entity_info.data_subdomain,
+                        source_file=entity_info.source_file,
+                        source_sheet=entity_info.source_sheet,
+                        source_row=entity_info.source_row
+                    ))
 
-    def _build_physical_relations(self, obj: ExtractedObject):
-        """构建与物理实体的关联"""
-        keywords = [obj.object_name] + obj.synonyms
-
-        for entity in self.data.get("physical", []):
-            entity_name = entity.get("entity_name", "")
-            if not entity_name or entity_name == "nan":
-                continue
-
-            match_method, strength = self._calculate_match(keywords, entity_name)
-            if strength > 0.3:
-                self.relations.append(EntityRelation(
-                    object_code=obj.object_code,
-                    entity_layer="PHYSICAL",
-                    entity_name=entity_name,
-                    entity_code=entity.get("entity_code", ""),
-                    relation_type="DIRECT" if strength > 0.7 else "INDIRECT",
-                    relation_strength=strength,
-                    match_method=match_method,
-                    data_domain=entity.get("data_domain", ""),
-                    source_file=entity.get("source_file", ""),
-                    source_sheet=entity.get("source_sheet", ""),
-                    source_row=entity.get("source_row", 0)
-                ))
-
-    def _calculate_match(self, keywords: List[str], entity_name: str) -> Tuple[str, float]:
-        """计算匹配强度"""
-        # 1. 精确匹配
-        for kw in keywords:
-            if kw == entity_name:
-                return "EXACT", 1.0
-
-        # 2. 包含匹配
-        for kw in keywords:
-            if kw in entity_name:
-                # 根据关键词在实体名称中的比例计算强度
-                strength = len(kw) / len(entity_name)
-                return "CONTAINS", min(0.9, strength + 0.3)
-
-        # 3. 语义匹配（如果SBERT可用）
-        if self.sbert_model:
-            try:
-                kw_text = " ".join(keywords)
-                embeddings = self.sbert_model.encode([kw_text, entity_name])
-                similarity = float(np.dot(embeddings[0], embeddings[1]) /
-                                 (np.linalg.norm(embeddings[0]) * np.linalg.norm(embeddings[1])))
-                if similarity > 0.5:
-                    return "SEMANTIC", similarity
-            except Exception:
-                pass
-
-        return "NONE", 0.0
+        print(f"[INFO] 构建完成，共 {len(relations)} 条关联关系")
+        return relations
 
 
 # ============================================================
@@ -704,7 +742,6 @@ class DatabaseWriter:
             with conn.cursor() as cursor:
                 for obj in objects:
                     try:
-                        # 插入或更新对象
                         sql = """
                         INSERT INTO extracted_objects
                         (object_code, object_name, object_name_en, object_type, description,
@@ -713,7 +750,9 @@ class DatabaseWriter:
                         ON DUPLICATE KEY UPDATE
                         object_name = VALUES(object_name),
                         description = VALUES(description),
-                        extraction_confidence = VALUES(extraction_confidence)
+                        extraction_source = VALUES(extraction_source),
+                        extraction_confidence = VALUES(extraction_confidence),
+                        llm_reasoning = VALUES(llm_reasoning)
                         """
                         cursor.execute(sql, (
                             obj.object_code, obj.object_name, obj.object_name_en,
@@ -721,7 +760,6 @@ class DatabaseWriter:
                             obj.extraction_confidence, obj.llm_reasoning, False
                         ))
 
-                        # 获取对象ID
                         cursor.execute("SELECT object_id FROM extracted_objects WHERE object_code = %s",
                                      (obj.object_code,))
                         result = cursor.fetchone()
@@ -755,6 +793,10 @@ class DatabaseWriter:
 
         with pymysql.connect(**self.db_config) as conn:
             with conn.cursor() as cursor:
+                # 清空旧的关联关系
+                for object_id in object_ids.values():
+                    cursor.execute("DELETE FROM object_entity_relations WHERE object_id = %s", (object_id,))
+
                 for rel in relations:
                     object_id = object_ids.get(rel.object_code)
                     if not object_id:
@@ -785,7 +827,7 @@ class DatabaseWriter:
 
     def create_batch(self, source_files: List[str], llm_model: str = "") -> int:
         """创建抽取批次"""
-        batch_code = f"BATCH_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        batch_code = f"SEMANTIC_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
         with pymysql.connect(**self.db_config) as conn:
             with conn.cursor() as cursor:
@@ -813,51 +855,69 @@ class DatabaseWriter:
 # 主执行流程
 # ============================================================
 
-class ObjectExtractionPipeline:
-    """对象抽取流水线"""
+class SemanticObjectExtractionPipeline:
+    """语义聚类对象抽取流水线"""
 
-    def __init__(self, data_dir: str = "DATA", db_config: Dict = None):
+    def __init__(self, data_dir: str = "DATA", db_config: Dict = None,
+                 target_clusters: int = TARGET_CLUSTER_COUNT):
         self.data_dir = data_dir
         self.db_config = db_config or {}
+        self.target_clusters = target_clusters
 
     def run(self, use_llm: bool = True) -> Dict:
         """执行抽取流水线"""
         print("=" * 60)
-        print("对象抽取流水线启动")
+        print("语义聚类对象抽取流水线启动")
         print("=" * 60)
+        print(f"算法：自下而上的归纳抽取")
+        print(f"目标聚类数：{self.target_clusters}")
+        print()
 
-        # 1. 读取数据
+        # 1. 读取三层架构数据
         reader = DataArchitectureReader(self.data_dir)
-        data = reader.read_all()
+        entities = reader.read_all()
 
-        # 2. 识别候选对象
-        identifier = CandidateObjectIdentifier(data)
-        candidate_names, candidates = identifier.identify_candidates()
+        if not entities:
+            print("[ERROR] 没有读取到任何实体数据")
+            return {"objects": [], "relations_count": 0, "stats": {}}
 
-        # 3. 大模型/规则抽取对象
-        extractor = LLMObjectExtractor()
-        objects = extractor.extract_objects(identifier.entity_names, candidates)
+        # 2. 语义聚类
+        extractor = SemanticClusterExtractor(target_clusters=self.target_clusters)
+        clusters, cluster_entity_map = extractor.extract(entities)
 
-        print(f"\n[INFO] 抽取到 {len(objects)} 个对象:")
+        print(f"\n[INFO] 聚类结果预览:")
+        for cluster in clusters[:5]:
+            print(f"  聚类{cluster['cluster_id']}: {cluster['size']}个实体, 代表: {cluster['centroid_entity']}")
+            print(f"    样本: {cluster['sample_entities'][:5]}")
+
+        # 3. 大模型归纳命名
+        namer = LLMObjectNamer()
+        if use_llm:
+            objects = namer.name_clusters(clusters)
+        else:
+            objects = namer._rule_based_naming(clusters)
+
+        print(f"\n[INFO] 抽取到 {len(objects)} 个核心对象:")
         for obj in objects:
-            print(f"  - {obj.object_code}: {obj.object_name} ({obj.object_type})")
+            print(f"  - {obj.object_code}: {obj.object_name} ({obj.object_type}) [聚类{obj.cluster_id}, {obj.cluster_size}个实体]")
 
         # 4. 构建关联关系
-        builder = RelationBuilder(objects, data)
+        builder = ClusterRelationBuilder(objects, entities, cluster_entity_map)
         relations = builder.build_relations()
 
-        # 5. 统计关联关系
+        # 5. 统计
         stats = self._compute_stats(objects, relations)
         print("\n[INFO] 关联关系统计:")
         for obj_code, obj_stats in stats.items():
             print(f"  {obj_code}:")
             print(f"    概念实体: {obj_stats['concept']} | 逻辑实体: {obj_stats['logical']} | 物理实体: {obj_stats['physical']}")
 
-        # 6. 写入数据库（如果配置了）
+        # 6. 写入数据库
         if self.db_config:
             try:
                 writer = DatabaseWriter(**self.db_config)
-                batch_id = writer.create_batch([f for f in os.listdir(self.data_dir) if f.endswith('.xlsx')])
+                source_files = [f for f in os.listdir(self.data_dir) if f.endswith('.xlsx')]
+                batch_id = writer.create_batch(source_files, "deepseek-chat")
                 object_ids = writer.write_objects(objects, batch_id)
                 rel_count = writer.write_relations(relations, object_ids)
                 writer.update_batch(batch_id, len(objects), rel_count)
@@ -866,6 +926,7 @@ class ObjectExtractionPipeline:
 
         return {
             "objects": [asdict(o) for o in objects],
+            "clusters": [{k: v for k, v in c.items() if k != "all_entities"} for c in clusters],
             "relations_count": len(relations),
             "stats": stats
         }
@@ -876,6 +937,9 @@ class ObjectExtractionPipeline:
         for obj in objects:
             obj_rels = [r for r in relations if r.object_code == obj.object_code]
             stats[obj.object_code] = {
+                "object_name": obj.object_name,
+                "cluster_id": obj.cluster_id,
+                "cluster_size": obj.cluster_size,
                 "concept": len([r for r in obj_rels if r.entity_layer == "CONCEPT"]),
                 "logical": len([r for r in obj_rels if r.entity_layer == "LOGICAL"]),
                 "physical": len([r for r in obj_rels if r.entity_layer == "PHYSICAL"]),
@@ -891,15 +955,17 @@ class ObjectExtractionPipeline:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="对象抽取器")
+    parser = argparse.ArgumentParser(description="语义聚类对象抽取器")
     parser.add_argument("--data-dir", default="DATA", help="数据目录")
+    parser.add_argument("--target-clusters", type=int, default=TARGET_CLUSTER_COUNT, help="目标聚类数量")
     parser.add_argument("--db-host", default="localhost", help="数据库主机")
     parser.add_argument("--db-port", type=int, default=3307, help="数据库端口")
     parser.add_argument("--db-user", default="root", help="数据库用户")
     parser.add_argument("--db-password", default="", help="数据库密码")
     parser.add_argument("--db-name", default="yimo", help="数据库名称")
-    parser.add_argument("--use-llm", action="store_true", help="使用大模型抽取")
+    parser.add_argument("--use-llm", action="store_true", help="使用大模型命名")
     parser.add_argument("--no-db", action="store_true", help="不写入数据库")
+    parser.add_argument("--output", "-o", default=None, help="输出JSON文件路径")
 
     args = parser.parse_args()
 
@@ -913,11 +979,21 @@ if __name__ == "__main__":
             "database": args.db_name
         }
 
-    pipeline = ObjectExtractionPipeline(args.data_dir, db_config)
+    pipeline = SemanticObjectExtractionPipeline(
+        args.data_dir,
+        db_config,
+        target_clusters=args.target_clusters
+    )
     result = pipeline.run(use_llm=args.use_llm)
 
     # 输出JSON结果
     print("\n" + "=" * 60)
-    print("抽取结果 (JSON)")
+    print("抽取结果摘要")
     print("=" * 60)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    print(f"核心对象数量: {len(result['objects'])}")
+    print(f"关联关系数量: {result['relations_count']}")
+
+    if args.output:
+        with open(args.output, 'w', encoding='utf-8') as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+        print(f"\n结果已保存到: {args.output}")
