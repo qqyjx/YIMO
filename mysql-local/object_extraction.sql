@@ -68,11 +68,11 @@ CREATE TABLE IF NOT EXISTS object_entity_relations (
     entity_code VARCHAR(256) COMMENT '实体编码',
 
     -- 关联强度和类型
-    relation_type ENUM('DIRECT', 'INDIRECT', 'DERIVED') DEFAULT 'DIRECT' COMMENT '关联类型：直接/间接/派生',
+    relation_type ENUM('DIRECT', 'INDIRECT', 'DERIVED', 'CLUSTER') DEFAULT 'DIRECT' COMMENT '关联类型：直接/间接/派生/聚类',
     relation_strength DECIMAL(5,4) DEFAULT 0.0 COMMENT '关联强度 0-1',
 
     -- 关联来源
-    match_method ENUM('EXACT', 'CONTAINS', 'SEMANTIC', 'LLM') DEFAULT 'EXACT' COMMENT '匹配方法',
+    match_method ENUM('EXACT', 'CONTAINS', 'SEMANTIC', 'LLM', 'SEMANTIC_CLUSTER') DEFAULT 'EXACT' COMMENT '匹配方法：精确/包含/语义/LLM/语义聚类',
     semantic_similarity DECIMAL(5,4) COMMENT '语义相似度（SBERT计算）',
 
     -- 元数据（来自原始Excel）
