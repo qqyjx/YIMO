@@ -4,26 +4,26 @@
 
 ## Project Overview
 
-**YIMO** (Your Intelligent Master Ontology) is a Universal Lifecycle Ontology Manager for smart grid asset data management. The core concept is "一模到底" (Unified Ontology) - using a single unified ontology model to track assets throughout their entire lifecycle from planning to operations.
+**YIMO** is an Object Extraction & Three-Tier Architecture Association System for smart grid data management. The core concept is extracting highly abstract "objects" (like Project, Device, Asset) from data architecture documents and establishing associations with the three-tier architecture (Concept Entity, Logical Entity, Physical Entity).
 
 ### Problem Solved
 
-Smart grid assets often have different identities across systems:
-- Feasibility Study: "1#主变" (Main Transformer 1)
-- Design: "主变一" (Main Transformer One)
-- Construction: "主变压器1" (Main Power Transformer 1)
-- SCADA: "TRF001"
-- Finance: "资产-变1" (Asset-Transformer 1)
+Data architecture documents contain three layers of entities:
+- **Concept Entity (概念实体)**: Business scenario layer
+- **Logical Entity (逻辑实体)**: Interaction form layer
+- **Physical Entity (物理实体)**: Database layer
 
-YIMO assigns a global unique identifier (e.g., `GA-2024-TRF-001`) and tracks it through the entire lifecycle.
+YIMO extracts abstract "objects" from these entities and builds association relationships, enabling:
+- Unified object model across different data domains
+- Traceable relationships between objects and three-tier entities
+- Foundation for comparison with enterprise data center
 
 ### Core Components
 
-1. **EAV Data Model** - Entity-Attribute-Value storage for heterogeneous equipment data
-2. **Semantic Deduplication** - SBERT-based Chinese text clustering
-3. **Lifecycle Fusion Agent** - LLM-driven entity matching across lifecycle stages
-4. **AIOps Consistency Monitor** - Real-time data quality monitoring
-5. **Web Visualization** - Flask app with RAG queries and Deepseek LLM integration
+1. **EAV Data Model** - Entity-Attribute-Value storage for heterogeneous data
+2. **Semantic Clustering** - SBERT-based Chinese text clustering for object extraction
+3. **LLM Object Naming** - DeepSeek/GPT integration for cluster naming
+4. **Web Visualization** - Flask app with object cards and relation panels
 
 ---
 
@@ -32,54 +32,41 @@ YIMO assigns a global unique identifier (e.g., `GA-2024-TRF-001`) and tracks it 
 ```
 YIMO/
 ├── scripts/                    # Core Python processing modules
+│   ├── object_extractor.py    # Object extraction algorithm (SBERT + LLM)
 │   ├── eav_full.py            # Excel → EAV import (multi-sheet)
 │   ├── eav_csv.py             # CSV → EAV import
 │   ├── eav_semantic_dedupe.py # SBERT semantic deduplication
-│   ├── import_all.py          # Batch import with lifecycle staging
-│   ├── agent_lifecycle_fusion.py    # LLM entity fusion
-│   ├── aiops_consistency_monitor.py # Data quality monitoring
-│   ├── object_lifecycle_manager.py  # Three-tier ontology management
-│   ├── mechanism_function_engine.py # Business rules engine
-│   ├── penetration_query_engine.py  # Cross-layer query engine
-│   ├── auto_finalize_global.py      # Auto finalization & reporting
-│   └── check_db_semantic.py         # Database health checks
+│   ├── import_all.py          # Batch import
+│   └── check_db_semantic.py   # Database health checks
 │
 ├── webapp/                     # Flask web application
 │   ├── app.py                 # Main Flask app + RAG interface
-│   ├── olm_api.py             # REST API Blueprint for OLM
+│   ├── olm_api.py             # REST API Blueprint for Object Extraction
 │   ├── requirements.txt       # Python web dependencies
 │   ├── .env.example           # Configuration template
 │   ├── start_web.sh           # Service start script
 │   ├── stop_web.sh            # Service stop script
-│   ├── components/            # TypeScript/React frontend components
-│   │   ├── ChatModule.tsx
-│   │   ├── VisionModule.tsx
-│   │   └── WriterModule.tsx
 │   └── templates/             # Jinja2 HTML templates
 │       ├── 10.0.html          # Main dashboard (v10.0)
-│       ├── lifecycle_manager.html
-│       ├── object_lifecycle_manager.html
-│       ├── anomalies.html
-│       └── finance_supervision.html
+│       ├── object_extraction.html
+│       └── home.html
 │
 ├── mysql-local/               # MySQL configuration
 │   ├── bootstrap.sql          # Database initialization
 │   ├── my.cnf                 # MySQL config
 │   └── init_local_mysql.sh    # Local MySQL setup
 │
-├── DATA/                      # Sample data directory
-│   ├── 1.xlsx, 2.xlsx, 3.xlsx # Original datasets
-│   └── lifecycle_demo/        # Lifecycle demo data
+├── DATA/                      # Data directory
+│   ├── 1.xlsx, 2.xlsx, 3.xlsx # Data architecture files
+│   └── (future: 计划财务域等)  # Additional domain data
 │
-├── doc/                       # Documentation
 ├── figures/                   # Architecture diagrams (Mermaid)
-├── outputs/                   # Execution results
-├── bat/                       # Windows batch scripts
+│   └── architecture/
+│       └── object_extraction_algorithm.mmd
 │
 ├── docker-compose.yml         # Docker orchestration
 ├── Dockerfile                 # Multi-stage container build
 ├── deploy.sh                  # Interactive deployment script
-├── docker-start.sh            # Docker quick-start
 └── requirements.txt           # Root Python dependencies
 ```
 
@@ -91,9 +78,9 @@ YIMO/
 |-------|------------|
 | **Backend** | Python 3.10+, Flask 3.0 |
 | **Database** | MySQL 8.0 (InnoDB, UTF8MB4) |
-| **ML/AI** | SBERT (text2vec-base-chinese), FAISS |
+| **ML/AI** | SBERT (text2vec-base-chinese), scikit-learn |
 | **LLM** | Deepseek API integration |
-| **Frontend** | HTML5/Jinja2, TypeScript/React components |
+| **Frontend** | HTML5/Jinja2, CSS3 |
 | **DevOps** | Docker, Docker Compose, Bash |
 
 ### Key Dependencies
@@ -102,12 +89,11 @@ YIMO/
 flask>=3.0.3               # Web framework
 pymysql>=1.1.1             # MySQL driver
 sentence-transformers>=2.7 # SBERT embeddings
-faiss-cpu>=1.7.4           # Vector search
+scikit-learn>=1.3          # Clustering algorithms
 pandas>=2.0                # Data processing
 openpyxl>=3.1              # Excel I/O
 python-dotenv>=1.0.1       # Environment config
 requests>=2.32.3           # HTTP client
-SQLAlchemy>=2.0.32         # ORM
 ```
 
 ---
@@ -121,9 +107,7 @@ SQLAlchemy>=2.0.32         # ORM
 ./docker-start.sh
 
 # Option 2: Local development
-./deploy.sh                    # Interactive setup
-./deploy.sh --with-demo-data   # With sample data
-./deploy.sh --cn-mirror        # Use China pip mirror
+./deploy.sh
 ```
 
 ### Running the Web Application
@@ -136,57 +120,38 @@ cd webapp && ./start_web.sh
 source venv/bin/activate
 cd webapp && python app.py
 
-# Background mode
-nohup python app.py > /tmp/webapp.log 2>&1 &
-
-# Stop service
-./stop_web.sh
-# or
-fuser -k 5000/tcp
-
 # Verify health
 curl http://localhost:5000/health
 ```
 
-### Data Import Pipeline
+### Object Extraction
 
 ```bash
-# Stage 1: Import Excel with lifecycle stage
-python scripts/eav_full.py --excel ./DATA/planning/equipment.xlsx --stage Planning
+# Command line extraction (no LLM)
+python scripts/object_extractor.py \
+    --data-dir DATA \
+    --target-clusters 15 \
+    --no-db \
+    --output result.json
 
-# Stage 2: Import CSV
+# With LLM naming
+python scripts/object_extractor.py \
+    --data-dir DATA \
+    --target-clusters 15 \
+    --use-llm \
+    --db-host localhost \
+    --db-port 3307 \
+    --db-name eav_db
+```
+
+### Data Import
+
+```bash
+# Import Excel to EAV
+python scripts/eav_full.py --excel ./DATA/2.xlsx
+
+# Import CSV
 python scripts/eav_csv.py --csv ./data.csv --db eav_db
-
-# Batch import by stage
-python scripts/import_all.py --stage planning --dir ./DATA/planning/
-python scripts/import_all.py --stage design --dir ./DATA/design/
-python scripts/import_all.py --stage construction --dir ./DATA/construction/
-python scripts/import_all.py --stage operation --dir ./DATA/operation/
-python scripts/import_all.py --stage finance --dir ./DATA/finance/
-```
-
-### Semantic Deduplication
-
-```bash
-# Single dataset mode
-python scripts/eav_semantic_dedupe.py --dataset-id 1 \
-  --threshold 0.86 --batch-size 512 --multi-gpu -1
-
-# Global mode (cross-dataset)
-python scripts/eav_semantic_dedupe.py --dataset-ids 1,2,3 --global-dedupe
-```
-
-### Lifecycle Fusion
-
-```bash
-# Build unified ontology
-python scripts/agent_lifecycle_fusion.py --batch-size 100 --mode full
-
-# Monitor data consistency
-python scripts/aiops_consistency_monitor.py --check-all
-
-# Generate reports
-python scripts/auto_finalize_global.py
 ```
 
 ---
@@ -221,24 +186,33 @@ MYSQL_PASSWORD=eavpass123
 | `eav_semantic_mapping` | Original → canonical text mappings |
 | `semantic_fingerprints` | Vector embeddings (768-dim SBERT) |
 
-### Lifecycle Tables
+### Object Extraction Tables
 
 | Table | Purpose |
 |-------|---------|
-| `lifecycle_stages` | Five standard stages (Planning/Design/Construction/Operation/Finance) |
-| `global_asset_index` | Unified ontology (global_uid, trust_score, golden_attributes) |
-| `entity_global_mapping` | Entity to global asset mappings with confidence |
-| `fusion_logs` | LLM fusion decision audit trail |
-| `data_anomalies` | Quality alerts and monitoring |
+| `extracted_objects` | Core objects (object_code, object_name, object_type) |
+| `object_synonyms` | Object synonyms/aliases |
+| `object_attribute_definitions` | Object attribute definitions |
+| `object_entity_relations` | **Object to Three-Tier Entity Relations (Core)** |
+| `object_extraction_batches` | Extraction batch records |
 
-### Anomaly Types Monitored
+### Object-Entity Relation Table Structure
 
-- `temporal_violation` - Lifecycle order violations
-- `value_drift` - Unexpected value changes across stages
-- `missing_stage` - Gaps in lifecycle continuity
-- `duplicate_conflict` - Multiple candidates for same asset
-- `schema_mismatch` - Type inconsistencies
-- `orphan_entity` - Unlinked entities
+```sql
+CREATE TABLE object_entity_relations (
+    relation_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    object_id INT NOT NULL,
+    entity_layer ENUM('CONCEPT', 'LOGICAL', 'PHYSICAL'),  -- Three-tier layer
+    entity_name VARCHAR(512),                              -- Entity name
+    entity_code VARCHAR(256),                              -- Entity code
+    relation_type ENUM('DIRECT', 'INDIRECT', 'DERIVED', 'CLUSTER'),
+    relation_strength DECIMAL(5,4),                        -- 0-1 strength
+    match_method ENUM('EXACT', 'CONTAINS', 'SEMANTIC', 'LLM', 'SEMANTIC_CLUSTER'),
+    data_domain VARCHAR(128),                              -- Data domain
+    source_file VARCHAR(256),                              -- Source file
+    FOREIGN KEY (object_id) REFERENCES extracted_objects(object_id)
+);
+```
 
 ---
 
@@ -281,21 +255,58 @@ MYSQL_PASSWORD=eavpass123
 
 | Route | Method | Description |
 |-------|--------|-------------|
-| `/` | GET | Main dashboard (add `?v=10.0` for v10) |
+| `/` | GET | Main dashboard (v10.0) |
 | `/health` | GET | Health check endpoint |
-| `/lifecycle` | GET | Unified ontology visualization |
-| `/anomalies` | GET | Anomaly monitoring dashboard |
+| `/extraction` | GET | Object extraction page |
 | `/rag/query` | POST | RAG-based query endpoint |
-| `/api/olm/*` | REST | Object Lifecycle Manager API |
+| `/api/olm/*` | REST | Object Extraction API |
 
-### OLM API Blueprint
+### Object Extraction API
 
-- `GET /api/olm/assets` - List global assets
-- `GET /api/olm/assets/<uid>` - Get asset details
-- `POST /api/olm/assets` - Create new asset
-- `PUT /api/olm/assets/<uid>` - Update asset
-- `GET /api/olm/mappings` - Entity-global mappings
-- `GET /api/olm/anomalies` - Data anomalies
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/olm/extracted-objects` | GET | List extracted objects |
+| `/api/olm/object-relations/<code>` | GET | Get object's three-tier relations |
+| `/api/olm/relation-stats` | GET | Relation statistics |
+| `/api/olm/run-extraction` | POST | Execute object extraction |
+| `/api/olm/export-objects` | GET | Export objects to JSON |
+| `/api/olm/objects` | POST | Create new object |
+| `/api/olm/objects/<code>` | PUT | Update object |
+| `/api/olm/objects/<code>` | DELETE | Delete object |
+
+---
+
+## Object Extraction Algorithm
+
+### Overview
+
+The algorithm uses a **bottom-up inductive extraction** approach:
+
+```
+Entity Collection → SBERT Vectorization → Semantic Clustering → LLM Naming → Object Output
+```
+
+### Algorithm Steps
+
+1. **Data Collection**: Read three-tier architecture data from Excel (DA-01, DA-02, DA-03 sheets)
+2. **SBERT Vectorization**: Encode entity names using `shibing624/text2vec-base-chinese` (768-dim)
+3. **Hierarchical Clustering**: Use `AgglomerativeClustering` with cosine distance (~15 clusters)
+4. **LLM Naming**: Call DeepSeek API to name each cluster with an abstract object name
+5. **Relation Building**: Build object-entity relations based on cluster membership
+
+### Key Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `TARGET_CLUSTER_COUNT` | 15 | Target number of clusters |
+| `MAX_CLUSTER_COUNT` | 20 | Maximum clusters |
+| `SBERT_MODEL_NAME` | text2vec-base-chinese | Embedding model |
+| `REQUIRED_OBJECTS` | ["项目"] | Objects that must exist |
+
+### Relation Strength
+
+- Sample entities (top-20 in cluster): `strength = 0.9`
+- Other cluster members: `strength = 0.7`
 
 ---
 
@@ -311,22 +322,12 @@ curl http://localhost:5000/health
 python scripts/check_db_semantic.py
 ```
 
-### Demo Data
-
-```bash
-# Generate lifecycle demo data
-cd DATA/lifecycle_demo && python generate_demo_data.py
-
-# Deploy with demo data
-./deploy.sh --with-demo-data
-```
-
 ### Common Verification Steps
 
 1. Check web service: `curl http://localhost:5000/health`
 2. Verify database connection: `python scripts/check_db_semantic.py`
-3. Test data import: `python scripts/eav_full.py --excel ./DATA/1.xlsx`
-4. Verify fusion: Check `/lifecycle` page for unified assets
+3. Test data import: `python scripts/eav_full.py --excel ./DATA/2.xlsx`
+4. Test object extraction: `python scripts/object_extractor.py --no-db --output test.json`
 
 ---
 
@@ -355,35 +356,6 @@ cd DATA/lifecycle_demo && python generate_demo_data.py
 
 ---
 
-## Common Tasks
-
-### Adding a New Data Source
-
-1. Place data files in appropriate `DATA/<stage>/` directory
-2. Run import: `python scripts/import_all.py --stage <stage> --dir <path>`
-3. Run fusion: `python scripts/agent_lifecycle_fusion.py`
-4. Verify in web UI at `/lifecycle`
-
-### Modifying Database Schema
-
-1. Update `mysql-local/bootstrap.sql`
-2. Apply changes: `mysql -u eav_user -p eav_db < mysql-local/bootstrap.sql`
-3. Update relevant Python models/queries
-
-### Adding New Web Pages
-
-1. Create template in `webapp/templates/`
-2. Add route in `webapp/app.py`
-3. Update navigation links in main template
-
-### Debugging Data Quality Issues
-
-1. Check anomalies: `python scripts/aiops_consistency_monitor.py --check-all`
-2. View dashboard: `http://localhost:5000/anomalies`
-3. Review fusion logs in `fusion_logs` table
-
----
-
 ## Important Notes for AI Assistants
 
 1. **Language**: The codebase primarily uses Chinese for:
@@ -393,20 +365,19 @@ cd DATA/lifecycle_demo && python generate_demo_data.py
 
 2. **Database Port**: Default is 3307 (not 3306) to avoid WSL2 conflicts
 
-3. **Lifecycle Stages**: Always use the five standard stages:
-   - Planning (规划)
-   - Design (设计)
-   - Construction (建设)
-   - Operation (运维)
-   - Finance (财务)
+3. **Three-Tier Architecture**:
+   - Concept Entity (概念实体) - Business scenario layer
+   - Logical Entity (逻辑实体) - Interaction form layer
+   - Physical Entity (物理实体) - Database layer
 
-4. **Global UID Format**: `GA-YYYY-<TYPE>-NNN` (e.g., `GA-2024-TRF-001`)
+4. **Required Object**: "项目" (Project) must always be extracted per client requirement
 
-5. **Trust Score**: Range 0-1, DECIMAL(5,4), reflects data completeness/consistency
+5. **Embedding Model**: Uses `shibing624/text2vec-base-chinese` (768 dimensions)
 
-6. **Embedding Model**: Uses `shibing624/text2vec-base-chinese` (768 dimensions)
-
-7. **Multi-GPU Support**: Use `--multi-gpu -1` to utilize all available GPUs
+6. **Object Types**:
+   - `CORE`: Core objects (Project, Device, Asset)
+   - `DERIVED`: Derived objects (Task, Cost)
+   - `AUXILIARY`: Auxiliary objects (Document, Process)
 
 ---
 
@@ -419,13 +390,12 @@ cd DATA/lifecycle_demo && python generate_demo_data.py
 | MySQL connection refused | Check port 3307, verify MySQL is running |
 | Import encoding errors | Ensure files are UTF-8 encoded |
 | Web service won't start | Check if port 5000 is in use: `fuser 5000/tcp` |
-| Empty lifecycle visualization | Run `agent_lifecycle_fusion.py` first |
+| Empty extraction results | Verify DATA/2.xlsx exists with DA-01/02/03 sheets |
 | Missing model files | Models download automatically on first run |
 
 ### Log Locations
 
 - Web app logs: `webapp/*.log` or `/tmp/webapp.log`
-- Deduplication outputs: `outputs/semantic_dedupe_gpu_full/`
 - Docker logs: `docker compose logs -f`
 
 ---
