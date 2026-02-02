@@ -1,6 +1,6 @@
 -- ============================================================================
--- YIMO 一模到底本体管理器 - 数据库初始化脚本
--- Universal Lifecycle Ontology Manager (ULOM) Bootstrap SQL
+-- YIMO 对象抽取与三层架构关联 - 数据库初始化脚本
+-- Object Extraction & Three-Tier Architecture Association
 -- ============================================================================
 -- 以 root 身份在系统 MySQL 或用户态 mysqld 中执行本脚本以创建数据库与账号
 
@@ -19,138 +19,87 @@ FLUSH PRIVILEGES;
 USE `eav_db`;
 
 -- ============================================================================
--- 生命周期阶段定义
--- "一模到底"核心理念：资产从规划到运维全生命周期统一管理
+-- EAV 核心表 - 数据导入基础
 -- ============================================================================
 
--- 生命周期阶段枚举表（便于扩展）
-CREATE TABLE IF NOT EXISTS `lifecycle_stages` (
-    `id` INT PRIMARY KEY AUTO_INCREMENT,
-    `code` VARCHAR(50) NOT NULL UNIQUE COMMENT '阶段代码',
-    `name_cn` VARCHAR(100) NOT NULL COMMENT '中文名称',
-    `name_en` VARCHAR(100) NOT NULL COMMENT '英文名称',
-    `ord_index` INT NOT NULL DEFAULT 0 COMMENT '阶段顺序(用于时序校验)',
-    `description` TEXT COMMENT '阶段描述',
-    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 初始化五大生命周期阶段
-INSERT IGNORE INTO `lifecycle_stages` (`code`, `name_cn`, `name_en`, `ord_index`, `description`) VALUES
-    ('Planning', '规划', 'Planning', 1, '资产规划阶段：需求分析、可研、立项'),
-    ('Design', '设计', 'Design', 2, '设计阶段：初设、施工图、BOM清单'),
-    ('Construction', '建设', 'Construction', 3, '建设阶段：采购、施工、验收'),
-    ('Operation', '运维', 'Operation', 4, '运维阶段：巡检、检修、状态监测'),
-    ('Finance', '财务', 'Finance', 5, '财务阶段：资产入账、折旧、处置');
-
--- ============================================================================
--- 全局资产索引表 - "统一本体"(Unified Ontology) 实现
--- 这是"一模到底"的核心：每个物理资产只有一个全局唯一标识
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS `global_asset_index` (
+-- EAV数据集表
+CREATE TABLE IF NOT EXISTS `eav_datasets` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `global_uid` VARCHAR(64) NOT NULL UNIQUE COMMENT '全局唯一资产标识(UUID或业务编码)',
-    `asset_name` VARCHAR(512) COMMENT '资产名称(融合后的规范名)',
-    `asset_type` VARCHAR(256) COMMENT '资产类型',
-    `asset_class` VARCHAR(128) COMMENT '资产大类(如:变压器/线路/开关)',
-    `trust_score` DECIMAL(5,4) DEFAULT 1.0000 COMMENT '数据可信度(0-1)',
-    `fusion_status` ENUM('pending', 'partial', 'complete', 'conflict') DEFAULT 'pending' COMMENT '融合状态',
-    `golden_attributes` JSON COMMENT '黄金记录:融合后的权威属性集',
-    `source_count` INT DEFAULT 0 COMMENT '关联的源数据数量',
-    `first_seen_stage` VARCHAR(50) COMMENT '首次出现的生命周期阶段',
-    `latest_stage` VARCHAR(50) COMMENT '最新的生命周期阶段',
-    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    KEY `idx_asset_type` (`asset_type`),
-    KEY `idx_asset_class` (`asset_class`),
-    KEY `idx_fusion_status` (`fusion_status`),
-    KEY `idx_trust_score` (`trust_score`)
+    `name` VARCHAR(256) NOT NULL COMMENT '数据集名称',
+    `source_file` VARCHAR(512) COMMENT '来源文件路径',
+    `source_type` VARCHAR(64) DEFAULT 'excel' COMMENT '来源类型(excel/csv/api)',
+    `description` TEXT COMMENT '数据集描述',
+    `row_count` INT DEFAULT 0 COMMENT '数据行数',
+    `imported_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    KEY `idx_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================================
--- 实体-全局资产映射表
--- 将不同阶段、不同来源的 eav_entities 映射到同一个 global_uid
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS `entity_global_mapping` (
+-- EAV实体表
+CREATE TABLE IF NOT EXISTS `eav_entities` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `entity_id` BIGINT NOT NULL COMMENT '关联的EAV实体ID',
-    `global_uid` VARCHAR(64) NOT NULL COMMENT '全局资产UID',
-    `lifecycle_stage` VARCHAR(50) NOT NULL COMMENT '该实体所属生命周期阶段',
-    `confidence` DECIMAL(5,4) DEFAULT 1.0000 COMMENT '映射置信度(0-1)',
-    `mapping_method` ENUM('manual', 'rule', 'llm', 'semantic') DEFAULT 'manual' COMMENT '映射方法',
-    `mapping_reason` TEXT COMMENT '映射原因/证据',
-    `is_primary` TINYINT(1) DEFAULT 0 COMMENT '是否为该阶段的主记录',
+    `dataset_id` BIGINT NOT NULL COMMENT '所属数据集ID',
+    `row_index` INT NOT NULL COMMENT '原始行号',
+    `entity_label` VARCHAR(512) COMMENT '实体标签(可选)',
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `created_by` VARCHAR(128) COMMENT '创建者(用户或agent)',
-    UNIQUE KEY `uniq_entity_stage` (`entity_id`, `lifecycle_stage`),
-    KEY `idx_global_uid` (`global_uid`),
-    KEY `idx_stage` (`lifecycle_stage`),
-    KEY `idx_confidence` (`confidence`),
-    CONSTRAINT `fk_mapping_global` FOREIGN KEY (`global_uid`) 
-        REFERENCES `global_asset_index` (`global_uid`) ON DELETE CASCADE
+    KEY `idx_dataset` (`dataset_id`),
+    KEY `idx_row` (`row_index`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================================
--- 数据异常/告警表 - AIOps一致性监控
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS `data_anomalies` (
+-- EAV属性定义表
+CREATE TABLE IF NOT EXISTS `eav_attributes` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `global_uid` VARCHAR(64) COMMENT '关联的全局资产UID',
-    `anomaly_type` ENUM(
-        'temporal_violation',   -- 时序违规(如运维早于建设)
-        'value_drift',          -- 值漂移(同属性不同阶段值不一致)
-        'missing_stage',        -- 缺失阶段
-        'duplicate_conflict',   -- 重复冲突
-        'schema_mismatch',      -- 模式不匹配
-        'orphan_entity'         -- 孤立实体(无法关联到全局资产)
-    ) NOT NULL COMMENT '异常类型',
-    `severity` ENUM('info', 'warning', 'error', 'critical') DEFAULT 'warning' COMMENT '严重程度',
-    `attribute_name` VARCHAR(256) COMMENT '涉及的属性名',
-    `expected_value` TEXT COMMENT '期望值',
-    `actual_value` TEXT COMMENT '实际值',
-    `source_entities` JSON COMMENT '涉及的源实体ID列表',
-    `description` TEXT NOT NULL COMMENT '异常描述',
-    `suggestion` TEXT COMMENT '修复建议',
-    `status` ENUM('open', 'acknowledged', 'resolved', 'ignored') DEFAULT 'open' COMMENT '处理状态',
-    `resolved_at` DATETIME(6) COMMENT '解决时间',
-    `resolved_by` VARCHAR(128) COMMENT '解决者',
-    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    KEY `idx_global_uid` (`global_uid`),
-    KEY `idx_anomaly_type` (`anomaly_type`),
-    KEY `idx_severity` (`severity`),
-    KEY `idx_status` (`status`),
-    KEY `idx_created_at` (`created_at`)
+    `dataset_id` BIGINT NOT NULL COMMENT '所属数据集ID',
+    `name` VARCHAR(256) NOT NULL COMMENT '属性名称',
+    `data_type` VARCHAR(64) DEFAULT 'string' COMMENT '数据类型(string/number/datetime/bool)',
+    `ord_index` INT NOT NULL DEFAULT 0 COMMENT '属性顺序',
+    `is_nullable` TINYINT(1) DEFAULT 1 COMMENT '是否可空',
+    `description` TEXT COMMENT '属性描述',
+    UNIQUE KEY `uniq_ds_name` (`dataset_id`, `name`),
+    KEY `idx_dataset` (`dataset_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============================================================================
--- 本体融合日志表 - 记录LLM/规则引擎的融合决策
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS `fusion_logs` (
+-- EAV值表
+CREATE TABLE IF NOT EXISTS `eav_values` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
-    `global_uid` VARCHAR(64) COMMENT '目标全局资产UID',
-    `source_entity_id` BIGINT COMMENT '源实体ID',
-    `target_entity_id` BIGINT COMMENT '目标实体ID(如果是合并)',
-    `action` ENUM('create', 'merge', 'split', 'update', 'reject') NOT NULL COMMENT '融合动作',
-    `agent_type` ENUM('rule', 'llm', 'semantic', 'human') NOT NULL COMMENT '执行代理类型',
-    `prompt_used` TEXT COMMENT 'LLM使用的Prompt',
-    `response_raw` TEXT COMMENT 'LLM原始响应',
-    `confidence` DECIMAL(5,4) COMMENT '置信度',
-    `reasoning` TEXT COMMENT '推理过程/依据',
-    `execution_time_ms` INT COMMENT '执行耗时(毫秒)',
-    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    KEY `idx_global_uid` (`global_uid`),
-    KEY `idx_action` (`action`),
-    KEY `idx_agent_type` (`agent_type`),
-    KEY `idx_created_at` (`created_at`)
+    `entity_id` BIGINT NOT NULL COMMENT '实体ID',
+    `attribute_id` BIGINT NOT NULL COMMENT '属性ID',
+    `value_text` TEXT COMMENT '文本值',
+    `value_number` DECIMAL(20,6) COMMENT '数值',
+    `value_datetime` DATETIME(6) COMMENT '日期时间值',
+    `value_bool` TINYINT(1) COMMENT '布尔值',
+    KEY `idx_entity` (`entity_id`),
+    KEY `idx_attr` (`attribute_id`),
+    FULLTEXT KEY `ft_value_text` (`value_text`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
+-- 语义相似度匹配相关表
+-- ============================================================================
+
+-- 语义规范值表（SBERT语义聚类后的规范值）
+CREATE TABLE IF NOT EXISTS `eav_semantic_canon` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `canon_text` VARCHAR(512) NOT NULL COMMENT '规范化文本',
+    `cluster_id` INT COMMENT '聚类ID',
+    `member_count` INT DEFAULT 1 COMMENT '聚类成员数量',
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    KEY `idx_canon` (`canon_text`(255)),
+    KEY `idx_cluster` (`cluster_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 语义映射表（原始值到规范值的映射）
+CREATE TABLE IF NOT EXISTS `eav_semantic_mapping` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `original_text` VARCHAR(512) NOT NULL COMMENT '原始文本',
+    `canon_id` BIGINT NOT NULL COMMENT '规范值ID',
+    `similarity_score` DECIMAL(5,4) COMMENT '相似度分数',
+    `match_method` VARCHAR(64) DEFAULT 'sbert' COMMENT '匹配方法',
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    KEY `idx_original` (`original_text`(255)),
+    KEY `idx_canon` (`canon_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 语义指纹表 - 存储实体的语义向量
--- ============================================================================
-
 CREATE TABLE IF NOT EXISTS `semantic_fingerprints` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
     `entity_id` BIGINT NOT NULL UNIQUE COMMENT 'EAV实体ID',
@@ -166,7 +115,163 @@ CREATE TABLE IF NOT EXISTS `semantic_fingerprints` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
+-- 对象抽取与三层架构关联表
+-- ============================================================================
+
+-- 1. 抽取的对象表（高度抽象的核心对象）
+CREATE TABLE IF NOT EXISTS `extracted_objects` (
+    `object_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `object_code` VARCHAR(64) NOT NULL UNIQUE COMMENT '对象编码，如 OBJ_PROJECT, OBJ_DEVICE',
+    `object_name` VARCHAR(256) NOT NULL COMMENT '对象名称，如 项目、设备',
+    `object_name_en` VARCHAR(256) COMMENT '对象英文名称',
+    `parent_object_id` INT DEFAULT NULL COMMENT '父对象ID，支持对象层次结构',
+    `object_type` ENUM('CORE', 'DERIVED', 'AUXILIARY') DEFAULT 'CORE' COMMENT '对象类型：核心/派生/辅助',
+    `description` TEXT COMMENT '对象描述',
+    `extraction_source` VARCHAR(64) COMMENT '抽取来源：SEMANTIC_CLUSTER_LLM/SEMANTIC_CLUSTER_RULE/MANUAL',
+    `extraction_confidence` DECIMAL(5,4) DEFAULT 0.0 COMMENT '抽取置信度 0-1',
+    `llm_reasoning` TEXT COMMENT '大模型抽取时的推理过程',
+    `is_verified` BOOLEAN DEFAULT FALSE COMMENT '是否经过人工验证',
+    `verified_by` VARCHAR(128) COMMENT '验证人',
+    `verified_at` TIMESTAMP NULL COMMENT '验证时间',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`parent_object_id`) REFERENCES `extracted_objects`(`object_id`) ON DELETE SET NULL,
+    INDEX `idx_object_name` (`object_name`),
+    INDEX `idx_object_type` (`object_type`),
+    INDEX `idx_is_verified` (`is_verified`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='抽取的核心对象表';
+
+-- 2. 对象同义词表（支持多种叫法）
+CREATE TABLE IF NOT EXISTS `object_synonyms` (
+    `synonym_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `object_id` INT NOT NULL,
+    `synonym` VARCHAR(256) NOT NULL COMMENT '同义词/别名',
+    `source` VARCHAR(64) COMMENT '来源：概念实体/逻辑实体/业务对象等',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`object_id`) REFERENCES `extracted_objects`(`object_id`) ON DELETE CASCADE,
+    INDEX `idx_synonym` (`synonym`),
+    INDEX `idx_object_id` (`object_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='对象同义词表';
+
+-- 3. 对象属性定义表
+CREATE TABLE IF NOT EXISTS `object_attribute_definitions` (
+    `attr_def_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `object_id` INT NOT NULL,
+    `attr_name` VARCHAR(256) NOT NULL COMMENT '属性名称',
+    `attr_code` VARCHAR(128) COMMENT '属性编码',
+    `attr_type` VARCHAR(64) COMMENT '属性类型：STRING/NUMBER/DATE/ENUM等',
+    `is_required` BOOLEAN DEFAULT FALSE COMMENT '是否必填',
+    `is_key_attribute` BOOLEAN DEFAULT FALSE COMMENT '是否关键属性',
+    `description` TEXT COMMENT '属性描述',
+    `extracted_from` VARCHAR(64) COMMENT '抽取来源层：CONCEPT/LOGICAL/PHYSICAL',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`object_id`) REFERENCES `extracted_objects`(`object_id`) ON DELETE CASCADE,
+    INDEX `idx_object_attr` (`object_id`, `attr_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='对象属性定义表';
+
+-- ============================================================================
+-- 4. 对象与三层架构关联关系表（核心）
+-- 表示对象与概念实体、逻辑实体、物理实体的关联关系
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `object_entity_relations` (
+    `relation_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `object_id` INT NOT NULL COMMENT '对象ID',
+    `entity_layer` ENUM('CONCEPT', 'LOGICAL', 'PHYSICAL') NOT NULL COMMENT '实体层级：概念/逻辑/物理',
+    `entity_name` VARCHAR(512) NOT NULL COMMENT '实体名称',
+    `entity_code` VARCHAR(256) COMMENT '实体编码',
+
+    -- 关联强度和类型
+    `relation_type` ENUM('DIRECT', 'INDIRECT', 'DERIVED', 'CLUSTER') DEFAULT 'CLUSTER' COMMENT '关联类型：直接/间接/派生/聚类',
+    `relation_strength` DECIMAL(5,4) DEFAULT 0.0 COMMENT '关联强度 0-1',
+
+    -- 关联来源
+    `match_method` ENUM('EXACT', 'CONTAINS', 'SEMANTIC', 'LLM', 'SEMANTIC_CLUSTER') DEFAULT 'SEMANTIC_CLUSTER' COMMENT '匹配方法',
+    `semantic_similarity` DECIMAL(5,4) COMMENT '语义相似度（SBERT计算）',
+
+    -- 元数据（来自原始Excel）
+    `data_domain` VARCHAR(128) COMMENT '数据域',
+    `data_subdomain` VARCHAR(128) COMMENT '数据子域',
+    `source_file` VARCHAR(256) COMMENT '来源文件',
+    `source_sheet` VARCHAR(256) COMMENT '来源工作表',
+    `source_row` INT COMMENT '来源行号',
+
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (`object_id`) REFERENCES `extracted_objects`(`object_id`) ON DELETE CASCADE,
+    INDEX `idx_object_layer` (`object_id`, `entity_layer`),
+    INDEX `idx_entity_name` (`entity_name`(255)),
+    INDEX `idx_entity_layer` (`entity_layer`),
+    INDEX `idx_relation_strength` (`relation_strength`),
+    INDEX `idx_data_domain` (`data_domain`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='对象与三层架构实体关联关系表';
+
+-- 5. 对象关联统计视图
+CREATE OR REPLACE VIEW `v_object_relation_stats` AS
+SELECT
+    o.`object_id`,
+    o.`object_code`,
+    o.`object_name`,
+    o.`object_type`,
+    COUNT(DISTINCT CASE WHEN r.`entity_layer` = 'CONCEPT' THEN r.`entity_name` END) AS `concept_entity_count`,
+    COUNT(DISTINCT CASE WHEN r.`entity_layer` = 'LOGICAL' THEN r.`entity_name` END) AS `logical_entity_count`,
+    COUNT(DISTINCT CASE WHEN r.`entity_layer` = 'PHYSICAL' THEN r.`entity_name` END) AS `physical_entity_count`,
+    COUNT(DISTINCT r.`entity_name`) AS `total_entity_count`,
+    AVG(r.`relation_strength`) AS `avg_relation_strength`,
+    GROUP_CONCAT(DISTINCT r.`data_domain`) AS `related_domains`
+FROM `extracted_objects` o
+LEFT JOIN `object_entity_relations` r ON o.`object_id` = r.`object_id`
+GROUP BY o.`object_id`, o.`object_code`, o.`object_name`, o.`object_type`;
+
+-- 6. 对象抽取批次记录表
+CREATE TABLE IF NOT EXISTS `object_extraction_batches` (
+    `batch_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `batch_code` VARCHAR(64) NOT NULL UNIQUE COMMENT '批次编码',
+    `extraction_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `source_files` JSON COMMENT '输入文件列表',
+    `llm_model` VARCHAR(128) COMMENT '使用的大模型',
+    `llm_prompt` TEXT COMMENT '使用的提示词',
+    `total_objects_extracted` INT DEFAULT 0 COMMENT '抽取对象数量',
+    `total_relations_created` INT DEFAULT 0 COMMENT '创建关联数量',
+    `status` ENUM('RUNNING', 'COMPLETED', 'FAILED') DEFAULT 'RUNNING',
+    `error_message` TEXT,
+    `created_by` VARCHAR(128),
+    INDEX `idx_batch_code` (`batch_code`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='对象抽取批次记录表';
+
+-- 7. 对象与批次关联表
+CREATE TABLE IF NOT EXISTS `object_batch_mapping` (
+    `mapping_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `object_id` INT NOT NULL,
+    `batch_id` INT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`object_id`) REFERENCES `extracted_objects`(`object_id`) ON DELETE CASCADE,
+    FOREIGN KEY (`batch_id`) REFERENCES `object_extraction_batches`(`batch_id`) ON DELETE CASCADE,
+    UNIQUE KEY `uk_object_batch` (`object_id`, `batch_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='对象与抽取批次关联表';
+
+-- ============================================================================
+-- 初始化核心对象（预置常见对象，可由大模型扩展）
+-- ============================================================================
+INSERT INTO `extracted_objects` (`object_code`, `object_name`, `object_name_en`, `object_type`, `description`, `extraction_source`, `extraction_confidence`, `is_verified`) VALUES
+('OBJ_PROJECT', '项目', 'Project', 'CORE', '电网建设项目，包括输变电工程项目、配网工程项目等', 'MANUAL', 1.0, TRUE),
+('OBJ_DEVICE', '设备', 'Device', 'CORE', '电网设备，包括变压器、断路器、线路等各类电气设备', 'MANUAL', 1.0, TRUE),
+('OBJ_ASSET', '资产', 'Asset', 'CORE', '固定资产，包括设备资产、房屋资产等', 'MANUAL', 1.0, TRUE),
+('OBJ_CONTRACT', '合同', 'Contract', 'CORE', '各类业务合同，包括工程合同、采购合同等', 'MANUAL', 1.0, TRUE),
+('OBJ_PERSONNEL', '人员', 'Personnel', 'CORE', '相关人员，包括项目人员、运维人员等', 'MANUAL', 1.0, TRUE),
+('OBJ_ORGANIZATION', '组织', 'Organization', 'CORE', '组织机构，包括部门、单位、项目部等', 'MANUAL', 1.0, TRUE),
+('OBJ_DOCUMENT', '文档', 'Document', 'AUXILIARY', '各类业务文档，包括设计文档、验收文档等', 'MANUAL', 1.0, TRUE),
+('OBJ_PROCESS', '流程', 'Process', 'AUXILIARY', '业务流程，包括审批流程、验收流程等', 'MANUAL', 1.0, TRUE)
+ON DUPLICATE KEY UPDATE `object_name` = VALUES(`object_name`);
+
+-- ============================================================================
 -- 完成提示
 -- ============================================================================
-SELECT '✅ YIMO 一模到底本体管理器 Schema 初始化完成!' AS message;
-
+SELECT '✅ YIMO 对象抽取与三层架构关联 Schema 初始化完成!' AS message;
