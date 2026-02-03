@@ -260,7 +260,7 @@ class DataArchitectureReader:
         return self.entities
 
     def _get_files_to_read(self) -> List[Path]:
-        """确定要读取的文件列表"""
+        """确定要读取的文件列表 - 支持域子目录结构"""
         files = []
 
         # 如果明确指定了文件列表（命令行参数或API调用）
@@ -271,9 +271,20 @@ class DataArchitectureReader:
                     files.append(file_path)
                 else:
                     print(f"[WARN] 文件不存在: {file_path}")
-            return files
+            if files:
+                files.sort(key=lambda x: x.name)
+                return files
 
-        # 根据域配置获取文件列表
+        # 优先检查域子目录 (DATA/<domain>/)
+        domain_subdir = self.data_dir / self.data_domain
+        if domain_subdir.exists() and domain_subdir.is_dir():
+            files = list(domain_subdir.glob("*.xlsx"))
+            if files:
+                print(f"[INFO] 从域子目录读取: {domain_subdir}")
+                files.sort(key=lambda x: x.name)
+                return files
+
+        # 降级：根据域配置获取文件列表
         config_files = self.config.get("files", [])
 
         if config_files:

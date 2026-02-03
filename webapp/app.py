@@ -194,49 +194,54 @@ def health():
 
 @app.route('/api/domains')
 def api_domains():
-    """获取可用的数据域列表
+    """自动发现DATA目录下的所有数据域
 
-    返回DOMAIN_CONFIG中定义的所有数据域，并标记哪些域已配置文件。
-    所有域的Excel文件统一存放在DATA目录下。
+    扫描DATA/目录下的子文件夹，每个包含.xlsx文件的子文件夹即为一个域。
+    支持通过domain.json配置文件自定义域名称。
     """
     from pathlib import Path
-
-    # 从object_extractor导入域配置
-    try:
-        import sys
-        script_dir = Path(__file__).parent.parent / "scripts"
-        sys.path.insert(0, str(script_dir))
-        from object_extractor import DOMAIN_CONFIG
-    except ImportError:
-        # 降级：使用本地配置
-        DOMAIN_CONFIG = {
-            "shupeidian": {"name": "输配电", "files": ["1.xlsx", "2.xlsx", "3.xlsx"]},
-            "jicai": {"name": "集采", "files": []},
-            "yingxiao": {"name": "营销", "files": []},
-            "caiwu": {"name": "财务", "files": []},
-            "renliziyuan": {"name": "人力资源", "files": []},
-            "default": {"name": "默认", "files": ["2.xlsx"]},
-        }
 
     data_dir = Path(__file__).parent.parent / "DATA"
     domains = []
 
-    for code, config in DOMAIN_CONFIG.items():
-        if code == "default":
-            continue  # 跳过默认配置
+    # 域名称映射（用于美化显示）
+    DOMAIN_NAMES = {
+        "shupeidian": "输配电",
+        "jicai": "计划财务",
+        "yingxiao": "营销",
+        "caiwu": "财务",
+        "renliziyuan": "人力资源",
+    }
 
+    if not data_dir.exists():
+        return jsonify([])
+
+    # 扫描所有子目录
+    for subdir in sorted(data_dir.iterdir()):
+        if not subdir.is_dir():
+            continue
+
+        # 查找该域下的Excel文件
+        excel_files = list(subdir.glob("*.xlsx"))
+        if not excel_files:
+            continue  # 跳过没有数据文件的目录
+
+        domain_code = subdir.name
         domain_info = {
-            "code": code,
-            "name": config.get("name", code),
-            "files": config.get("files", []),
-            "has_files": False
+            "code": domain_code,
+            "name": DOMAIN_NAMES.get(domain_code, domain_code),
+            "files": [f.name for f in sorted(excel_files)],
+            "has_files": True
         }
 
-        # 检查配置的文件是否存在
-        if data_dir.exists() and config.get("files"):
-            existing_files = [f for f in config["files"] if (data_dir / f).exists()]
-            domain_info["has_files"] = len(existing_files) > 0
-            domain_info["existing_files"] = existing_files
+        # 可选：读取域配置文件 domain.json
+        config_file = subdir / "domain.json"
+        if config_file.exists():
+            try:
+                config = json.loads(config_file.read_text(encoding='utf-8'))
+                domain_info["name"] = config.get("name", domain_info["name"])
+            except Exception:
+                pass
 
         domains.append(domain_info)
 
