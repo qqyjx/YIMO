@@ -34,41 +34,6 @@
 
 ---
 
-## 技术路线图
-
-```mermaid
-flowchart TB
-    subgraph 数据源
-        A1[Excel数据架构表<br/>输配电域/计划财务域]
-    end
-
-    subgraph 数据处理层
-        B1[EAV数据导入<br/>eav_full.py]
-        B2[SBERT语义向量化<br/>text2vec-chinese]
-        B3[语义聚类<br/>AgglomerativeClustering]
-        B4[大模型归纳命名<br/>DeepSeek API]
-    end
-
-    subgraph 存储层
-        C1[EAV表<br/>datasets/entities/values]
-        C2[对象表<br/>extracted_objects]
-        C3[关联表<br/>object_entity_relations]
-    end
-
-    subgraph 可视化层
-        D1[对象卡片网格]
-        D2[三层关联面板]
-        D3[统计仪表盘]
-    end
-
-    A1 --> B1 --> C1
-    C1 --> B2 --> B3 --> B4
-    B4 --> C2 & C3
-    C2 & C3 --> D1 & D2 & D3
-```
-
----
-
 ## 快速部署
 
 ### 方式一：Docker 部署（推荐）
