@@ -377,15 +377,8 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="domain-selector d-flex align-items-center gap-2" style="background:rgba(255,255,255,0.1); padding:0.5rem 1rem; border-radius:8px;">
                         <span style="font-size:0.9rem; color:#94a3b8;">数据域：</span>
-                        <div id="domainCheckboxes" class="d-flex gap-3">
-                            <label class="d-flex align-items-center gap-1" style="cursor:pointer; color:#e2e8f0;">
-                                <input type="checkbox" class="domain-checkbox" value="shupeidian" checked style="accent-color:#6366f1;">
-                                <span>输配电</span>
-                            </label>
-                            <label class="d-flex align-items-center gap-1" style="cursor:pointer; color:#e2e8f0;">
-                                <input type="checkbox" class="domain-checkbox" value="jicai" style="accent-color:#6366f1;">
-                                <span>计划财务</span>
-                            </label>
+                        <div id="domainCheckboxes" class="d-flex gap-3 flex-wrap">
+                            <span style="color:#94a3b8;">加载中...</span>
                         </div>
                     </div>
                     <div class="action-buttons">
@@ -865,20 +858,29 @@
 
         // 加载域列表
         async function loadDomains() {
+            const container = document.getElementById('domainCheckboxes');
             try {
                 const resp = await fetch('/api/domains');
                 const domains = await resp.json();
-                const container = document.getElementById('domainCheckboxes');
-                if (domains.length > 0) {
-                    container.innerHTML = domains.map((d, i) => `
-                        <label class="d-flex align-items-center gap-1" style="cursor:pointer; color:#e2e8f0;">
-                            <input type="checkbox" class="domain-checkbox" value="${d.code}" ${i === 0 ? 'checked' : ''} style="accent-color:#6366f1;">
-                            <span>${d.name}</span>
-                        </label>
-                    `).join('');
+
+                if (domains.length === 0) {
+                    container.innerHTML = '<span style="color:#fbbf24;">未发现数据域，请在 DATA/ 目录下创建子文件夹</span>';
+                    return;
                 }
+
+                container.innerHTML = domains.map((d, i) => `
+                    <label class="d-flex align-items-center gap-1" style="cursor:pointer; color:#e2e8f0;">
+                        <input type="checkbox" class="domain-checkbox" value="${d.code}" ${i === 0 ? 'checked' : ''} style="accent-color:#6366f1;">
+                        <span>${d.name}</span>
+                        <span style="font-size:0.75rem; background:rgba(99,102,241,0.3); padding:0 6px; border-radius:10px; color:#a5b4fc;">${d.files?.length || 0}</span>
+                    </label>
+                `).join('');
+
+                // 设置默认选中的域
+                currentDomain = domains[0]?.code || '';
             } catch(e) {
-                console.log('使用默认域列表');
+                console.error('加载域列表失败:', e);
+                container.innerHTML = '<span style="color:#f87171;">加载域列表失败</span>';
             }
         }
 

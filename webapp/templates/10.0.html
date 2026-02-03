@@ -523,14 +523,7 @@
                     <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
                         <span style="font-weight:500; color:var(--text-main);">选择数据域：</span>
                         <div id="domainCheckboxes" style="display:flex; gap:1rem; flex-wrap:wrap;">
-                            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
-                                <input type="checkbox" class="domain-checkbox" value="shupeidian" checked>
-                                <span>输配电</span>
-                            </label>
-                            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
-                                <input type="checkbox" class="domain-checkbox" value="jicai">
-                                <span>计划财务</span>
-                            </label>
+                            <span style="color:#94a3b8;">加载中...</span>
                         </div>
                     </div>
                 </div>
@@ -576,20 +569,26 @@
     <script>
         // 加载域列表
         async function loadDomains() {
+            const container = document.getElementById('domainCheckboxes');
             try {
                 const resp = await fetch('/api/domains');
                 const domains = await resp.json();
-                const container = document.getElementById('domainCheckboxes');
-                if (domains.length > 0) {
-                    container.innerHTML = domains.map((d, i) => `
-                        <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
-                            <input type="checkbox" class="domain-checkbox" value="${d.code}" ${i === 0 ? 'checked' : ''}>
-                            <span>${d.name}</span>
-                        </label>
-                    `).join('');
+
+                if (domains.length === 0) {
+                    container.innerHTML = '<span style="color:#f59e0b;">未发现数据域，请在 DATA/ 目录下创建子文件夹</span>';
+                    return;
                 }
+
+                container.innerHTML = domains.map((d, i) => `
+                    <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
+                        <input type="checkbox" class="domain-checkbox" value="${d.code}" ${i === 0 ? 'checked' : ''}>
+                        <span>${d.name}</span>
+                        <span style="font-size:0.75rem; background:#e0e7ff; padding:0 6px; border-radius:10px; color:#4f46e5;">${d.files?.length || 0}</span>
+                    </label>
+                `).join('');
             } catch(e) {
-                console.log('使用默认域列表');
+                console.error('加载域列表失败:', e);
+                container.innerHTML = '<span style="color:#ef4444;">加载域列表失败</span>';
             }
         }
 
