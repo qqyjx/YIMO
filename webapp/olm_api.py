@@ -17,6 +17,7 @@ import os
 import sys
 import json
 from datetime import datetime
+from pathlib import Path
 from flask import Blueprint, request, jsonify, render_template, Response
 
 import pymysql
@@ -28,6 +29,98 @@ sys.path.insert(0, SCRIPT_DIR)
 
 # 创建 Blueprint
 olm_api = Blueprint('olm_api', __name__)
+
+# JSON 数据文件目录
+OUTPUTS_DIR = Path(os.path.dirname(os.path.dirname(__file__))) / 'outputs'
+
+
+# ============================================================================
+# JSON 文件后备数据源（当数据库不可用时使用）
+# ============================================================================
+
+_json_cache = {}
+
+def load_json_data(domain: str = 'shupeidian') -> dict:
+    """加载 JSON 文件数据作为后备数据源"""
+    cache_key = f"extraction_{domain}"
+
+    # 检查缓存
+    if cache_key in _json_cache:
+        return _json_cache[cache_key]
+
+    # 尝试加载 JSON 文件
+    json_file = OUTPUTS_DIR / f"extraction_{domain}.json"
+    if not json_file.exists():
+        # 尝试不带域后缀的文件
+        json_file = OUTPUTS_DIR / "extraction_result.json"
+
+    if json_file.exists():
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                _json_cache[cache_key] = data
+                return data
+        except Exception as e:
+            print(f"[WARN] 加载 JSON 文件失败: {e}")
+
+    return {}
+
+
+def get_objects_from_json(domain: str = '') -> list:
+    """从 JSON 文件获取对象列表"""
+    data = load_json_data(domain or 'shupeidian')
+    objects = data.get('objects', [])
+
+    result = []
+    for obj in objects:
+        result.append({
+            'object_id': hash(obj.get('object_code', '')),
+            'object_code': obj.get('object_code', ''),
+            'object_name': obj.get('object_name', ''),
+            'object_name_en': obj.get('object_name_en', ''),
+            'object_type': obj.get('object_type', 'CORE'),
+            'data_domain': domain or data.get('data_domain', 'shupeidian'),
+            'description': obj.get('description', ''),
+            'stats': obj.get('stats', {'concept': 0, 'logical': 0, 'physical': 0})
+        })
+
+    return result
+
+
+def get_relations_from_json(object_code: str, domain: str = '') -> dict:
+    """从 JSON 文件获取对象关联"""
+    data = load_json_data(domain or 'shupeidian')
+    relations = data.get('relations', [])
+
+    result = {'concept': [], 'logical': [], 'physical': []}
+
+    for rel in relations:
+        if rel.get('object_code') == object_code:
+            layer = rel.get('entity_layer', '').lower()
+            if layer in result:
+                result[layer].append({
+                    'entity_name': rel.get('entity_name', ''),
+                    'entity_code': rel.get('entity_code', ''),
+                    'relation_strength': rel.get('relation_strength', 0.8),
+                    'data_domain': rel.get('data_domain', domain)
+                })
+
+    # 限制返回数量
+    for layer in result:
+        result[layer] = result[layer][:50]
+
+    return result
+
+
+def is_db_available() -> bool:
+    """检查数据库是否可用"""
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                return True
+    except:
+        return False
 
 
 # ============================================================================
@@ -82,57 +175,66 @@ def api_extracted_objects():
     Query参数:
         domain (str): 数据域过滤，如 'shupeidian'，默认返回所有域
     """
-    try:
-        domain = request.args.get('domain', '')
+    domain = request.args.get('domain', '')
 
-        # 构建查询SQL（支持domain过滤）
-        if domain:
-            result = execute_query("""
-                SELECT o.*,
-                       (SELECT COUNT(*) FROM object_entity_relations r
-                        WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
-                       (SELECT COUNT(*) FROM object_entity_relations r
-                        WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
-                       (SELECT COUNT(*) FROM object_entity_relations r
-                        WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
-                FROM extracted_objects o
-                WHERE o.data_domain = %s
-                ORDER BY o.object_type, o.object_name
-            """, (domain,))
-        else:
-            result = execute_query("""
-                SELECT o.*,
-                       (SELECT COUNT(*) FROM object_entity_relations r
-                        WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
-                       (SELECT COUNT(*) FROM object_entity_relations r
-                        WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
-                       (SELECT COUNT(*) FROM object_entity_relations r
-                        WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
-                FROM extracted_objects o
-                ORDER BY o.data_domain, o.object_type, o.object_name
-            """)
+    # 优先尝试数据库
+    if is_db_available():
+        try:
+            # 构建查询SQL（支持domain过滤）
+            if domain:
+                result = execute_query("""
+                    SELECT o.*,
+                           (SELECT COUNT(*) FROM object_entity_relations r
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
+                           (SELECT COUNT(*) FROM object_entity_relations r
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
+                           (SELECT COUNT(*) FROM object_entity_relations r
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
+                    FROM extracted_objects o
+                    WHERE o.data_domain = %s
+                    ORDER BY o.object_type, o.object_name
+                """, (domain,))
+            else:
+                result = execute_query("""
+                    SELECT o.*,
+                           (SELECT COUNT(*) FROM object_entity_relations r
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
+                           (SELECT COUNT(*) FROM object_entity_relations r
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
+                           (SELECT COUNT(*) FROM object_entity_relations r
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
+                    FROM extracted_objects o
+                    ORDER BY o.data_domain, o.object_type, o.object_name
+                """)
 
-        if isinstance(result, dict) and 'error' in result:
-            return jsonify({'objects': [], 'error': result['error']})
+            if not isinstance(result, dict) or 'error' not in result:
+                objects = []
+                for row in result:
+                    # 处理日期时间
+                    for key in ['created_at', 'updated_at', 'verified_at']:
+                        if row.get(key):
+                            row[key] = row[key].isoformat() if hasattr(row[key], 'isoformat') else str(row[key])
 
-        objects = []
-        for row in result:
-            # 处理日期时间
-            for key in ['created_at', 'updated_at', 'verified_at']:
-                if row.get(key):
-                    row[key] = row[key].isoformat() if hasattr(row[key], 'isoformat') else str(row[key])
+                    # 添加统计信息
+                    row['stats'] = {
+                        'concept': row.pop('concept_count', 0),
+                        'logical': row.pop('logical_count', 0),
+                        'physical': row.pop('physical_count', 0)
+                    }
+                    objects.append(row)
 
-            # 添加统计信息
-            row['stats'] = {
-                'concept': row.pop('concept_count', 0),
-                'logical': row.pop('logical_count', 0),
-                'physical': row.pop('physical_count', 0)
-            }
-            objects.append(row)
+                return jsonify({'objects': objects, 'total': len(objects), 'domain': domain or 'all', 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 数据库查询失败，使用 JSON 后备: {e}")
 
-        return jsonify({'objects': objects, 'total': len(objects), 'domain': domain or 'all'})
-    except Exception as e:
-        return jsonify({'objects': [], 'error': str(e)})
+    # 数据库不可用或查询失败，使用 JSON 后备
+    objects = get_objects_from_json(domain or 'shupeidian')
+    return jsonify({
+        'objects': objects,
+        'total': len(objects),
+        'domain': domain or 'shupeidian',
+        'source': 'json_file'
+    })
 
 
 @olm_api.route('/api/olm/object-relations/<object_code>')
@@ -142,62 +244,73 @@ def api_object_relations(object_code):
     Query参数:
         domain (str): 数据域过滤，默认返回所有域的关联
     """
-    try:
-        domain = request.args.get('domain', '')
+    domain = request.args.get('domain', '')
 
-        # 获取对象ID（支持域限定）
-        if domain:
-            obj_result = execute_query(
-                "SELECT object_id, data_domain FROM extracted_objects WHERE object_code = %s AND data_domain = %s",
-                (object_code, domain)
-            )
-        else:
-            obj_result = execute_query(
-                "SELECT object_id, data_domain FROM extracted_objects WHERE object_code = %s",
-                (object_code,)
-            )
+    # 优先尝试数据库
+    if is_db_available():
+        try:
+            # 获取对象ID（支持域限定）
+            if domain:
+                obj_result = execute_query(
+                    "SELECT object_id, data_domain FROM extracted_objects WHERE object_code = %s AND data_domain = %s",
+                    (object_code, domain)
+                )
+            else:
+                obj_result = execute_query(
+                    "SELECT object_id, data_domain FROM extracted_objects WHERE object_code = %s",
+                    (object_code,)
+                )
 
-        if not obj_result or isinstance(obj_result, dict):
-            return jsonify({'error': 'Object not found'}), 404
+            if obj_result and not isinstance(obj_result, dict):
+                object_id = obj_result[0]['object_id']
 
-        object_id = obj_result[0]['object_id']
+                # 构建关联查询（支持domain过滤）
+                domain_filter = " AND r.data_domain = %s" if domain else ""
+                params = (object_id, domain) if domain else (object_id,)
 
-        # 构建关联查询（支持domain过滤）
-        domain_filter = " AND r.data_domain = %s" if domain else ""
-        params = (object_id, domain) if domain else (object_id,)
+                concept_result = execute_query(f"""
+                    SELECT entity_name, entity_code, relation_strength, data_domain
+                    FROM object_entity_relations r
+                    WHERE object_id = %s AND entity_layer = 'CONCEPT'{domain_filter}
+                    ORDER BY relation_strength DESC
+                    LIMIT 50
+                """, params)
 
-        concept_result = execute_query(f"""
-            SELECT entity_name, entity_code, relation_strength, data_domain
-            FROM object_entity_relations r
-            WHERE object_id = %s AND entity_layer = 'CONCEPT'{domain_filter}
-            ORDER BY relation_strength DESC
-            LIMIT 50
-        """, params)
+                logical_result = execute_query(f"""
+                    SELECT entity_name, entity_code, relation_strength, data_domain
+                    FROM object_entity_relations r
+                    WHERE object_id = %s AND entity_layer = 'LOGICAL'{domain_filter}
+                    ORDER BY relation_strength DESC
+                    LIMIT 50
+                """, params)
 
-        logical_result = execute_query(f"""
-            SELECT entity_name, entity_code, relation_strength, data_domain
-            FROM object_entity_relations r
-            WHERE object_id = %s AND entity_layer = 'LOGICAL'{domain_filter}
-            ORDER BY relation_strength DESC
-            LIMIT 50
-        """, params)
+                physical_result = execute_query(f"""
+                    SELECT entity_name, entity_code, relation_strength, data_domain
+                    FROM object_entity_relations r
+                    WHERE object_id = %s AND entity_layer = 'PHYSICAL'{domain_filter}
+                    ORDER BY relation_strength DESC
+                    LIMIT 50
+                """, params)
 
-        physical_result = execute_query(f"""
-            SELECT entity_name, entity_code, relation_strength, data_domain
-            FROM object_entity_relations r
-            WHERE object_id = %s AND entity_layer = 'PHYSICAL'{domain_filter}
-            ORDER BY relation_strength DESC
-            LIMIT 50
-        """, params)
+                return jsonify({
+                    'concept': concept_result if not isinstance(concept_result, dict) else [],
+                    'logical': logical_result if not isinstance(logical_result, dict) else [],
+                    'physical': physical_result if not isinstance(physical_result, dict) else [],
+                    'domain': domain or 'all',
+                    'source': 'database'
+                })
+        except Exception as e:
+            print(f"[WARN] 数据库查询关联失败，使用 JSON 后备: {e}")
 
-        return jsonify({
-            'concept': concept_result if not isinstance(concept_result, dict) else [],
-            'logical': logical_result if not isinstance(logical_result, dict) else [],
-            'physical': physical_result if not isinstance(physical_result, dict) else [],
-            'domain': domain or 'all'
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    # 数据库不可用或查询失败，使用 JSON 后备
+    relations = get_relations_from_json(object_code, domain or 'shupeidian')
+    return jsonify({
+        'concept': relations.get('concept', []),
+        'logical': relations.get('logical', []),
+        'physical': relations.get('physical', []),
+        'domain': domain or 'shupeidian',
+        'source': 'json_file'
+    })
 
 
 @olm_api.route('/api/olm/relation-stats')

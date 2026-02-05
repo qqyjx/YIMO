@@ -35,7 +35,15 @@ else:
     def load_dotenv():
         return False
 
-from sentence_transformers import SentenceTransformer
+# Optional sentence_transformers import
+_sbert_spec = importlib_util.find_spec("sentence_transformers")
+if _sbert_spec:
+    from sentence_transformers import SentenceTransformer
+    HAS_SBERT = True
+else:
+    SentenceTransformer = None
+    HAS_SBERT = False
+    print(" * WARNING: sentence_transformers not installed, RAG features disabled")
 
 load_dotenv()
 
@@ -81,6 +89,8 @@ def get_conn():
 
 @lru_cache(maxsize=1)
 def get_model():
+    if not HAS_SBERT:
+        raise RuntimeError("sentence_transformers not installed")
     return SentenceTransformer(MODEL_NAME, cache_folder=MODEL_CACHE)
 
 # =================== EAV 查询 ===================
