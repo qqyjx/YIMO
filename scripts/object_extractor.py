@@ -1104,6 +1104,7 @@ class SemanticObjectExtractionPipeline:
         return {
             "objects": [asdict(o) for o in objects],
             "clusters": [{k: v for k, v in c.items() if k != "all_entities"} for c in clusters],
+            "relations": [asdict(r) for r in relations],  # 添加关联关系
             "relations_count": len(relations),
             "stats": stats,
             "data_domain": self.data_domain,
