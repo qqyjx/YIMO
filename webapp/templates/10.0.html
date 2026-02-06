@@ -456,16 +456,16 @@
             <div class="modal-body" style="padding:1.5rem;">
                 <table class="data-table">
                     <thead>
-                        <tr><th>ID</th><th>名称</th><th>来源</th><th>规范值</th><th>映射</th></tr>
+                        <tr><th>序号</th><th>数据域</th><th>文件名</th><th>路径</th><th>大小</th></tr>
                     </thead>
                     <tbody>
                     {% for row in stats %}
                         <tr>
                             <td><span class="tag">#{{ row.id }}</span></td>
+                            <td>{{ row.domain }}</td>
                             <td>{{ row.name }}</td>
                             <td style="font-family:monospace; font-size:0.85rem;">{{ row.source_file }}</td>
-                            <td>{{ row.canon }}</td>
-                            <td>{{ row.mapping }}</td>
+                            <td>{{ row.size }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -572,6 +572,7 @@
             const container = document.getElementById('domainCheckboxes');
             try {
                 const resp = await fetch('/api/domains');
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const domains = await resp.json();
 
                 if (domains.length === 0) {
@@ -630,7 +631,10 @@
             grid.innerHTML = '<p style="text-align:center; padding:2rem; color:var(--text-muted); grid-column:1/-1;">加载中...</p>';
 
             try {
-                const resp = await fetch('/api/olm/extracted-objects');
+                const domains = getSelectedDomains();
+                const domainParam = domains.length > 0 ? `?domain=${domains.join(',')}` : '';
+                const resp = await fetch('/api/olm/extracted-objects' + domainParam);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const data = await resp.json();
 
                 if (data.error) {
@@ -702,7 +706,10 @@
 
             // 加载关联关系
             try {
-                const resp = await fetch(`/api/olm/object-relations/${code}`);
+                const selDomains = getSelectedDomains();
+                const relDomainParam = selDomains.length > 0 ? `?domain=${selDomains[0]}` : '';
+                const resp = await fetch(`/api/olm/object-relations/${code}${relDomainParam}`);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const data = await resp.json();
 
                 renderEntityTags('concept-entities', data.concept || []);
@@ -753,6 +760,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ use_llm: false, target_clusters: 15, domains: domains })
                 });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const data = await resp.json();
 
                 if (data.success) {
@@ -772,6 +780,7 @@
         async function exportObjects() {
             try {
                 const resp = await fetch('/api/olm/export-objects');
+                if (!resp.ok) throw new Error(`导出失败: HTTP ${resp.status}`);
                 const blob = await resp.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');

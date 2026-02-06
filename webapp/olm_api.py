@@ -83,10 +83,10 @@ def get_objects_from_json(domain: str = '') -> list:
             stats_map[code][layer] += 1
 
     result = []
-    for obj in objects:
+    for idx, obj in enumerate(objects, start=1):
         obj_code = obj.get('object_code', '')
         result.append({
-            'object_id': hash(obj_code),
+            'object_id': idx,
             'object_code': obj_code,
             'object_name': obj.get('object_name', ''),
             'object_name_en': obj.get('object_name_en', ''),
@@ -100,7 +100,7 @@ def get_objects_from_json(domain: str = '') -> list:
 
 
 def get_relations_from_json(object_code: str, domain: str = '') -> dict:
-    """从 JSON 文件获取对象关联"""
+    """从 JSON 文件获取对象关联（支持层级结构）"""
     data = load_json_data(domain or 'shupeidian')
     relations = data.get('relations', [])
 
@@ -110,16 +110,20 @@ def get_relations_from_json(object_code: str, domain: str = '') -> dict:
         if rel.get('object_code') == object_code:
             layer = rel.get('entity_layer', '').lower()
             if layer in result:
-                result[layer].append({
+                entry = {
                     'entity_name': rel.get('entity_name', ''),
                     'entity_code': rel.get('entity_code', ''),
+                    'relation_type': rel.get('relation_type', 'CLUSTER'),
                     'relation_strength': rel.get('relation_strength', 0.8),
                     'data_domain': rel.get('data_domain', domain)
-                })
+                }
+                if layer == 'logical':
+                    entry['via_concept_entity'] = rel.get('via_concept_entity', '')
+                result[layer].append(entry)
 
     # 限制返回数量
     for layer in result:
-        result[layer] = result[layer][:50]
+        result[layer] = result[layer][:200]
 
     return result
 
@@ -131,7 +135,7 @@ def is_db_available() -> bool:
             with conn.cursor() as cur:
                 cur.execute("SELECT 1")
                 return True
-    except:
+    except Exception:
         return False
 
 
@@ -185,15 +189,16 @@ def api_extracted_objects():
     """获取抽取的对象列表
 
     Query参数:
-        domain (str): 数据域过滤，如 'shupeidian'，默认返回所有域
+        domain (str): 数据域过滤，支持逗号分隔多域如 'shupeidian,jicai'，默认返回所有域
     """
     domain = request.args.get('domain', '')
+    domains = [d.strip() for d in domain.split(',') if d.strip()] if domain else []
 
     # 优先尝试数据库
     if is_db_available():
         try:
-            # 构建查询SQL（支持domain过滤）
-            if domain:
+            # 构建查询SQL（支持多域过滤）
+            if len(domains) == 1:
                 result = execute_query("""
                     SELECT o.*,
                            (SELECT COUNT(*) FROM object_entity_relations r
@@ -205,7 +210,21 @@ def api_extracted_objects():
                     FROM extracted_objects o
                     WHERE o.data_domain = %s
                     ORDER BY o.object_type, o.object_name
-                """, (domain,))
+                """, (domains[0],))
+            elif len(domains) > 1:
+                placeholders = ','.join(['%s'] * len(domains))
+                result = execute_query(f"""
+                    SELECT o.*,
+                           (SELECT COUNT(*) FROM object_entity_relations r
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
+                           (SELECT COUNT(*) FROM object_entity_relations r
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
+                           (SELECT COUNT(*) FROM object_entity_relations r
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
+                    FROM extracted_objects o
+                    WHERE o.data_domain IN ({placeholders})
+                    ORDER BY o.data_domain, o.object_type, o.object_name
+                """, tuple(domains))
             else:
                 result = execute_query("""
                     SELECT o.*,
@@ -281,23 +300,29 @@ def api_object_relations(object_code):
                 params = (object_id, domain) if domain else (object_id,)
 
                 concept_result = execute_query(f"""
-                    SELECT entity_name, entity_code, relation_strength, data_domain
+                    SELECT r.entity_name, r.entity_code, r.relation_type,
+                           r.relation_strength, r.data_domain,
+                           (SELECT COUNT(DISTINCT r2.entity_name) FROM object_entity_relations r2
+                            WHERE r2.object_id = r.object_id AND r2.entity_layer = 'LOGICAL'
+                            AND r2.via_concept_entity = r.entity_name) as logical_count
                     FROM object_entity_relations r
-                    WHERE object_id = %s AND entity_layer = 'CONCEPT'{domain_filter}
-                    ORDER BY relation_strength DESC
+                    WHERE r.object_id = %s AND r.entity_layer = 'CONCEPT'{domain_filter}
+                    ORDER BY r.relation_strength DESC
                     LIMIT 50
                 """, params)
 
                 logical_result = execute_query(f"""
-                    SELECT entity_name, entity_code, relation_strength, data_domain
+                    SELECT entity_name, entity_code, relation_type,
+                           relation_strength, data_domain, via_concept_entity
                     FROM object_entity_relations r
                     WHERE object_id = %s AND entity_layer = 'LOGICAL'{domain_filter}
-                    ORDER BY relation_strength DESC
-                    LIMIT 50
+                    ORDER BY via_concept_entity, relation_strength DESC
+                    LIMIT 200
                 """, params)
 
                 physical_result = execute_query(f"""
-                    SELECT entity_name, entity_code, relation_strength, data_domain
+                    SELECT entity_name, entity_code, relation_type,
+                           relation_strength, data_domain
                     FROM object_entity_relations r
                     WHERE object_id = %s AND entity_layer = 'PHYSICAL'{domain_filter}
                     ORDER BY relation_strength DESC
@@ -467,7 +492,7 @@ def api_export_objects():
             """, (domain,))
             relations = execute_query("""
                 SELECT o.object_code, o.data_domain as object_domain, r.entity_layer, r.entity_name, r.entity_code,
-                       r.relation_type, r.relation_strength, r.data_domain
+                       r.relation_type, r.relation_strength, r.via_concept_entity, r.data_domain
                 FROM object_entity_relations r
                 JOIN extracted_objects o ON o.object_id = r.object_id
                 WHERE o.data_domain = %s
@@ -479,7 +504,7 @@ def api_export_objects():
             """)
             relations = execute_query("""
                 SELECT o.object_code, o.data_domain as object_domain, r.entity_layer, r.entity_name, r.entity_code,
-                       r.relation_type, r.relation_strength, r.data_domain
+                       r.relation_type, r.relation_strength, r.via_concept_entity, r.data_domain
                 FROM object_entity_relations r
                 JOIN extracted_objects o ON o.object_id = r.object_id
                 ORDER BY o.data_domain, o.object_code, r.entity_layer, r.relation_strength DESC

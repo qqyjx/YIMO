@@ -71,6 +71,15 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 RAG_TOP_K = int(os.getenv("RAG_TOP_K", "5"))
 
 os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", MODEL_CACHE)
+
+# 数据域名称映射
+DOMAIN_NAMES = {
+    "shupeidian": "输配电",
+    "jicai": "计划财务",
+    "yingxiao": "营销",
+    "caiwu": "财务",
+    "renliziyuan": "人力资源",
+}
 os.environ.setdefault("HF_HOME", MODEL_CACHE)
 
 # =================== 数据库 ===================
@@ -159,22 +168,25 @@ def call_deepseek(messages: List[Dict[str, str]], model: str = "deepseek-chat") 
 @app.route('/')
 def home():
     try:
-        ds = list_datasets()
-        stats = []
-        with get_conn() as conn, conn.cursor() as cur:
-            cur.execute(f"SELECT COUNT(*) c FROM {TABLE_PREFIX}_semantic_canon")
-            canon_count = cur.fetchone()['c']
-            cur.execute(f"SELECT COUNT(*) c FROM {TABLE_PREFIX}_semantic_mapping")
-            map_count = cur.fetchone()['c']
+        from pathlib import Path
 
-        for d in ds:
-            stats.append({
-                'id': d['id'],
-                'name': d['name'],
-                'source_file': d.get('source_file'),
-                'canon': canon_count,
-                'mapping': map_count,
-            })
+        # 扫描 DATA/ 目录下所有 xlsx 文件
+        data_dir = Path(__file__).parent.parent / "DATA"
+        stats = []
+        idx = 1
+        if data_dir.exists():
+            for subdir in sorted(data_dir.iterdir()):
+                if not subdir.is_dir():
+                    continue
+                for f in sorted(subdir.glob("*.xlsx")):
+                    stats.append({
+                        'id': idx,
+                        'domain': DOMAIN_NAMES.get(subdir.name, subdir.name),
+                        'name': f.name,
+                        'source_file': str(f),
+                        'size': f"{f.stat().st_size / 1024:.0f} KB",
+                    })
+                    idx += 1
 
         # 默认使用 v10.0 模板
         v = request.args.get('v', '10.0')
@@ -182,18 +194,19 @@ def home():
             v = '10.0'
 
         template_name = f"{v}.html"
-        folder = app.template_folder if app.template_folder else 'templates'
-        if not os.path.exists(os.path.join(folder, template_name)):
+        # 使用 Jinja2 loader 检查模板是否存在
+        try:
+            app.jinja_env.get_template(template_name)
+        except Exception:
             template_name = 'home.html'
 
         return render_template(template_name, stats=stats)
     except Exception as e:
         return (
             f"<h2>YIMO 对象抽取与三层架构关联系统</h2>"
-            f"<p>数据库连接失败: {str(e)}</p>"
-            f"<p>请检查 .env 配置 (MYSQL_HOST/PORT/DB/USER/PASSWORD)</p>"
+            f"<p>启动失败: {str(e)}</p>"
             f"<p><a href='/extraction'>进入对象抽取页面</a></p>",
-            200,
+            500,
             {"Content-Type": "text/html; charset=utf-8"}
         )
 
@@ -214,14 +227,7 @@ def api_domains():
     data_dir = Path(__file__).parent.parent / "DATA"
     domains = []
 
-    # 域名称映射（用于美化显示）
-    DOMAIN_NAMES = {
-        "shupeidian": "输配电",
-        "jicai": "计划财务",
-        "yingxiao": "营销",
-        "caiwu": "财务",
-        "renliziyuan": "人力资源",
-    }
+    # 使用模块级 DOMAIN_NAMES 常量
 
     if not data_dir.exists():
         return jsonify([])

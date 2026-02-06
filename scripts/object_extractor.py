@@ -125,6 +125,7 @@ class EntityRelation:
     relation_type: str = "CLUSTER"  # CLUSTER（来自同一聚类）
     relation_strength: float = 0.0
     match_method: str = "SEMANTIC_CLUSTER"
+    via_concept_entity: str = ""  # 间接关联时的中间概念实体名称
     semantic_similarity: float = 0.0
     data_domain: str = ""
     data_subdomain: str = ""
@@ -304,6 +305,79 @@ class DataArchitectureReader:
         files.sort(key=lambda x: x.name)
         return files
 
+    @staticmethod
+    def _read_excel_fallback(file_path: Path, sheet_name: str) -> pd.DataFrame:
+        """当 openpyxl 因 custom.xml 过大崩溃时，用 zipfile + lxml 直接解析 xlsx"""
+        import zipfile
+        from lxml import etree
+
+        NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+        WB_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+
+        with zipfile.ZipFile(file_path) as z:
+            # 1) 读 shared strings
+            shared = []
+            if "xl/sharedStrings.xml" in z.namelist():
+                tree = etree.parse(z.open("xl/sharedStrings.xml"), etree.XMLParser(huge_tree=True))
+                for si in tree.findall(f"{{{NS}}}si"):
+                    texts = si.itertext()
+                    shared.append("".join(texts))
+
+            # 2) 查找 sheet_name 对应的文件
+            wb_tree = etree.parse(z.open("xl/workbook.xml"))
+            sheet_map = {}
+            for s in wb_tree.findall(f".//{{{WB_NS}}}sheet"):
+                sheet_map[s.get("name")] = s.get("sheetId")
+
+            if sheet_name not in sheet_map:
+                raise ValueError(f"Worksheet named '{sheet_name}' not found")
+
+            # workbook.xml 中的 sheetId 不直接对应文件名，需从 rels 获取
+            rels_tree = etree.parse(z.open("xl/_rels/workbook.xml.rels"))
+            rid_map = {}
+            for rel in rels_tree.getroot():
+                rid_map[rel.get("Id")] = rel.get("Target")
+
+            # 找 rId
+            rid = None
+            for s in wb_tree.findall(f".//{{{WB_NS}}}sheet"):
+                if s.get("name") == sheet_name:
+                    rid = s.get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id")
+                    break
+
+            if not rid or rid not in rid_map:
+                raise ValueError(f"Cannot resolve sheet file for '{sheet_name}'")
+
+            sheet_file = "xl/" + rid_map[rid]
+
+            # 3) 解析 sheet XML
+            sheet_tree = etree.parse(z.open(sheet_file), etree.XMLParser(huge_tree=True))
+            rows_data = []
+            for row_el in sheet_tree.findall(f".//{{{NS}}}row"):
+                row_dict = {}
+                for cell in row_el.findall(f"{{{NS}}}c"):
+                    ref = cell.get("r", "")  # e.g. "A1"
+                    col_letter = "".join(c for c in ref if c.isalpha())
+                    val_el = cell.find(f"{{{NS}}}v")
+                    val = val_el.text if val_el is not None else ""
+                    if cell.get("t") == "s" and val:
+                        val = shared[int(val)] if int(val) < len(shared) else val
+                    row_dict[col_letter] = val
+                rows_data.append(row_dict)
+
+            if not rows_data:
+                return pd.DataFrame()
+
+            # 第一行作为列名
+            header = rows_data[0]
+            col_map = {letter: name for letter, name in header.items()}
+            data = []
+            for row_dict in rows_data[1:]:
+                named_row = {col_map.get(k, k): v for k, v in row_dict.items()}
+                data.append(named_row)
+
+            return pd.DataFrame(data)
+
     def _read_concept_entities(self, file_path: Path):
         """读取概念实体清单"""
         sheet_name = self.config.get("sheet_config", {}).get("concept", "DA-01 数据实体清单-概念实体清单")
@@ -328,7 +402,28 @@ class DataArchitectureReader:
                         source_row=idx + 2
                     ))
         except Exception as e:
-            print(f"[ERROR] 读取概念实体失败 ({file_path.name}): {e}")
+            print(f"[WARN] pd.read_excel 读取概念实体失败 ({file_path.name}): {e}")
+            try:
+                print(f"[INFO] 尝试 fallback 解析 {file_path.name}...")
+                df = self._read_excel_fallback(file_path, sheet_name)
+                seen_fb = set()
+                for idx, row in df.iterrows():
+                    name = str(row.get("概念实体", "")).strip()
+                    if name and name != "nan" and name != "" and name not in seen_fb:
+                        seen_fb.add(name)
+                        excel_domain = str(row.get("数据域", "")).strip()
+                        domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                        self.entities.append(EntityInfo(
+                            name=name, layer="CONCEPT",
+                            code=str(row.get("概念实体编号", "")).strip(),
+                            data_domain=domain,
+                            data_subdomain=str(row.get("数据子域", "")).strip(),
+                            source_file=str(file_path.name),
+                            source_sheet=sheet_name, source_row=idx + 2
+                        ))
+                print(f"[INFO] fallback 成功，读取到 {len(seen_fb)} 个概念实体")
+            except Exception as e2:
+                print(f"[ERROR] fallback 也失败 ({file_path.name}): {e2}")
 
     def _read_logical_entities(self, file_path: Path):
         """读取逻辑实体清单"""
@@ -353,6 +448,103 @@ class DataArchitectureReader:
                     ))
         except Exception as e:
             print(f"[ERROR] 读取逻辑实体失败 ({file_path.name}): {e}")
+
+    def read_concept_with_mapping(self) -> Tuple[List['EntityInfo'], Dict[str, List['EntityInfo']]]:
+        """读取概念实体 + 构建概念→逻辑实体映射
+
+        只用概念实体做聚类，逻辑实体通过映射间接关联。
+
+        Returns:
+            concept_entities: 概念实体列表（用于聚类）
+            concept_to_logical: {概念实体名称: [逻辑实体EntityInfo列表]}
+        """
+        print(f"[INFO] 读取概念实体 + 概念→逻辑映射 (域: {self.data_domain})...")
+
+        files_to_read = self._get_files_to_read()
+        if not files_to_read:
+            print(f"[WARN] 未找到数据文件")
+            return [], {}
+
+        concept_to_logical: Dict[str, List[EntityInfo]] = defaultdict(list)
+
+        for data_file in files_to_read:
+            print(f"  读取 {data_file}...")
+            self._read_concept_entities(data_file)
+            self._build_concept_logical_mapping(data_file, concept_to_logical)
+
+        concept_entities = [e for e in self.entities if e.layer == "CONCEPT"]
+        total_logical = sum(len(v) for v in concept_to_logical.values())
+        print(f"[INFO] 读取完成:")
+        print(f"  - 概念实体: {len(concept_entities)} 个")
+        print(f"  - 概念→逻辑映射: {len(concept_to_logical)} 个概念实体 → {total_logical} 个逻辑实体")
+
+        return concept_entities, dict(concept_to_logical)
+
+    def _build_concept_logical_mapping(self, file_path: Path,
+                                        mapping: Dict[str, List['EntityInfo']]):
+        """从 DA-02 构建概念实体→逻辑实体映射"""
+        sheet_name = self.config.get("sheet_config", {}).get("logical",
+                     "DA-02 数据实体清单-逻辑实体清单")
+        try:
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
+            seen: Set[Tuple[str, str]] = set()
+
+            for idx, row in df.iterrows():
+                concept_name = str(row.get("概念实体", "")).strip()
+                logical_name = str(row.get("逻辑实体名称", "")).strip()
+
+                if (not concept_name or concept_name == "nan"
+                        or not logical_name or logical_name == "nan"):
+                    continue
+
+                key = (concept_name, logical_name)
+                if key in seen:
+                    continue
+                seen.add(key)
+
+                excel_domain = str(row.get("数据域", "")).strip()
+                domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+
+                mapping[concept_name].append(EntityInfo(
+                    name=logical_name,
+                    layer="LOGICAL",
+                    code=str(row.get("逻辑实体编码", "")).strip(),
+                    data_domain=domain,
+                    source_file=str(file_path.name),
+                    source_sheet=sheet_name,
+                    source_row=idx + 2
+                ))
+        except Exception as e:
+            print(f"[WARN] pd.read_excel 构建概念→逻辑映射失败 ({file_path.name}): {e}")
+            try:
+                print(f"[INFO] 尝试 fallback 解析 DA-02 ({file_path.name})...")
+                df = self._read_excel_fallback(file_path, sheet_name)
+                seen_fb: Set[Tuple[str, str]] = set()
+                count = 0
+                for idx, row in df.iterrows():
+                    concept_name = str(row.get("概念实体", "")).strip()
+                    logical_name = str(row.get("逻辑实体名称", "")).strip()
+                    if (not concept_name or concept_name == "nan"
+                            or not logical_name or logical_name == "nan"):
+                        continue
+                    key = (concept_name, logical_name)
+                    if key in seen_fb:
+                        continue
+                    seen_fb.add(key)
+                    excel_domain = str(row.get("数据域", "")).strip()
+                    domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                    mapping[concept_name].append(EntityInfo(
+                        name=logical_name, layer="LOGICAL",
+                        code=str(row.get("逻辑实体编码", "")).strip(),
+                        data_domain=domain,
+                        data_subdomain=str(row.get("数据子域", "")).strip(),
+                        source_file=str(file_path.name),
+                        source_sheet=sheet_name, source_row=idx + 2
+                    ))
+                    count += 1
+                print(f"[INFO] fallback 成功，构建 {len(set(k for k,_ in seen_fb))} 个概念→{count} 个逻辑映射")
+            except Exception as e2:
+                print(f"[ERROR] fallback 也失败 ({file_path.name}): {e2}")
 
     def _read_physical_entities(self, file_path: Path):
         """读取物理实体清单"""
@@ -862,14 +1054,106 @@ class ClusterRelationBuilder:
 
 
 # ============================================================
+# 层级关联关系构建器（新模型）
+# ============================================================
+
+class HierarchicalRelationBuilder:
+    """层级关联关系构建器
+
+    正确的关系模型：
+    - 对象 → 概念实体：DIRECT（来自聚类归属）
+    - 对象 → 逻辑实体：INDIRECT（通过概念实体间接关联）
+    - 逻辑实体和对象没有直接关系，通过概念实体产生关系
+    """
+
+    def __init__(self,
+                 objects: List[ExtractedObject],
+                 cluster_entity_map: Dict[int, List[str]],
+                 concept_entities: List[EntityInfo],
+                 concept_to_logical: Dict[str, List[EntityInfo]]):
+        self.objects = objects
+        self.cluster_entity_map = cluster_entity_map
+        self.concept_to_logical = concept_to_logical
+
+        # 构建概念实体名称 → EntityInfo 的映射
+        self.concept_info_map: Dict[str, EntityInfo] = {}
+        for ce in concept_entities:
+            if ce.name not in self.concept_info_map:
+                self.concept_info_map[ce.name] = ce
+
+    def build_relations(self) -> List[EntityRelation]:
+        """构建层级关联关系"""
+        print("[INFO] 开始构建层级关联关系...")
+
+        relations = []
+
+        for obj in self.objects:
+            if obj.cluster_id < 0:
+                continue
+
+            # 获取该对象对应聚类中的概念实体名称
+            cluster_concepts = self.cluster_entity_map.get(obj.cluster_id, [])
+
+            for concept_name in cluster_concepts:
+                concept_info = self.concept_info_map.get(concept_name)
+                if not concept_info:
+                    continue
+
+                # DIRECT: 对象 → 概念实体
+                strength = 0.9 if concept_name in obj.sample_entities else 0.8
+                relations.append(EntityRelation(
+                    object_code=obj.object_code,
+                    entity_layer="CONCEPT",
+                    entity_name=concept_name,
+                    entity_code=concept_info.code,
+                    relation_type="DIRECT",
+                    relation_strength=strength,
+                    match_method="SEMANTIC_CLUSTER",
+                    via_concept_entity="",
+                    data_domain=concept_info.data_domain,
+                    data_subdomain=concept_info.data_subdomain,
+                    source_file=concept_info.source_file,
+                    source_sheet=concept_info.source_sheet,
+                    source_row=concept_info.source_row
+                ))
+
+                # INDIRECT: 对象 → 逻辑实体（通过该概念实体）
+                logical_entities = self.concept_to_logical.get(concept_name, [])
+                for le in logical_entities:
+                    relations.append(EntityRelation(
+                        object_code=obj.object_code,
+                        entity_layer="LOGICAL",
+                        entity_name=le.name,
+                        entity_code=le.code,
+                        relation_type="INDIRECT",
+                        relation_strength=0.7,
+                        match_method="SEMANTIC_CLUSTER",
+                        via_concept_entity=concept_name,
+                        data_domain=le.data_domain,
+                        data_subdomain=le.data_subdomain,
+                        source_file=le.source_file,
+                        source_sheet=le.source_sheet,
+                        source_row=le.source_row
+                    ))
+
+        concept_count = len([r for r in relations if r.entity_layer == "CONCEPT"])
+        logical_count = len([r for r in relations if r.entity_layer == "LOGICAL"])
+        print(f"[INFO] 层级关联构建完成:")
+        print(f"  - 对象→概念实体 (DIRECT): {concept_count} 条")
+        print(f"  - 对象→逻辑实体 (INDIRECT): {logical_count} 条")
+        print(f"  - 总计: {len(relations)} 条")
+        return relations
+
+
+# ============================================================
 # 数据库写入器
 # ============================================================
 
 class DatabaseWriter:
     """数据库写入器 - 支持多数据域"""
 
-    def __init__(self, host: str = "localhost", port: int = 3307,
-                 user: str = "root", password: str = "", database: str = "yimo",
+    def __init__(self, host: str = "127.0.0.1", port: int = 3307,
+                 user: str = "eav_user", password: str = "eavpass123", database: str = "eav_db",
                  data_domain: str = "default"):
         self.db_config = {
             "host": host,
@@ -888,6 +1172,24 @@ class DatabaseWriter:
 
         with pymysql.connect(**self.db_config) as conn:
             with conn.cursor() as cursor:
+                # 清理该域的旧数据（先删关联再删对象）
+                print(f"[INFO] 清理域 {self.data_domain} 的旧数据...")
+                cursor.execute("""
+                    DELETE r FROM object_entity_relations r
+                    JOIN extracted_objects o ON r.object_id = o.object_id
+                    WHERE o.data_domain = %s
+                """, (self.data_domain,))
+                cursor.execute("""
+                    DELETE FROM object_synonyms WHERE object_id IN
+                    (SELECT object_id FROM extracted_objects WHERE data_domain = %s)
+                """, (self.data_domain,))
+                cursor.execute(
+                    "DELETE FROM extracted_objects WHERE data_domain = %s",
+                    (self.data_domain,)
+                )
+                conn.commit()
+                print(f"[INFO] 旧数据清理完成")
+
                 for obj in objects:
                     try:
                         # 对象编码需要加上域前缀以支持多域唯一性
@@ -960,13 +1262,14 @@ class DatabaseWriter:
                         sql = """
                         INSERT INTO object_entity_relations
                         (object_id, entity_layer, entity_name, entity_code, relation_type,
-                         relation_strength, match_method, data_domain, data_subdomain,
-                         source_file, source_sheet, source_row)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                         relation_strength, match_method, via_concept_entity,
+                         data_domain, data_subdomain, source_file, source_sheet, source_row)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """
                         cursor.execute(sql, (
                             object_id, rel.entity_layer, rel.entity_name, rel.entity_code,
                             rel.relation_type, rel.relation_strength, rel.match_method,
+                            rel.via_concept_entity or None,
                             rel.data_domain, rel.data_subdomain, rel.source_file,
                             rel.source_sheet, rel.source_row
                         ))
@@ -1042,25 +1345,25 @@ class SemanticObjectExtractionPipeline:
         print(f"目标聚类数：{self.target_clusters}")
         print()
 
-        # 1. 读取三层架构数据（支持多数据域）
+        # 1. 读取概念实体 + 概念→逻辑映射（只用概念实体聚类）
         reader = DataArchitectureReader(
             data_dir=self.data_dir,
             data_domain=self.data_domain,
             excel_files=self.excel_files
         )
-        entities = reader.read_all()
+        concept_entities, concept_to_logical = reader.read_concept_with_mapping()
 
-        if not entities:
-            print("[ERROR] 没有读取到任何实体数据")
+        if not concept_entities:
+            print("[ERROR] 没有读取到概念实体数据")
             return {"objects": [], "relations_count": 0, "stats": {}, "data_domain": self.data_domain}
 
-        # 2. 语义聚类
+        # 2. 只对概念实体做语义聚类
         extractor = SemanticClusterExtractor(target_clusters=self.target_clusters)
-        clusters, cluster_entity_map = extractor.extract(entities)
+        clusters, cluster_entity_map = extractor.extract(concept_entities)
 
-        print(f"\n[INFO] 聚类结果预览:")
+        print(f"\n[INFO] 聚类结果预览 (仅概念实体):")
         for cluster in clusters[:5]:
-            print(f"  聚类{cluster['cluster_id']}: {cluster['size']}个实体, 代表: {cluster['centroid_entity']}")
+            print(f"  聚类{cluster['cluster_id']}: {cluster['size']}个概念实体, 代表: {cluster['centroid_entity']}")
             print(f"    样本: {cluster['sample_entities'][:5]}")
 
         # 3. 大模型归纳命名
@@ -1072,10 +1375,12 @@ class SemanticObjectExtractionPipeline:
 
         print(f"\n[INFO] 抽取到 {len(objects)} 个核心对象:")
         for obj in objects:
-            print(f"  - {obj.object_code}: {obj.object_name} ({obj.object_type}) [聚类{obj.cluster_id}, {obj.cluster_size}个实体]")
+            print(f"  - {obj.object_code}: {obj.object_name} ({obj.object_type}) [聚类{obj.cluster_id}, {obj.cluster_size}个概念实体]")
 
-        # 4. 构建关联关系
-        builder = ClusterRelationBuilder(objects, entities, cluster_entity_map)
+        # 4. 构建层级关联关系（对象→概念实体 DIRECT, 对象→逻辑实体 INDIRECT）
+        builder = HierarchicalRelationBuilder(
+            objects, cluster_entity_map, concept_entities, concept_to_logical
+        )
         relations = builder.build_relations()
 
         # 5. 统计
@@ -1120,9 +1425,9 @@ class SemanticObjectExtractionPipeline:
                 "object_name": obj.object_name,
                 "cluster_id": obj.cluster_id,
                 "cluster_size": obj.cluster_size,
-                "concept": len([r for r in obj_rels if r.entity_layer == "CONCEPT"]),
-                "logical": len([r for r in obj_rels if r.entity_layer == "LOGICAL"]),
-                "physical": len([r for r in obj_rels if r.entity_layer == "PHYSICAL"]),
+                "concept": len([r for r in obj_rels if r.entity_layer == "CONCEPT" and r.relation_type == "DIRECT"]),
+                "logical": len([r for r in obj_rels if r.entity_layer == "LOGICAL" and r.relation_type == "INDIRECT"]),
+                "physical": 0,
                 "total": len(obj_rels)
             }
         return stats
@@ -1140,11 +1445,11 @@ if __name__ == "__main__":
     parser.add_argument("--data-domain", default="default", help="数据域编码 (如 shupeidian, jicai)")
     parser.add_argument("--excel-files", nargs="+", default=None, help="指定要读取的Excel文件列表 (覆盖域配置)")
     parser.add_argument("--target-clusters", type=int, default=TARGET_CLUSTER_COUNT, help="目标聚类数量")
-    parser.add_argument("--db-host", default="localhost", help="数据库主机")
+    parser.add_argument("--db-host", default="127.0.0.1", help="数据库主机")
     parser.add_argument("--db-port", type=int, default=3307, help="数据库端口")
-    parser.add_argument("--db-user", default="root", help="数据库用户")
-    parser.add_argument("--db-password", default="", help="数据库密码")
-    parser.add_argument("--db-name", default="yimo", help="数据库名称")
+    parser.add_argument("--db-user", default="eav_user", help="数据库用户")
+    parser.add_argument("--db-password", default="eavpass123", help="数据库密码")
+    parser.add_argument("--db-name", default="eav_db", help="数据库名称")
     parser.add_argument("--use-llm", action="store_true", help="使用大模型命名")
     parser.add_argument("--no-db", action="store_true", help="不写入数据库")
     parser.add_argument("--output", "-o", default=None, help="输出JSON文件路径")
