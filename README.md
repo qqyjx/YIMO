@@ -56,6 +56,16 @@ DATA/
 3. 启动 Web 服务
 4. 打印访问地址
 
+### 启停服务
+
+```bash
+# 启动（推荐，自动检测环境、健康检查）
+cd webapp && ./start_web.sh
+
+# 停止
+cd webapp && ./stop_web.sh
+```
+
 ### 手动运行
 
 ```bash
@@ -82,10 +92,18 @@ cd webapp && python3 app.py
 # 4. 访问 http://localhost:5000/extraction
 ```
 
+## 数据源机制
+
+系统采用 **数据库优先 + JSON 回退** 的双数据源架构：
+
+- **数据库可用时**：从 MySQL 实时查询对象和关联关系
+- **数据库不可用时**：自动回退到 `outputs/extraction_<domain>.json` 文件
+- 通过 `/api/olm/export-objects?domain=shupeidian` 可将数据库数据导出到 JSON，保持两者同步
+
 ## Web 界面操作
 
 1. 打开 http://localhost:5000/extraction
-2. 使用顶部下拉框选择数据域（输配电/集采）
+2. 使用顶部下拉框选择数据域（输配电/集采），支持多域切换
 3. 点击对象卡片，查看其关联的三层实体
 4. 关联实体按强度排序，高强度用绿色标记
 
@@ -192,6 +210,10 @@ DEEPSEEK_API_BASE=https://api.deepseek.com/v1
 ## 停止服务
 
 ```bash
+# 推荐方式
+cd webapp && ./stop_web.sh
+
+# 备用
 pkill -f 'python3.*app.py'
 ```
 
