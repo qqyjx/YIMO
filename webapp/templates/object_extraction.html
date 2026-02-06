@@ -382,7 +382,7 @@
                         </div>
                     </div>
                     <div class="action-buttons">
-                        <button class="btn-action btn-primary-custom" onclick="runExtraction()">
+                        <button class="btn-action btn-primary-custom" onclick="runExtraction(event)">
                             <i class="bi bi-play-fill"></i> 执行抽取
                         </button>
                         <button class="btn-action btn-secondary-custom" onclick="exportResults()">
@@ -487,6 +487,14 @@
     <!-- ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script>
+        // 全局 ECharts 实例（避免重复 init 导致内存泄漏）
+        let sankeyChart = null;
+
+        // 全局 resize 监听（只注册一次）
+        window.addEventListener('resize', () => {
+            if (sankeyChart) sankeyChart.resize();
+        });
+
         // 模拟数据（实际从API获取）
         let extractedObjects = [
             {
@@ -586,16 +594,10 @@
         let currentDomain = '';
 
         // 初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDomains();
-            // 延迟加载数据，等待域列表加载完成
-            setTimeout(() => {
-                currentDomain = getSelectedDomains()[0] || '';
-                loadFromAPI();
-            }, 500);
-            renderObjectCards();
-            updateStats();
-            initSankeyChart();
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadDomains();
+            currentDomain = getSelectedDomains()[0] || '';
+            await loadFromAPI();
 
             // 监听域选择变化
             document.getElementById('domainCheckboxes').addEventListener('change', function(e) {
@@ -636,7 +638,20 @@
                     }
                 }
             } catch (err) {
-                console.log('Using default data');
+                console.warn('API 加载失败，使用本地默认数据:', err);
+                // 显示黄色警告提示条
+                let banner = document.getElementById('api-warning-banner');
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'api-warning-banner';
+                    banner.style.cssText = 'background:rgba(245,158,11,0.15); border:1px solid #f59e0b; color:#fcd34d; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;';
+                    banner.innerHTML = '<i class="bi bi-exclamation-triangle"></i> API 连接失败，当前显示的是本地缓存数据';
+                    document.querySelector('.container-fluid.px-4')?.prepend(banner);
+                }
+                // 用本地默认数据渲染
+                renderObjectCards();
+                updateStats();
+                initSankeyChart();
             }
         }
 
@@ -766,9 +781,14 @@
             }
         }
 
-        // 初始化桑基图
+        // 初始化桑基图（复用全局 sankeyChart 实例）
         function initSankeyChart() {
-            const chart = echarts.init(document.getElementById('sankey-chart'));
+            const container = document.getElementById('sankey-chart');
+
+            // 复用已有实例，避免内存泄漏
+            if (!sankeyChart) {
+                sankeyChart = echarts.init(container);
+            }
 
             // 构建桑基图数据
             const nodes = [];
@@ -812,6 +832,26 @@
                 }
             });
 
+            // 无数据时显示空状态提示
+            if (links.length === 0) {
+                sankeyChart.clear();
+                sankeyChart.setOption({
+                    backgroundColor: 'transparent',
+                    graphic: {
+                        type: 'text',
+                        left: 'center',
+                        top: 'middle',
+                        style: {
+                            text: '暂无关联数据\n请先执行对象抽取或检查数据源',
+                            fontSize: 16,
+                            fill: '#94a3b8',
+                            textAlign: 'center'
+                        }
+                    }
+                });
+                return;
+            }
+
             const option = {
                 backgroundColor: 'transparent',
                 tooltip: {
@@ -844,10 +884,7 @@
                 }]
             };
 
-            chart.setOption(option);
-
-            // 响应式
-            window.addEventListener('resize', () => chart.resize());
+            sankeyChart.setOption(option, true);
         }
 
         // 获取选中的域
@@ -885,8 +922,8 @@
         }
 
         // 执行抽取
-        async function runExtraction() {
-            const btn = event.target.closest('button');
+        async function runExtraction(e) {
+            const btn = e.target.closest('button');
             const domains = getSelectedDomains();
 
             if (domains.length === 0) {

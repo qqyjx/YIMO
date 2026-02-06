@@ -67,21 +67,33 @@ def load_json_data(domain: str = 'shupeidian') -> dict:
 
 
 def get_objects_from_json(domain: str = '') -> list:
-    """从 JSON 文件获取对象列表"""
+    """从 JSON 文件获取对象列表，从 relations 预计算各层关联数量"""
     data = load_json_data(domain or 'shupeidian')
     objects = data.get('objects', [])
+    relations = data.get('relations', [])
+
+    # 预计算每个 object_code 在各层的关联数量
+    stats_map = {}  # {object_code: {concept: N, logical: N, physical: N}}
+    for rel in relations:
+        code = rel.get('object_code', '')
+        layer = rel.get('entity_layer', '').lower()
+        if code and layer in ('concept', 'logical', 'physical'):
+            if code not in stats_map:
+                stats_map[code] = {'concept': 0, 'logical': 0, 'physical': 0}
+            stats_map[code][layer] += 1
 
     result = []
     for obj in objects:
+        obj_code = obj.get('object_code', '')
         result.append({
-            'object_id': hash(obj.get('object_code', '')),
-            'object_code': obj.get('object_code', ''),
+            'object_id': hash(obj_code),
+            'object_code': obj_code,
             'object_name': obj.get('object_name', ''),
             'object_name_en': obj.get('object_name_en', ''),
             'object_type': obj.get('object_type', 'CORE'),
             'data_domain': domain or data.get('data_domain', 'shupeidian'),
             'description': obj.get('description', ''),
-            'stats': obj.get('stats', {'concept': 0, 'logical': 0, 'physical': 0})
+            'stats': obj.get('stats') or stats_map.get(obj_code, {'concept': 0, 'logical': 0, 'physical': 0})
         })
 
     return result
