@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 批量导入目录下的所有 .xlsx 到 MySQL 的 EAV 模型。
-支持生命周期阶段标记（一模到底本体管理器）。
+支持生命周期阶段标记（YIMO 对象抽取与三层架构关联系统）。
 
 用法:
   python scripts/import_all.py --dir ./data --stage Finance

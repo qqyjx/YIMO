@@ -265,8 +265,9 @@ def api_domains():
 
 @app.route('/extraction')
 def extraction_page():
-    """对象抽取与三层架构关联页面"""
-    return render_template('object_extraction.html')
+    """对象抽取与三层架构关联 - 重定向到主页 10.0"""
+    from flask import redirect
+    return redirect('/?v=10.0')
 
 @app.route('/dataset/<int:dsid>/attributes')
 def api_attributes(dsid: int):

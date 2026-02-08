@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <title>DataMind 一模到底本体管理</title>
+  <title>DataMind 对象抽取与三层架构关联</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 1.5rem; }
     table { border-collapse: collapse; width: 100%; }
@@ -20,19 +20,19 @@
   </style>
 </head>
 <body>
-<h1>DataMind 一模到底本体管理系统</h1>
+<h1>DataMind 对象抽取与三层架构关联系统</h1>
 <table>
   <thead>
-    <tr><th>ID</th><th>Name</th><th>Source File</th><th>Canon Rows</th><th>Mapping Rows</th></tr>
+    <tr><th>序号</th><th>数据域</th><th>文件名</th><th>路径</th><th>大小</th></tr>
   </thead>
   <tbody>
   {% for row in stats %}
     <tr>
       <td>{{ row.id }}</td>
+      <td>{{ row.domain }}</td>
       <td>{{ row.name }}</td>
       <td class="small">{{ row.source_file }}</td>
-      <td>{{ row.canon }}</td>
-      <td>{{ row.mapping }}</td>
+      <td>{{ row.size }}</td>
     </tr>
   {% endfor %}
   </tbody>

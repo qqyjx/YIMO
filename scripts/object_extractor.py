@@ -151,7 +151,7 @@ DOMAIN_CONFIG = {
         }
     },
     "jicai": {
-        "name": "集采",
+        "name": "计划财务",
         "files": [],  # 待配置：集采域的Excel文件
         "sheet_config": {
             "concept": "DA-01 数据实体清单-概念实体清单",
@@ -449,36 +449,41 @@ class DataArchitectureReader:
         except Exception as e:
             print(f"[ERROR] 读取逻辑实体失败 ({file_path.name}): {e}")
 
-    def read_concept_with_mapping(self) -> Tuple[List['EntityInfo'], Dict[str, List['EntityInfo']]]:
-        """读取概念实体 + 构建概念→逻辑实体映射
+    def read_concept_with_mapping(self) -> Tuple[List['EntityInfo'], Dict[str, List['EntityInfo']], Dict[str, List['EntityInfo']]]:
+        """读取概念实体 + 构建概念→逻辑实体映射 + 逻辑→物理实体映射
 
-        只用概念实体做聚类，逻辑实体通过映射间接关联。
+        只用概念实体做聚类，逻辑实体通过映射间接关联，物理实体通过逻辑实体间接关联。
 
         Returns:
             concept_entities: 概念实体列表（用于聚类）
             concept_to_logical: {概念实体名称: [逻辑实体EntityInfo列表]}
+            logical_to_physical: {逻辑实体名称: [物理实体EntityInfo列表]}
         """
-        print(f"[INFO] 读取概念实体 + 概念→逻辑映射 (域: {self.data_domain})...")
+        print(f"[INFO] 读取概念实体 + 概念→逻辑映射 + 逻辑→物理映射 (域: {self.data_domain})...")
 
         files_to_read = self._get_files_to_read()
         if not files_to_read:
             print(f"[WARN] 未找到数据文件")
-            return [], {}
+            return [], {}, {}
 
         concept_to_logical: Dict[str, List[EntityInfo]] = defaultdict(list)
+        logical_to_physical: Dict[str, List[EntityInfo]] = defaultdict(list)
 
         for data_file in files_to_read:
             print(f"  读取 {data_file}...")
             self._read_concept_entities(data_file)
             self._build_concept_logical_mapping(data_file, concept_to_logical)
+            self._build_logical_physical_mapping(data_file, logical_to_physical)
 
         concept_entities = [e for e in self.entities if e.layer == "CONCEPT"]
         total_logical = sum(len(v) for v in concept_to_logical.values())
+        total_physical = sum(len(v) for v in logical_to_physical.values())
         print(f"[INFO] 读取完成:")
         print(f"  - 概念实体: {len(concept_entities)} 个")
         print(f"  - 概念→逻辑映射: {len(concept_to_logical)} 个概念实体 → {total_logical} 个逻辑实体")
+        print(f"  - 逻辑→物理映射: {len(logical_to_physical)} 个逻辑实体 → {total_physical} 个物理实体")
 
-        return concept_entities, dict(concept_to_logical)
+        return concept_entities, dict(concept_to_logical), dict(logical_to_physical)
 
     def _build_concept_logical_mapping(self, file_path: Path,
                                         mapping: Dict[str, List['EntityInfo']]):
@@ -545,6 +550,43 @@ class DataArchitectureReader:
                 print(f"[INFO] fallback 成功，构建 {len(set(k for k,_ in seen_fb))} 个概念→{count} 个逻辑映射")
             except Exception as e2:
                 print(f"[ERROR] fallback 也失败 ({file_path.name}): {e2}")
+
+    def _build_logical_physical_mapping(self, file_path: Path,
+                                         mapping: Dict[str, List['EntityInfo']]):
+        """从 DA-03 构建逻辑实体→物理实体映射"""
+        sheet_name = self.config.get("sheet_config", {}).get("physical",
+                     "DA-03数据实体清单-物理实体清单")
+        try:
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
+            seen: Set[Tuple[str, str]] = set()
+
+            for idx, row in df.iterrows():
+                logical_name = str(row.get("逻辑实体名称", "")).strip()
+                physical_name = str(row.get("物理实体名称", "")).strip()
+
+                if (not logical_name or logical_name == "nan"
+                        or not physical_name or physical_name == "nan"):
+                    continue
+
+                key = (logical_name, physical_name)
+                if key in seen:
+                    continue
+                seen.add(key)
+
+                excel_domain = str(row.get("数据域", "")).strip()
+                domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+
+                mapping[logical_name].append(EntityInfo(
+                    name=physical_name,
+                    layer="PHYSICAL",
+                    code=str(row.get("物理实体编码", "")).strip(),
+                    data_domain=domain,
+                    source_file=str(file_path.name),
+                    source_sheet=sheet_name,
+                    source_row=idx + 2
+                ))
+        except Exception as e:
+            print(f"[WARN] 构建逻辑→物理映射失败 ({file_path.name}): {e}")
 
     def _read_physical_entities(self, file_path: Path):
         """读取物理实体清单"""
@@ -1070,10 +1112,12 @@ class HierarchicalRelationBuilder:
                  objects: List[ExtractedObject],
                  cluster_entity_map: Dict[int, List[str]],
                  concept_entities: List[EntityInfo],
-                 concept_to_logical: Dict[str, List[EntityInfo]]):
+                 concept_to_logical: Dict[str, List[EntityInfo]],
+                 logical_to_physical: Dict[str, List[EntityInfo]] = None):
         self.objects = objects
         self.cluster_entity_map = cluster_entity_map
         self.concept_to_logical = concept_to_logical
+        self.logical_to_physical = logical_to_physical or {}
 
         # 构建概念实体名称 → EntityInfo 的映射
         self.concept_info_map: Dict[str, EntityInfo] = {}
@@ -1136,11 +1180,32 @@ class HierarchicalRelationBuilder:
                         source_row=le.source_row
                     ))
 
+                    # INDIRECT: 对象 → 物理实体（通过逻辑实体间接关联）
+                    physical_entities = self.logical_to_physical.get(le.name, [])
+                    for pe in physical_entities:
+                        relations.append(EntityRelation(
+                            object_code=obj.object_code,
+                            entity_layer="PHYSICAL",
+                            entity_name=pe.name,
+                            entity_code=pe.code,
+                            relation_type="INDIRECT",
+                            relation_strength=0.6,
+                            match_method="SEMANTIC_CLUSTER",
+                            via_concept_entity=le.name,
+                            data_domain=pe.data_domain,
+                            data_subdomain=pe.data_subdomain,
+                            source_file=pe.source_file,
+                            source_sheet=pe.source_sheet,
+                            source_row=pe.source_row
+                        ))
+
         concept_count = len([r for r in relations if r.entity_layer == "CONCEPT"])
         logical_count = len([r for r in relations if r.entity_layer == "LOGICAL"])
+        physical_count = len([r for r in relations if r.entity_layer == "PHYSICAL"])
         print(f"[INFO] 层级关联构建完成:")
         print(f"  - 对象→概念实体 (DIRECT): {concept_count} 条")
         print(f"  - 对象→逻辑实体 (INDIRECT): {logical_count} 条")
+        print(f"  - 对象→物理实体 (INDIRECT): {physical_count} 条")
         print(f"  - 总计: {len(relations)} 条")
         return relations
 
@@ -1345,13 +1410,13 @@ class SemanticObjectExtractionPipeline:
         print(f"目标聚类数：{self.target_clusters}")
         print()
 
-        # 1. 读取概念实体 + 概念→逻辑映射（只用概念实体聚类）
+        # 1. 读取概念实体 + 概念→逻辑映射 + 逻辑→物理映射（只用概念实体聚类）
         reader = DataArchitectureReader(
             data_dir=self.data_dir,
             data_domain=self.data_domain,
             excel_files=self.excel_files
         )
-        concept_entities, concept_to_logical = reader.read_concept_with_mapping()
+        concept_entities, concept_to_logical, logical_to_physical = reader.read_concept_with_mapping()
 
         if not concept_entities:
             print("[ERROR] 没有读取到概念实体数据")
@@ -1377,9 +1442,9 @@ class SemanticObjectExtractionPipeline:
         for obj in objects:
             print(f"  - {obj.object_code}: {obj.object_name} ({obj.object_type}) [聚类{obj.cluster_id}, {obj.cluster_size}个概念实体]")
 
-        # 4. 构建层级关联关系（对象→概念实体 DIRECT, 对象→逻辑实体 INDIRECT）
+        # 4. 构建层级关联关系（对象→概念实体 DIRECT, 对象→逻辑实体 INDIRECT, 对象→物理实体 INDIRECT）
         builder = HierarchicalRelationBuilder(
-            objects, cluster_entity_map, concept_entities, concept_to_logical
+            objects, cluster_entity_map, concept_entities, concept_to_logical, logical_to_physical
         )
         relations = builder.build_relations()
 
@@ -1427,7 +1492,7 @@ class SemanticObjectExtractionPipeline:
                 "cluster_size": obj.cluster_size,
                 "concept": len([r for r in obj_rels if r.entity_layer == "CONCEPT" and r.relation_type == "DIRECT"]),
                 "logical": len([r for r in obj_rels if r.entity_layer == "LOGICAL" and r.relation_type == "INDIRECT"]),
-                "physical": 0,
+                "physical": len([r for r in obj_rels if r.entity_layer == "PHYSICAL"]),
                 "total": len(obj_rels)
             }
         return stats

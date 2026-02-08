@@ -194,6 +194,9 @@ CREATE TABLE IF NOT EXISTS `object_entity_relations` (
     `match_method` ENUM('EXACT', 'CONTAINS', 'SEMANTIC', 'LLM', 'SEMANTIC_CLUSTER') DEFAULT 'SEMANTIC_CLUSTER' COMMENT '匹配方法',
     `semantic_similarity` DECIMAL(5,4) COMMENT '语义相似度（SBERT计算）',
 
+    -- 层级关联路径
+    `via_concept_entity` VARCHAR(512) DEFAULT NULL COMMENT '间接关联时的中间概念实体名称（逻辑实体通过哪个概念实体关联）',
+
     -- 元数据（来自原始Excel）
     `data_domain` VARCHAR(128) COMMENT '数据域',
     `data_subdomain` VARCHAR(128) COMMENT '数据子域',
@@ -301,6 +304,18 @@ SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
 SET @sql = IF(@col_exists = 0,
     'ALTER TABLE object_extraction_batches ADD COLUMN data_domain VARCHAR(128) DEFAULT ''default'' COMMENT ''数据域编码'' AFTER batch_code, ADD COLUMN data_domain_name VARCHAR(256) COMMENT ''数据域名称'' AFTER data_domain, ADD INDEX idx_data_domain (data_domain)',
     'SELECT ''Column data_domain already exists in batches''');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 为 object_entity_relations 表添加 via_concept_entity 字段（如果不存在）
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.columns
+                   WHERE table_schema = 'eav_db'
+                   AND table_name = 'object_entity_relations'
+                   AND column_name = 'via_concept_entity');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE object_entity_relations ADD COLUMN via_concept_entity VARCHAR(512) DEFAULT NULL COMMENT ''间接关联时的中间概念实体名称'' AFTER semantic_similarity',
+    'SELECT ''Column via_concept_entity already exists''');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;

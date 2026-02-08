@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DataMind | 一模到底本体管理</title>
+    <title>YIMO | 对象抽取与三层架构关联</title>
     <style>
         /* --- Global Variables & Reset --- */
         :root {
@@ -391,6 +391,56 @@
         .data-table th { background: #f1f5f9; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
         .tag { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; background: #e0e7ff; color: var(--primary); }
 
+        /* --- Hierarchical Relation Groups --- */
+        .concept-group {
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .concept-header {
+            padding: 0.6rem 0.75rem;
+            background: #f8fafc;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s;
+        }
+        .concept-header:hover { background: #f1f5f9; }
+        .concept-name {
+            font-weight: 600;
+            color: var(--concept-color);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.9rem;
+        }
+        .logical-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: #e0e7ff;
+            padding: 0.1rem 0.5rem;
+            border-radius: 10px;
+        }
+        .logical-list {
+            padding: 0.5rem 0.75rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            border-top: 1px solid var(--border);
+        }
+        .entity-strength {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.25rem;
+        }
+        .strength-high { background: #22c55e; }
+        .strength-medium { background: #f59e0b; }
+        .strength-low { background: #94a3b8; }
+
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -419,19 +469,19 @@
             <div class="nav-links">
                 <a href="#" onclick="window.scrollTo(0,0)">首页</a>
                 <a href="#" onclick="openModal('modal-datasets')">数据集</a>
-                <a href="#" onclick="openModal('modal-extraction')" style="color:var(--primary); font-weight:600;">本体管理</a>
+                <a href="#" onclick="openModal('modal-extraction')" style="color:var(--primary); font-weight:600;">对象管理</a>
             </div>
-            <button class="btn-nav" onclick="openModal('modal-extraction')">本体管理</button>
+            <button class="btn-nav" onclick="openModal('modal-extraction')">对象管理</button>
         </nav>
     </header>
 
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
-            <h1>一模到底<br>本体管理</h1>
+            <h1>一模到底<br>对象管理</h1>
             <p>从数据架构表单中智能抽取高度抽象的"对象"，并建立与概念实体、逻辑实体、物理实体的关联关系。采用 SBERT 语义聚类 + 大模型归纳命名算法。</p>
             <div class="hero-btns">
-                <button class="btn-hero btn-primary" onclick="openModal('modal-extraction')">开始本体管理</button>
+                <button class="btn-hero btn-primary" onclick="openModal('modal-extraction')">开始对象管理</button>
                 <button class="btn-hero btn-secondary" onclick="openModal('modal-datasets')">查看数据集</button>
             </div>
         </div>
@@ -440,7 +490,7 @@
     <!-- Footer -->
     <footer>
         <div class="logo" style="margin-bottom: 1rem;">DataMind</div>
-        <p style="color:var(--text-muted);">一模到底本体管理系统</p>
+        <p style="color:var(--text-muted);">对象抽取与三层架构关联系统</p>
         <p style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);">&copy; 2026 DataMind Platform</p>
     </footer>
 
@@ -478,7 +528,7 @@
     <div id="modal-extraction" class="modal-overlay" onclick="closeModal(event, 'modal-extraction')">
         <div class="modal-card">
             <div class="modal-header">
-                <h2>一模到底本体管理</h2>
+                <h2>对象抽取与三层架构关联</h2>
                 <button class="close-btn" onclick="closeModal(null, 'modal-extraction')">&times;</button>
             </div>
             <div class="modal-body">
@@ -543,30 +593,42 @@
                     <p style="color:var(--text-muted); text-align:center; padding:2rem; grid-column:1/-1;">点击"刷新"加载对象列表</p>
                 </div>
 
-                <!-- 关联关系面板 -->
+                <!-- 关联关系面板（层级折叠视图） -->
                 <div class="relation-panel" id="relation-panel">
                     <h4 style="margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
                         <span id="selected-object-icon">🎯</span>
                         <span id="selected-object-name">-</span> 的三层架构关联
+                        <span style="font-size:0.8rem; color:var(--text-muted); font-weight:400; margin-left:0.5rem;">
+                            对象 → 概念实体（直接）→ 逻辑实体（间接）→ 物理实体（间接）
+                        </span>
                     </h4>
-                    <div class="layer-row">
-                        <div class="layer-label concept">概念实体</div>
-                        <div class="layer-entities" id="concept-entities"><span style="color:var(--text-muted);">暂无</span></div>
+                    <div id="hierarchical-relations">
+                        <span style="color:var(--text-muted);">点击对象卡片查看关联关系</span>
                     </div>
-                    <div class="layer-row">
-                        <div class="layer-label logical">逻辑实体</div>
-                        <div class="layer-entities" id="logical-entities"><span style="color:var(--text-muted);">暂无</span></div>
-                    </div>
-                    <div class="layer-row">
+                    <!-- 物理实体行 -->
+                    <div class="layer-row" id="physical-row" style="display:none; margin-top:1rem;">
                         <div class="layer-label physical">物理实体</div>
                         <div class="layer-entities" id="physical-entities"><span style="color:var(--text-muted);">暂无</span></div>
                     </div>
+                </div>
+
+                <!-- 桑基图 -->
+                <div style="padding:1.5rem; border-top:1px solid var(--border);">
+                    <h4 style="margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
+                        对象-三层架构关联桑基图
+                    </h4>
+                    <div id="sankey-chart" style="width:100%; height:400px;"></div>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script>
+        // 全局 ECharts 实例
+        let sankeyChart = null;
+        window.addEventListener('resize', () => { if (sankeyChart) sankeyChart.resize(); });
+
         // 加载域列表
         async function loadDomains() {
             const container = document.getElementById('domainCheckboxes');
@@ -645,6 +707,7 @@
                 extractedObjects = data.objects || [];
                 renderObjectCards(extractedObjects);
                 updateStats();
+                initSankeyChart();
             } catch(e) {
                 grid.innerHTML = `<p style="color:#ef4444; padding:2rem; grid-column:1/-1;">加载失败: ${e}</p>`;
             }
@@ -712,29 +775,146 @@
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const data = await resp.json();
 
-                renderEntityTags('concept-entities', data.concept || []);
-                renderEntityTags('logical-entities', data.logical || []);
-                renderEntityTags('physical-entities', data.physical || []);
+                renderHierarchicalRelations(data);
+                renderPhysicalEntities(data.physical || []);
             } catch(e) {
                 console.error('加载关联失败:', e);
             }
         }
 
-        function renderEntityTags(containerId, entities) {
-            const container = document.getElementById(containerId);
-            if (!entities.length) {
-                container.innerHTML = '<span style="color:var(--text-muted); font-size:0.85rem;">暂无关联数据</span>';
+        function renderHierarchicalRelations(relations) {
+            const container = document.getElementById('hierarchical-relations');
+            const concepts = relations?.concept || [];
+            const logicals = relations?.logical || [];
+
+            if (concepts.length === 0 && logicals.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted);">暂无关联数据</p>';
                 return;
             }
 
+            // 按概念实体分组逻辑实体
+            const logicalByConceptMap = {};
+            logicals.forEach(le => {
+                const via = le.via_concept_entity || '未分组';
+                if (!logicalByConceptMap[via]) logicalByConceptMap[via] = [];
+                logicalByConceptMap[via].push(le);
+            });
+
+            container.innerHTML = concepts.map((ce, idx) => {
+                const name = typeof ce === 'string' ? ce : ce.entity_name;
+                const logicalEntities = logicalByConceptMap[name] || [];
+                const logicalCount = ce.logical_count || logicalEntities.length;
+                const id = `logical-group-${idx}`;
+
+                return `
+                <div class="concept-group">
+                    <div class="concept-header" onclick="document.getElementById('${id}').style.display = document.getElementById('${id}').style.display === 'none' ? 'flex' : 'none'">
+                        <span class="concept-name">
+                            <span class="entity-strength strength-high"></span>
+                            ${name}
+                        </span>
+                        <span class="logical-count">${logicalCount} 个逻辑实体</span>
+                    </div>
+                    <div class="logical-list" id="${id}" style="display:none;">
+                        ${logicalEntities.length > 0
+                            ? logicalEntities.slice(0, 30).map(le => `
+                                <span class="entity-tag" title="通过 ${name} 间接关联" style="padding:0.3rem 0.6rem; border-radius:6px; font-size:0.75rem; background:white; border:1px solid var(--border);">
+                                    ${typeof le === 'string' ? le : le.entity_name}
+                                </span>
+                            `).join('') + (logicalEntities.length > 30 ? `<span class="entity-tag" style="color:var(--text-muted);">+${logicalEntities.length - 30} 更多</span>` : '')
+                            : '<span style="color:var(--text-muted); font-size:0.85rem;">无逻辑实体</span>'
+                        }
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderPhysicalEntities(entities) {
+            const row = document.getElementById('physical-row');
+            const container = document.getElementById('physical-entities');
+            if (!entities.length) {
+                row.style.display = 'none';
+                return;
+            }
+            row.style.display = 'flex';
             container.innerHTML = entities.slice(0, 30).map(e => {
                 const name = typeof e === 'string' ? e : e.entity_name;
-                return `<span class="entity-tag" title="${e.data_domain || ''}">${name}</span>`;
+                return `<span class="entity-tag" title="${e.data_domain || ''}" style="padding:0.3rem 0.6rem; border-radius:6px; font-size:0.75rem; background:white; border:1px solid var(--border);">${name}</span>`;
             }).join('');
-
             if (entities.length > 30) {
                 container.innerHTML += `<span class="entity-tag" style="background:#f1f5f9;">+${entities.length - 30} 更多</span>`;
             }
+        }
+
+        // 桑基图：对象 → 概念实体层 → 逻辑实体层 → 物理实体层
+        function initSankeyChart() {
+            const container = document.getElementById('sankey-chart');
+            if (!container) return;
+
+            if (!sankeyChart) {
+                sankeyChart = echarts.init(container);
+            }
+
+            const nodes = [];
+            const links = [];
+            let totalLogical = 0, totalPhysical = 0;
+
+            extractedObjects.forEach(obj => {
+                nodes.push({ name: obj.object_name, itemStyle: { color: '#3b82f6' } });
+            });
+
+            nodes.push({ name: '概念实体层', itemStyle: { color: '#6366f1' } });
+            nodes.push({ name: '逻辑实体层', itemStyle: { color: '#22c55e' } });
+            nodes.push({ name: '物理实体层', itemStyle: { color: '#f59e0b' } });
+
+            extractedObjects.forEach(obj => {
+                if (obj.stats?.concept > 0) {
+                    links.push({ source: obj.object_name, target: '概念实体层', value: obj.stats.concept });
+                }
+                totalLogical += (obj.stats?.logical || 0);
+                totalPhysical += (obj.stats?.physical || 0);
+            });
+
+            if (totalLogical > 0) {
+                links.push({ source: '概念实体层', target: '逻辑实体层', value: totalLogical });
+            }
+            if (totalPhysical > 0) {
+                links.push({ source: '逻辑实体层', target: '物理实体层', value: totalPhysical });
+            }
+
+            if (links.length === 0) {
+                sankeyChart.clear();
+                sankeyChart.setOption({
+                    backgroundColor: 'transparent',
+                    graphic: { type: 'text', left: 'center', top: 'middle', style: { text: '暂无关联数据\n请先执行对象抽取或检查数据源', fontSize: 16, fill: '#94a3b8', textAlign: 'center' } }
+                });
+                return;
+            }
+
+            sankeyChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item',
+                    triggerOn: 'mousemove',
+                    formatter: function(params) {
+                        if (params.dataType === 'edge') {
+                            const relType = params.data.source === '概念实体层' ? '间接关联' : '直接关联';
+                            return `${params.data.source} → ${params.data.target}<br/>${relType}数量: ${params.data.value}`;
+                        }
+                        return params.name;
+                    }
+                },
+                series: [{
+                    type: 'sankey',
+                    layout: 'none',
+                    emphasis: { focus: 'adjacency' },
+                    nodeAlign: 'justify',
+                    data: nodes,
+                    links: links,
+                    lineStyle: { color: 'gradient', curveness: 0.5 },
+                    label: { color: '#0f172a', fontSize: 12 }
+                }]
+            }, true);
         }
 
         function getSelectedDomains() {
