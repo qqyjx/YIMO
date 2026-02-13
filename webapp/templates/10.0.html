@@ -4,974 +4,1310 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YIMO | 对象抽取与三层架构关联</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        /* --- Global Variables & Reset --- */
+        /* ========== CSS Variables ========== */
         :root {
-            --primary: #6366f1; /* Indigo */
+            --sidebar-w: 260px;
+            --primary: #6366f1;
             --primary-dark: #4f46e5;
-            --secondary: #3b82f6; /* Blue */
-            --accent: #22c55e; /* Green */
-            --concept-color: #6366f1;
-            --logical-color: #22c55e;
-            --physical-color: #f59e0b;
+            --primary-light: #818cf8;
+            --secondary: #3b82f6;
+            --accent: #22c55e;
+            --concept: #6366f1;
+            --logical: #10b981;
+            --physical: #f59e0b;
             --text-main: #0f172a;
-            --text-muted: #64748b;
-            --bg-body: #f8fafc;
+            --text-sec: #475569;
+            --text-muted: #94a3b8;
+            --bg-body: #f1f5f9;
             --bg-card: #ffffff;
             --border: #e2e8f0;
+            --border-light: #f1f5f9;
             --radius: 12px;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --transition: .2s cubic-bezier(.4,0,.2,1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* ========== Reset ========== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font); background: var(--bg-body); color: var(--text-main); line-height: 1.6; overflow-x: hidden; }
+        a { text-decoration: none; color: inherit; }
+        button, input, select { font-family: inherit; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        body {
-            font-family: var(--font-sans);
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            line-height: 1.6;
-            overflow-x: hidden;
+        /* ========== Sidebar ========== */
+        .sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            width: var(--sidebar-w);
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            display: flex; flex-direction: column;
+            z-index: 100;
+            transition: transform .3s ease;
+        }
+        .sidebar-brand {
+            padding: 1.5rem 1.25rem 1.25rem;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+        }
+        .sidebar-brand h1 {
+            font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em;
+            background: linear-gradient(135deg, #818cf8, #22d3ee);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .sidebar-brand p {
+            font-size: .75rem; color: #64748b; margin-top: .15rem; letter-spacing: .02em;
         }
 
-        a { text-decoration: none; color: inherit; transition: 0.2s; }
-        ul { list-style: none; }
-        button, input, select, textarea { font-family: inherit; }
+        .sidebar-nav { padding: .75rem 0; flex-shrink: 0; }
+        .nav-item {
+            display: flex; align-items: center; gap: .65rem;
+            padding: .6rem 1.25rem;
+            font-size: .875rem; font-weight: 500; color: #94a3b8;
+            cursor: pointer; position: relative; transition: var(--transition);
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover { color: #e2e8f0; background: rgba(255,255,255,.04); }
+        .nav-item.active {
+            color: #e2e8f0; background: rgba(99,102,241,.12);
+            border-left-color: var(--primary-light);
+        }
+        .nav-item i { font-size: 1.1rem; width: 1.25rem; text-align: center; }
 
-        /* --- Navigation --- */
-        header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
-            z-index: 1000;
+        .sidebar-section {
+            padding: 1rem 1.25rem .5rem;
+            font-size: .65rem; font-weight: 600; color: #475569;
+            text-transform: uppercase; letter-spacing: .08em;
         }
 
-        nav {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .sidebar-domains {
+            padding: .25rem 1.25rem; flex: 1; overflow-y: auto;
+        }
+        .domain-item {
+            display: flex; align-items: center; gap: .5rem;
+            padding: .45rem .5rem; border-radius: 6px;
+            font-size: .82rem; color: #94a3b8; cursor: pointer;
+            transition: var(--transition);
+        }
+        .domain-item:hover { background: rgba(255,255,255,.05); color: #e2e8f0; }
+        .domain-item input[type="radio"] {
+            accent-color: var(--primary-light); width: 14px; height: 14px; cursor: pointer;
+        }
+        .domain-item .domain-badge {
+            margin-left: auto; font-size: .7rem; font-weight: 600;
+            background: rgba(99,102,241,.2); color: var(--primary-light);
+            padding: .1rem .4rem; border-radius: 8px;
         }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.02em;
+        .sidebar-footer {
+            padding: 1rem 1.25rem; border-top: 1px solid rgba(255,255,255,.06);
+            font-size: .72rem; color: #475569;
         }
+        .sidebar-footer span { color: #64748b; }
 
-        .nav-links { display: flex; gap: 2.5rem; }
-        .nav-links a {
-            font-weight: 500;
-            color: var(--text-muted);
-            font-size: 0.95rem;
+        /* ========== Main Content ========== */
+        .main { margin-left: var(--sidebar-w); min-height: 100vh; }
+
+        /* Top Bar */
+        .topbar {
+            position: sticky; top: 0; z-index: 50;
+            background: rgba(255,255,255,.85); backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: .75rem 2rem;
+            display: flex; align-items: center; gap: 1rem;
         }
-        .nav-links a:hover { color: var(--primary); }
-
-        .btn-nav {
-            background: var(--primary);
-            color: white;
-            padding: 0.5rem 1.25rem;
-            border-radius: 999px;
-            font-weight: 600;
-            font-size: 0.9rem;
+        .search-box {
+            flex: 1; max-width: 400px; position: relative;
         }
-        .btn-nav:hover { background: var(--primary-dark); }
-
-        /* --- Hero Section --- */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 8rem 2rem 4rem;
-            background:
-                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.1), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(34, 197, 94, 0.1), transparent 25%);
+        .search-box input {
+            width: 100%; padding: .55rem 1rem .55rem 2.4rem;
+            border: 1px solid var(--border); border-radius: 8px;
+            font-size: .875rem; color: var(--text-main);
+            background: var(--bg-body); transition: var(--transition);
         }
-
-        .hero-content { max-width: 800px; animation: fadeUp 0.8s ease-out; }
-
-        .hero h1 {
-            font-size: 3.5rem;
-            line-height: 1.1;
-            font-weight: 800;
-            margin-bottom: 1.5rem;
-            letter-spacing: -0.03em;
-            background: linear-gradient(to bottom right, var(--text-main), #475569);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .search-box input:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99,102,241,.1); background: #fff;
         }
-
-        .hero p {
-            font-size: 1.25rem;
-            color: var(--text-muted);
-            margin-bottom: 3rem;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
+        .search-box input::placeholder { color: var(--text-muted); }
+        .search-box i {
+            position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+            color: var(--text-muted); font-size: .9rem;
         }
-
-        .hero-btns {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
+        .topbar-actions { display: flex; gap: .5rem; margin-left: auto; }
+        .btn {
+            display: inline-flex; align-items: center; gap: .4rem;
+            padding: .5rem 1rem; border-radius: 8px;
+            font-size: .82rem; font-weight: 600; cursor: pointer;
+            border: none; transition: var(--transition);
         }
-
-        .btn-hero {
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-        }
-
         .btn-primary {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            background: var(--primary); color: #fff;
+            box-shadow: 0 1px 3px rgba(99,102,241,.25);
         }
-        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
-
-        .btn-secondary {
-            background: white;
-            color: var(--text-main);
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-outline {
+            background: #fff; color: var(--text-sec);
             border: 1px solid var(--border);
         }
-        .btn-secondary:hover { border-color: var(--text-muted); background: #f1f5f9; }
+        .btn-outline:hover { border-color: #cbd5e1; background: var(--bg-body); }
+        .btn-sm { padding: .35rem .65rem; font-size: .75rem; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
-        /* --- Modals --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(4px);
-            z-index: 2000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .modal-overlay.active { display: flex; opacity: 1; }
-
-        .modal-card {
-            background: var(--bg-card);
-            width: 90%;
-            max-width: 1200px;
-            max-height: 90vh;
-            border-radius: 16px;
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transform: scale(0.95);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .modal-overlay.active .modal-card { transform: scale(1); }
-
-        .modal-header {
-            padding: 1.5rem 2rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(135deg, #1e1b4b, #312e81);
-            color: white;
-        }
-        .modal-header h2 { font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
-        .close-btn {
-            background: none; border: none; font-size: 1.5rem;
-            color: rgba(255,255,255,0.7); cursor: pointer;
-        }
-        .close-btn:hover { color: white; }
-
-        .modal-body {
-            padding: 0;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        /* --- Layer Legend --- */
+        /* Layer Legend */
         .layer-legend {
-            display: flex;
-            gap: 2rem;
-            justify-content: center;
-            padding: 1rem;
-            background: #f8fafc;
-            border-bottom: 1px solid var(--border);
+            display: flex; gap: 1.5rem; padding: 0 2rem;
+            margin-bottom: .25rem;
         }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
+        .legend-chip {
+            display: flex; align-items: center; gap: .35rem;
+            font-size: .72rem; color: var(--text-sec); font-weight: 500;
         }
         .legend-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
+            width: 8px; height: 8px; border-radius: 50%;
         }
-        .legend-dot.concept { background: var(--concept-color); }
-        .legend-dot.logical { background: var(--logical-color); }
-        .legend-dot.physical { background: var(--physical-color); }
+        .legend-dot.concept { background: var(--concept); }
+        .legend-dot.logical { background: var(--logical); }
+        .legend-dot.physical { background: var(--physical); }
 
-        /* --- Stats Cards --- */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            padding: 1rem 1.5rem;
-            background: white;
-            border-bottom: 1px solid var(--border);
+        /* ========== Content Sections ========== */
+        .content-area { padding: 1.5rem 2rem 3rem; }
+        .section { margin-bottom: 2rem; scroll-margin-top: 4rem; }
+        .section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1rem;
         }
-        .stats-card {
-            padding: 1rem;
-            border-radius: 10px;
-            text-align: center;
+        .section-title {
+            font-size: 1.05rem; font-weight: 700; color: var(--text-main);
+            display: flex; align-items: center; gap: .5rem;
         }
-        .stats-value {
-            font-size: 1.8rem;
-            font-weight: 700;
+        .section-title i { color: var(--text-muted); font-size: 1rem; }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
         }
-        .stats-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 0.25rem;
+        .stat-card {
+            background: var(--bg-card); border-radius: var(--radius);
+            padding: 1.25rem; border: 1px solid var(--border);
+            position: relative; overflow: hidden;
+            transition: var(--transition);
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+        .stat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .stat-card.card-objects::before { background: linear-gradient(90deg, var(--primary), var(--secondary)); }
+        .stat-card.card-concept::before { background: linear-gradient(90deg, var(--concept), #a78bfa); }
+        .stat-card.card-logical::before { background: linear-gradient(90deg, var(--logical), #34d399); }
+        .stat-card.card-physical::before { background: linear-gradient(90deg, var(--physical), #fbbf24); }
+        .stat-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; margin-bottom: .75rem;
+        }
+        .card-objects .stat-icon { background: rgba(99,102,241,.1); color: var(--primary); }
+        .card-concept .stat-icon { background: rgba(99,102,241,.1); color: var(--concept); }
+        .card-logical .stat-icon { background: rgba(16,185,129,.1); color: var(--logical); }
+        .card-physical .stat-icon { background: rgba(245,158,11,.1); color: var(--physical); }
+        .stat-value {
+            font-size: 1.75rem; font-weight: 800; line-height: 1;
+            color: var(--text-main); margin-bottom: .25rem;
+        }
+        .stat-label { font-size: .78rem; color: var(--text-muted); font-weight: 500; }
+
+        /* ========== Object Cards ========== */
+        .filter-tabs {
+            display: flex; gap: .35rem; margin-bottom: 1rem;
+        }
+        .filter-tab {
+            padding: .35rem .85rem; border-radius: 6px;
+            font-size: .78rem; font-weight: 600; cursor: pointer;
+            color: var(--text-sec); background: transparent;
+            border: 1px solid transparent; transition: var(--transition);
+        }
+        .filter-tab:hover { background: var(--bg-body); }
+        .filter-tab.active {
+            background: var(--primary); color: #fff;
+            border-color: var(--primary);
+        }
+        .filter-tab .count {
+            font-weight: 700; margin-left: .25rem;
+            opacity: .7;
         }
 
-        /* --- Object Cards --- */
         .objects-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1rem;
-            padding: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: .85rem;
         }
         .object-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.25rem;
+            background: var(--bg-card); border-radius: var(--radius);
             border: 1px solid var(--border);
-            cursor: pointer;
-            transition: all 0.2s;
+            padding: 1rem 1rem 1rem 1.15rem;
+            cursor: pointer; transition: var(--transition);
+            position: relative; display: flex; flex-direction: column;
         }
+        .object-card::before {
+            content: ''; position: absolute; left: 0; top: 12px; bottom: 12px;
+            width: 3px; border-radius: 0 3px 3px 0;
+            background: var(--border); transition: var(--transition);
+        }
+        .object-card.type-CORE::before { background: var(--primary); }
+        .object-card.type-DERIVED::before { background: var(--secondary); }
+        .object-card.type-AUXILIARY::before { background: #94a3b8; }
         .object-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--primary);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+            transform: translateY(-2px); box-shadow: var(--shadow);
+            border-color: #cbd5e1;
         }
         .object-card.active {
             border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 0 0 2px rgba(99,102,241,.15), var(--shadow);
         }
-        .object-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            color: white;
-            margin-bottom: 0.75rem;
+        .object-card.active::before { width: 4px; }
+        .obj-top { display: flex; align-items: flex-start; gap: .65rem; margin-bottom: .5rem; }
+        .obj-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.15rem; flex-shrink: 0;
+            background: linear-gradient(135deg, rgba(99,102,241,.1), rgba(59,130,246,.08));
         }
-        .object-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
+        .obj-info { min-width: 0; }
+        .obj-name { font-size: .95rem; font-weight: 700; color: var(--text-main); line-height: 1.3; }
+        .obj-code {
+            font-size: .68rem; color: var(--text-muted);
+            font-family: 'SF Mono', SFMono-Regular, ui-monospace, monospace;
         }
-        .object-code {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            font-family: monospace;
+        .obj-desc {
+            font-size: .78rem; color: var(--text-sec); margin: .35rem 0 .5rem;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; line-height: 1.45;
         }
-        .object-stats {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 0.75rem;
+        .obj-badges { display: flex; gap: .35rem; margin-top: auto; }
+        .badge {
+            padding: .15rem .45rem; border-radius: 4px;
+            font-size: .68rem; font-weight: 600;
         }
-        .stat-badge {
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 600;
+        .badge-concept { background: rgba(99,102,241,.1); color: var(--concept); }
+        .badge-logical { background: rgba(16,185,129,.1); color: var(--logical); }
+        .badge-physical { background: rgba(245,158,11,.1); color: var(--physical); }
+        .badge-type {
+            padding: .12rem .4rem; border-radius: 4px;
+            font-size: .62rem; font-weight: 700; text-transform: uppercase;
+            margin-left: auto;
         }
-        .stat-badge.concept { background: rgba(99, 102, 241, 0.15); color: var(--concept-color); }
-        .stat-badge.logical { background: rgba(34, 197, 94, 0.15); color: var(--logical-color); }
-        .stat-badge.physical { background: rgba(245, 158, 11, 0.15); color: var(--physical-color); }
+        .badge-CORE { background: rgba(99,102,241,.1); color: var(--primary); }
+        .badge-DERIVED { background: rgba(59,130,246,.1); color: var(--secondary); }
+        .badge-AUXILIARY { background: rgba(148,163,184,.12); color: #64748b; }
 
-        /* --- Relation Panel --- */
-        .relation-panel {
-            background: #f8fafc;
-            border-top: 1px solid var(--border);
-            padding: 1.5rem;
-            display: none;
+        /* No data state */
+        .empty-state {
+            text-align: center; padding: 3rem 2rem; color: var(--text-muted);
+            grid-column: 1 / -1;
         }
-        .relation-panel.active { display: block; }
-        .layer-row {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        .layer-label {
-            width: 100px;
-            flex-shrink: 0;
-            padding: 0.5rem;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 500;
-            font-size: 0.8rem;
-        }
-        .layer-label.concept { background: rgba(99, 102, 241, 0.15); border: 1px solid var(--concept-color); }
-        .layer-label.logical { background: rgba(34, 197, 94, 0.15); border: 1px solid var(--logical-color); }
-        .layer-label.physical { background: rgba(245, 158, 11, 0.15); border: 1px solid var(--physical-color); }
-        .layer-entities {
-            flex: 1;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .entity-tag {
-            padding: 0.3rem 0.6rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            background: white;
-            border: 1px solid var(--border);
-            transition: all 0.2s;
-        }
-        .entity-tag:hover { border-color: var(--primary); }
+        .empty-state i { font-size: 2.5rem; display: block; margin-bottom: .75rem; opacity: .4; }
+        .empty-state p { font-size: .9rem; }
 
-        /* --- Forms & Misc --- */
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
+        /* ========== Relation Panel ========== */
+        .relation-section {
+            display: none; animation: slideDown .3s ease;
         }
-        .form-control {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.2s;
-        }
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-        .result-box {
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: monospace;
-            font-size: 0.9rem;
-            white-space: pre-wrap;
-        }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .data-table th, .data-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
-        .data-table th { background: #f1f5f9; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
-        .tag { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; background: #e0e7ff; color: var(--primary); }
-
-        /* --- Hierarchical Relation Groups --- */
-        .concept-group {
-            margin-bottom: 0.75rem;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .concept-header {
-            padding: 0.6rem 0.75rem;
-            background: #f8fafc;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: background 0.2s;
-        }
-        .concept-header:hover { background: #f1f5f9; }
-        .concept-name {
-            font-weight: 600;
-            color: var(--concept-color);
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 0.9rem;
-        }
-        .logical-count {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            background: #e0e7ff;
-            padding: 0.1rem 0.5rem;
-            border-radius: 10px;
-        }
-        .logical-list {
-            padding: 0.5rem 0.75rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.4rem;
-            border-top: 1px solid var(--border);
-        }
-        .entity-strength {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 0.25rem;
-        }
-        .strength-high { background: #22c55e; }
-        .strength-medium { background: #f59e0b; }
-        .strength-low { background: #94a3b8; }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
+        .relation-section.active { display: block; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .relation-header {
+            display: flex; align-items: center; gap: .5rem;
+            margin-bottom: 1rem; flex-wrap: wrap;
+        }
+        .relation-obj-name {
+            font-size: 1rem; font-weight: 700; color: var(--text-main);
+        }
+        .relation-subtitle {
+            font-size: .78rem; color: var(--text-muted); font-weight: 400;
+        }
+        .relation-columns {
+            display: grid; grid-template-columns: 1fr 1.8fr .8fr;
+            gap: 1rem; min-height: 200px;
+        }
+        .rel-col {
+            background: var(--bg-card); border-radius: var(--radius);
+            border: 1px solid var(--border); overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .rel-col-header {
+            padding: .65rem .85rem; font-size: .78rem; font-weight: 600;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        .rel-col.col-concept .rel-col-header { background: rgba(99,102,241,.05); color: var(--concept); }
+        .rel-col.col-logical .rel-col-header { background: rgba(16,185,129,.05); color: var(--logical); }
+        .rel-col.col-physical .rel-col-header { background: rgba(245,158,11,.05); color: var(--physical); }
+        .rel-col-count {
+            font-size: .68rem; font-weight: 700; padding: .1rem .4rem;
+            border-radius: 8px; background: rgba(0,0,0,.05);
+        }
+        .rel-col-search {
+            padding: .4rem .65rem; border-bottom: 1px solid var(--border-light);
+        }
+        .rel-col-search input {
+            width: 100%; padding: .3rem .55rem; border: 1px solid var(--border);
+            border-radius: 6px; font-size: .75rem; background: var(--bg-body);
+        }
+        .rel-col-search input:focus { outline: none; border-color: var(--primary); }
+        .rel-col-body {
+            padding: .65rem; overflow-y: auto; flex: 1; max-height: 400px;
+        }
+        .entity-item {
+            padding: .35rem .5rem; border-radius: 6px;
+            font-size: .78rem; color: var(--text-sec); cursor: pointer;
+            display: flex; align-items: center; gap: .35rem;
+            transition: var(--transition); margin-bottom: .15rem;
+        }
+        .entity-item:hover { background: var(--bg-body); }
+        .entity-item.highlighted { background: rgba(99,102,241,.08); color: var(--primary); font-weight: 500; }
+        .entity-dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+        }
+        .entity-dot.strong { background: var(--accent); }
+        .entity-dot.medium { background: var(--physical); }
+        .entity-dot.weak { background: var(--text-muted); }
+        .entity-via {
+            font-size: .65rem; color: var(--text-muted);
+            margin-left: auto; white-space: nowrap;
+        }
+        .empty-col {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 2rem; color: var(--text-muted); text-align: center;
+        }
+        .empty-col i { font-size: 1.8rem; opacity: .3; margin-bottom: .5rem; }
+        .empty-col p { font-size: .78rem; }
 
+        /* Concept Group in logical column */
+        .concept-group-header {
+            padding: .3rem .5rem; margin: .25rem 0 .1rem; border-radius: 6px;
+            font-size: .72rem; font-weight: 600; color: var(--concept);
+            background: rgba(99,102,241,.06); cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .concept-group-header:hover { background: rgba(99,102,241,.1); }
+        .concept-group-header .toggle { font-size: .6rem; color: var(--text-muted); }
+        .concept-group-items { padding-left: .4rem; }
+        .concept-group-items.collapsed { display: none; }
+
+        /* ========== Sankey Section ========== */
+        .sankey-container {
+            background: var(--bg-card); border-radius: var(--radius);
+            border: 1px solid var(--border); padding: 1.25rem;
+        }
+        #sankey-chart { width: 100%; height: 450px; }
+
+        /* ========== Datasets Table ========== */
+        .datasets-table {
+            width: 100%; border-collapse: separate; border-spacing: 0;
+            font-size: .82rem;
+        }
+        .datasets-table th {
+            padding: .6rem .85rem; text-align: left;
+            font-size: .7rem; font-weight: 600; text-transform: uppercase;
+            color: var(--text-muted); letter-spacing: .04em;
+            background: var(--bg-body); border-bottom: 1px solid var(--border);
+        }
+        .datasets-table td {
+            padding: .6rem .85rem; border-bottom: 1px solid var(--border-light);
+            color: var(--text-sec);
+        }
+        .datasets-table tr:hover td { background: rgba(99,102,241,.02); }
+        .ds-tag {
+            display: inline-block; padding: .1rem .4rem; border-radius: 4px;
+            font-size: .68rem; font-weight: 600;
+            background: rgba(99,102,241,.08); color: var(--primary);
+        }
+
+        /* ========== Toast / Notifications ========== */
+        .toast-container {
+            position: fixed; top: 1rem; right: 1rem; z-index: 9999;
+            display: flex; flex-direction: column; gap: .5rem;
+        }
+        .toast {
+            padding: .65rem 1rem; border-radius: 8px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg); font-size: .82rem;
+            display: flex; align-items: center; gap: .5rem;
+            animation: toastIn .3s ease;
+            max-width: 360px;
+        }
+        .toast.success { border-left: 3px solid var(--accent); }
+        .toast.error { border-left: 3px solid #ef4444; }
+        .toast.info { border-left: 3px solid var(--primary); }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ========== Mobile ========== */
+        .mobile-toggle {
+            display: none; position: fixed; top: .65rem; left: .75rem; z-index: 200;
+            width: 38px; height: 38px; border-radius: 10px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            box-shadow: var(--shadow); cursor: pointer;
+            align-items: center; justify-content: center; font-size: 1.1rem;
+        }
+        .mobile-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,.4); z-index: 90;
+        }
+
+        @media (max-width: 1024px) {
+            :root { --sidebar-w: 220px; }
+        }
         @media (max-width: 768px) {
-            .grid-2 { grid-template-columns: 1fr; }
-            .hero h1 { font-size: 2.5rem; }
-            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .mobile-toggle { display: flex; }
+            .sidebar { transform: translateX(-100%); width: 280px; }
+            .sidebar.open { transform: translateX(0); }
+            .mobile-overlay.open { display: block; }
+            .main { margin-left: 0; }
+            .topbar { padding: .75rem 1rem .75rem 3.5rem; }
+            .content-area { padding: 1rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .objects-grid { grid-template-columns: 1fr; }
+            .relation-columns { grid-template-columns: 1fr; }
+            .filter-tabs { flex-wrap: wrap; }
         }
 
-        /* Footer */
-        footer {
-            background: var(--bg-card);
-            padding: 3rem 2rem;
-            text-align: center;
-            border-top: 1px solid var(--border);
+        /* ========== Animations ========== */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .fade-in { animation: fadeIn .4s ease; }
+
+        /* Loading spinner */
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(99,102,241,.2);
+            border-top-color: var(--primary);
+            border-radius: 50%; animation: spin .6s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <header>
-        <nav>
-            <div class="logo">DataMind</div>
-            <div class="nav-links">
-                <a href="#" onclick="window.scrollTo(0,0)">首页</a>
-                <a href="#" onclick="openModal('modal-datasets')">数据集</a>
-                <a href="#" onclick="openModal('modal-extraction')" style="color:var(--primary); font-weight:600;">对象管理</a>
+    <!-- Mobile Toggle -->
+    <button class="mobile-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <h1>YIMO</h1>
+            <p>一模到底 &middot; 对象管理平台</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-item active" data-section="section-overview" onclick="scrollToSection('section-overview')">
+                <i class="bi bi-grid-1x2"></i><span>总览</span>
             </div>
-            <button class="btn-nav" onclick="openModal('modal-extraction')">对象管理</button>
+            <div class="nav-item" data-section="section-objects" onclick="scrollToSection('section-objects')">
+                <i class="bi bi-box-seam"></i><span>对象管理</span>
+            </div>
+            <div class="nav-item" data-section="section-relations" onclick="scrollToSection('section-relations')">
+                <i class="bi bi-diagram-3"></i><span>关联分析</span>
+            </div>
+            <div class="nav-item" data-section="section-sankey" onclick="scrollToSection('section-sankey')">
+                <i class="bi bi-bar-chart-steps"></i><span>流向图</span>
+            </div>
+            <div class="nav-item" data-section="section-datasets" onclick="scrollToSection('section-datasets')">
+                <i class="bi bi-database"></i><span>数据集</span>
+            </div>
         </nav>
-    </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1>一模到底<br>对象管理</h1>
-            <p>从数据架构表单中智能抽取高度抽象的"对象"，并建立与概念实体、逻辑实体、物理实体的关联关系。采用 SBERT 语义聚类 + 大模型归纳命名算法。</p>
-            <div class="hero-btns">
-                <button class="btn-hero btn-primary" onclick="openModal('modal-extraction')">开始对象管理</button>
-                <button class="btn-hero btn-secondary" onclick="openModal('modal-datasets')">查看数据集</button>
+        <div class="sidebar-section">数据域</div>
+        <div class="sidebar-domains" id="sidebarDomains">
+            <div style="padding:.5rem; color:#64748b; font-size:.78rem;">加载中...</div>
+        </div>
+
+        <div class="sidebar-footer">
+            <span>&copy; 2026 YIMO Platform</span>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main">
+        <!-- Top Bar -->
+        <div class="topbar">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" id="globalSearch" placeholder="搜索对象名称、编码..." oninput="handleSearch(this.value)">
+            </div>
+            <div class="layer-legend">
+                <span class="legend-chip"><span class="legend-dot concept"></span>概念实体</span>
+                <span class="legend-chip"><span class="legend-dot logical"></span>逻辑实体</span>
+                <span class="legend-chip"><span class="legend-dot physical"></span>物理实体</span>
+            </div>
+            <div class="topbar-actions">
+                <button class="btn btn-outline" onclick="refreshAll()" title="刷新数据">
+                    <i class="bi bi-arrow-clockwise"></i>刷新
+                </button>
+                <button class="btn btn-outline" onclick="exportObjects()" title="导出结果">
+                    <i class="bi bi-download"></i>导出
+                </button>
+                <button class="btn btn-primary" onclick="runExtraction()" id="btnExtract">
+                    <i class="bi bi-cpu"></i>执行抽取
+                </button>
             </div>
         </div>
-    </section>
 
-    <!-- Footer -->
-    <footer>
-        <div class="logo" style="margin-bottom: 1rem;">DataMind</div>
-        <p style="color:var(--text-muted);">对象抽取与三层架构关联系统</p>
-        <p style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);">&copy; 2026 DataMind Platform</p>
-    </footer>
+        <!-- Content -->
+        <div class="content-area">
 
-    <!-- Modals -->
-
-    <!-- Datasets Modal -->
-    <div id="modal-datasets" class="modal-overlay" onclick="closeModal(event, 'modal-datasets')">
-        <div class="modal-card" style="max-width:900px;">
-            <div class="modal-header">
-                <h2>数据集列表</h2>
-                <button class="close-btn" onclick="closeModal(null, 'modal-datasets')">&times;</button>
-            </div>
-            <div class="modal-body" style="padding:1.5rem;">
-                <table class="data-table">
-                    <thead>
-                        <tr><th>序号</th><th>数据域</th><th>文件名</th><th>路径</th><th>大小</th></tr>
-                    </thead>
-                    <tbody>
-                    {% for row in stats %}
-                        <tr>
-                            <td><span class="tag">#{{ row.id }}</span></td>
-                            <td>{{ row.domain }}</td>
-                            <td>{{ row.name }}</td>
-                            <td style="font-family:monospace; font-size:0.85rem;">{{ row.source_file }}</td>
-                            <td>{{ row.size }}</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Object Extraction Modal -->
-    <div id="modal-extraction" class="modal-overlay" onclick="closeModal(event, 'modal-extraction')">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h2>对象抽取与三层架构关联</h2>
-                <button class="close-btn" onclick="closeModal(null, 'modal-extraction')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <!-- 三层架构图例 -->
-                <div class="layer-legend">
-                    <div class="legend-item">
-                        <span class="legend-dot concept"></span>
-                        <span>概念实体（业务场景层）</span>
+            <!-- Section: Overview -->
+            <section class="section" id="section-overview">
+                <div class="stats-grid">
+                    <div class="stat-card card-objects">
+                        <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+                        <div class="stat-value" id="statObjects">-</div>
+                        <div class="stat-label">抽取对象</div>
                     </div>
-                    <div class="legend-item">
-                        <span class="legend-dot logical"></span>
-                        <span>逻辑实体（交互表单层）</span>
+                    <div class="stat-card card-concept">
+                        <div class="stat-icon"><i class="bi bi-lightbulb"></i></div>
+                        <div class="stat-value" id="statConcept">-</div>
+                        <div class="stat-label">概念实体</div>
                     </div>
-                    <div class="legend-item">
-                        <span class="legend-dot physical"></span>
-                        <span>物理实体（数据库层）</span>
+                    <div class="stat-card card-logical">
+                        <div class="stat-icon"><i class="bi bi-ui-checks-grid"></i></div>
+                        <div class="stat-value" id="statLogical">-</div>
+                        <div class="stat-label">逻辑实体</div>
+                    </div>
+                    <div class="stat-card card-physical">
+                        <div class="stat-icon"><i class="bi bi-hdd-stack"></i></div>
+                        <div class="stat-value" id="statPhysical">-</div>
+                        <div class="stat-label">物理实体</div>
                     </div>
                 </div>
+            </section>
 
-                <!-- 统计卡片 -->
-                <div class="stats-row">
-                    <div class="stats-card" style="background:linear-gradient(135deg, var(--primary), var(--secondary)); color:white;">
-                        <div class="stats-value" id="stat-objects">-</div>
-                        <div class="stats-label" style="color:rgba(255,255,255,0.8);">抽取对象</div>
-                    </div>
-                    <div class="stats-card" style="background:linear-gradient(135deg, var(--concept-color), #818cf8); color:white;">
-                        <div class="stats-value" id="stat-concept">-</div>
-                        <div class="stats-label" style="color:rgba(255,255,255,0.8);">概念实体</div>
-                    </div>
-                    <div class="stats-card" style="background:linear-gradient(135deg, var(--logical-color), #4ade80); color:white;">
-                        <div class="stats-value" id="stat-logical">-</div>
-                        <div class="stats-label" style="color:rgba(255,255,255,0.8);">逻辑实体</div>
-                    </div>
-                    <div class="stats-card" style="background:linear-gradient(135deg, var(--physical-color), #fbbf24); color:white;">
-                        <div class="stats-value" id="stat-physical">-</div>
-                        <div class="stats-label" style="color:rgba(255,255,255,0.8);">物理实体</div>
+            <!-- Section: Object Cards -->
+            <section class="section" id="section-objects">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-box-seam"></i>抽取对象
                     </div>
                 </div>
+                <div class="filter-tabs" id="filterTabs">
+                    <div class="filter-tab active" data-filter="ALL" onclick="filterObjects('ALL')">全部<span class="count" id="countAll">0</span></div>
+                    <div class="filter-tab" data-filter="CORE" onclick="filterObjects('CORE')">核心<span class="count" id="countCore">0</span></div>
+                    <div class="filter-tab" data-filter="DERIVED" onclick="filterObjects('DERIVED')">派生<span class="count" id="countDerived">0</span></div>
+                    <div class="filter-tab" data-filter="AUXILIARY" onclick="filterObjects('AUXILIARY')">辅助<span class="count" id="countAuxiliary">0</span></div>
+                </div>
+                <div class="objects-grid" id="objectsGrid">
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <p>正在加载对象列表...</p>
+                    </div>
+                </div>
+            </section>
 
-                <!-- 域选择 -->
-                <div style="padding:1rem 1.5rem; background:#f8fafc; border-bottom:1px solid var(--border);">
-                    <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
-                        <span style="font-weight:500; color:var(--text-main);">选择数据域：</span>
-                        <div id="domainCheckboxes" style="display:flex; gap:1rem; flex-wrap:wrap;">
-                            <span style="color:#94a3b8;">加载中...</span>
+            <!-- Section: Relations -->
+            <section class="section relation-section" id="section-relations">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-diagram-3"></i>
+                        <span id="relationObjIcon"></span>
+                        <span id="relationObjName">-</span>
+                        <span class="relation-subtitle">的三层架构关联</span>
+                    </div>
+                </div>
+                <div class="relation-columns">
+                    <!-- Concept Column -->
+                    <div class="rel-col col-concept">
+                        <div class="rel-col-header">
+                            <span><i class="bi bi-lightbulb"></i> 概念实体</span>
+                            <span class="rel-col-count" id="relConceptCount">0</span>
                         </div>
+                        <div class="rel-col-search">
+                            <input type="text" placeholder="搜索概念实体..." oninput="filterEntities('concept', this.value)">
+                        </div>
+                        <div class="rel-col-body" id="relConceptBody"></div>
+                    </div>
+                    <!-- Logical Column -->
+                    <div class="rel-col col-logical">
+                        <div class="rel-col-header">
+                            <span><i class="bi bi-ui-checks-grid"></i> 逻辑实体</span>
+                            <span class="rel-col-count" id="relLogicalCount">0</span>
+                        </div>
+                        <div class="rel-col-search">
+                            <input type="text" placeholder="搜索逻辑实体..." oninput="filterEntities('logical', this.value)">
+                        </div>
+                        <div class="rel-col-body" id="relLogicalBody"></div>
+                    </div>
+                    <!-- Physical Column -->
+                    <div class="rel-col col-physical">
+                        <div class="rel-col-header">
+                            <span><i class="bi bi-hdd-stack"></i> 物理实体</span>
+                            <span class="rel-col-count" id="relPhysicalCount">0</span>
+                        </div>
+                        <div class="rel-col-body" id="relPhysicalBody"></div>
                     </div>
                 </div>
+            </section>
 
-                <!-- 操作按钮 -->
-                <div style="padding:1rem 1.5rem; display:flex; gap:1rem; border-bottom:1px solid var(--border);">
-                    <button class="btn-hero btn-primary" onclick="runExtraction()" id="btn-extract">执行抽取</button>
-                    <button class="btn-hero btn-secondary" onclick="loadExtractedObjects()">刷新</button>
-                    <button class="btn-hero btn-secondary" onclick="exportObjects()">导出结果</button>
-                </div>
-
-                <!-- 对象卡片网格 -->
-                <div style="padding:0 1.5rem;">
-                    <h4 style="margin:1rem 0 0.5rem; font-size:1rem;">抽取的核心对象</h4>
-                </div>
-                <div class="objects-grid" id="objects-grid">
-                    <p style="color:var(--text-muted); text-align:center; padding:2rem; grid-column:1/-1;">点击"刷新"加载对象列表</p>
-                </div>
-
-                <!-- 关联关系面板（层级折叠视图） -->
-                <div class="relation-panel" id="relation-panel">
-                    <h4 style="margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
-                        <span id="selected-object-icon">🎯</span>
-                        <span id="selected-object-name">-</span> 的三层架构关联
-                        <span style="font-size:0.8rem; color:var(--text-muted); font-weight:400; margin-left:0.5rem;">
-                            对象 → 概念实体（直接）→ 逻辑实体（间接）→ 物理实体（间接）
-                        </span>
-                    </h4>
-                    <div id="hierarchical-relations">
-                        <span style="color:var(--text-muted);">点击对象卡片查看关联关系</span>
-                    </div>
-                    <!-- 物理实体行 -->
-                    <div class="layer-row" id="physical-row" style="display:none; margin-top:1rem;">
-                        <div class="layer-label physical">物理实体</div>
-                        <div class="layer-entities" id="physical-entities"><span style="color:var(--text-muted);">暂无</span></div>
+            <!-- Section: Sankey -->
+            <section class="section" id="section-sankey">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-bar-chart-steps"></i>对象-三层架构关联流向图
                     </div>
                 </div>
-
-                <!-- 桑基图 -->
-                <div style="padding:1.5rem; border-top:1px solid var(--border);">
-                    <h4 style="margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
-                        对象-三层架构关联桑基图
-                    </h4>
-                    <div id="sankey-chart" style="width:100%; height:400px;"></div>
+                <div class="sankey-container">
+                    <div id="sankey-chart"></div>
                 </div>
-            </div>
+            </section>
+
+            <!-- Section: Datasets -->
+            <section class="section" id="section-datasets">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-database"></i>数据集
+                    </div>
+                </div>
+                <div style="background:var(--bg-card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden;">
+                    <table class="datasets-table">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>数据域</th>
+                                <th>文件名</th>
+                                <th>大小</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in stats %}
+                            <tr>
+                                <td><span class="ds-tag">#{{ row.id }}</span></td>
+                                <td>{{ row.domain }}</td>
+                                <td style="font-family:monospace; font-size:.78rem;">{{ row.name }}</td>
+                                <td>{{ row.size }}</td>
+                            </tr>
+                        {% endfor %}
+                        {% if not stats %}
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:2rem;">暂无数据集</td></tr>
+                        {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
         </div>
     </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script>
-        // 全局 ECharts 实例
-        let sankeyChart = null;
-        window.addEventListener('resize', () => { if (sankeyChart) sankeyChart.resize(); });
+    // ========== Global State ==========
+    let extractedObjects = [];
+    let currentFilter = 'ALL';
+    let searchQuery = '';
+    let selectedDomain = '';
+    let selectedObjectCode = null;
+    let currentRelations = null;
+    let sankeyChart = null;
 
-        // 加载域列表
-        async function loadDomains() {
-            const container = document.getElementById('domainCheckboxes');
-            try {
-                const resp = await fetch('/api/domains');
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const domains = await resp.json();
+    const objectIcons = {
+        'OBJ_PROJECT':'bi-building',       'OBJ_DEVICE':'bi-lightning-charge',
+        'OBJ_ASSET':'bi-gem',               'OBJ_CONTRACT':'bi-file-earmark-text',
+        'OBJ_PERSONNEL':'bi-person',        'OBJ_ORGANIZATION':'bi-buildings',
+        'OBJ_DOCUMENT':'bi-file-earmark-richtext', 'OBJ_PROCESS':'bi-arrow-repeat',
+        'OBJ_MATERIAL':'bi-box2',           'OBJ_COST':'bi-currency-yen',
+        'OBJ_TASK':'bi-check2-square',      'OBJ_STANDARD':'bi-shield-check',
+        'OBJ_PLAN':'bi-calendar-check',     'OBJ_MEASUREMENT':'bi-speedometer2',
+        'OBJ_LOCATION':'bi-geo-alt'
+    };
 
-                if (domains.length === 0) {
-                    container.innerHTML = '<span style="color:#f59e0b;">未发现数据域，请在 DATA/ 目录下创建子文件夹</span>';
-                    return;
+    // ========== Init ==========
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDomains();
+        setupScrollSpy();
+    });
+
+    // ========== Sidebar ==========
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('mobileOverlay').classList.toggle('open');
+    }
+
+    function scrollToSection(id) {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        // Close mobile sidebar
+        if (window.innerWidth <= 768) toggleSidebar();
+    }
+
+    function setupScrollSpy() {
+        const sections = document.querySelectorAll('.section[id]');
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                    const nav = document.querySelector(`.nav-item[data-section="${entry.target.id}"]`);
+                    if (nav) nav.classList.add('active');
                 }
+            });
+        }, { threshold: 0.2, rootMargin: '-80px 0px -60% 0px' });
+        sections.forEach(s => observer.observe(s));
+    }
 
-                container.innerHTML = domains.map((d, i) => `
-                    <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
-                        <input type="checkbox" class="domain-checkbox" value="${d.code}" ${i === 0 ? 'checked' : ''}>
-                        <span>${d.name}</span>
-                        <span style="font-size:0.75rem; background:#e0e7ff; padding:0 6px; border-radius:10px; color:#4f46e5;">${d.files?.length || 0}</span>
-                    </label>
-                `).join('');
-            } catch(e) {
-                console.error('加载域列表失败:', e);
-                container.innerHTML = '<span style="color:#ef4444;">加载域列表失败</span>';
-            }
-        }
+    // ========== Domain Loading ==========
+    async function loadDomains() {
+        const container = document.getElementById('sidebarDomains');
+        try {
+            const resp = await fetch('/api/domains');
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const domains = await resp.json();
 
-        // Modal Logic
-        function openModal(id) {
-            document.getElementById(id).classList.add('active');
-            document.body.style.overflow = 'hidden';
-            if (id === 'modal-extraction') {
-                loadDomains();
-                loadExtractedObjects();
-            }
-        }
-
-        function closeModal(e, id) {
-            if (e === null || e.target.id === id) {
-                document.getElementById(id).classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        }
-
-        // ============ 对象抽取 ============
-        let extractedObjects = [];
-        const objectIcons = {
-            'OBJ_PROJECT': '🏗️',
-            'OBJ_DEVICE': '⚡',
-            'OBJ_ASSET': '💎',
-            'OBJ_CONTRACT': '📄',
-            'OBJ_PERSONNEL': '👤',
-            'OBJ_ORGANIZATION': '🏢',
-            'OBJ_DOCUMENT': '📑',
-            'OBJ_PROCESS': '🔄',
-            'OBJ_MATERIAL': '📦',
-            'OBJ_COST': '💰',
-            'OBJ_TASK': '✅'
-        };
-
-        async function loadExtractedObjects() {
-            const grid = document.getElementById('objects-grid');
-            grid.innerHTML = '<p style="text-align:center; padding:2rem; color:var(--text-muted); grid-column:1/-1;">加载中...</p>';
-
-            try {
-                const domains = getSelectedDomains();
-                const domainParam = domains.length > 0 ? `?domain=${domains.join(',')}` : '';
-                const resp = await fetch('/api/olm/extracted-objects' + domainParam);
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const data = await resp.json();
-
-                if (data.error) {
-                    grid.innerHTML = `<p style="color:#ef4444; padding:2rem; grid-column:1/-1;">错误: ${data.error}</p>`;
-                    return;
-                }
-
-                extractedObjects = data.objects || [];
-                renderObjectCards(extractedObjects);
-                updateStats();
-                initSankeyChart();
-            } catch(e) {
-                grid.innerHTML = `<p style="color:#ef4444; padding:2rem; grid-column:1/-1;">加载失败: ${e}</p>`;
-            }
-        }
-
-        function renderObjectCards(objects) {
-            const grid = document.getElementById('objects-grid');
-
-            if (!objects.length) {
-                grid.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:2rem; grid-column:1/-1;">暂无对象，点击"执行抽取"开始</p>';
+            if (!domains.length) {
+                container.innerHTML = '<div style="padding:.5rem; color:#f59e0b; font-size:.78rem;">未发现数据域</div>';
                 return;
             }
 
-            grid.innerHTML = objects.map(obj => `
-                <div class="object-card" data-code="${obj.object_code}" onclick="selectObject('${obj.object_code}')">
-                    <div class="object-icon">${objectIcons[obj.object_code] || '📦'}</div>
-                    <div class="object-name">${obj.object_name}</div>
-                    <div class="object-code">${obj.object_code}</div>
-                    <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">${obj.description || ''}</p>
-                    <div class="object-stats">
-                        <span class="stat-badge concept">${obj.stats?.concept || 0} 概念</span>
-                        <span class="stat-badge logical">${obj.stats?.logical || 0} 逻辑</span>
-                        <span class="stat-badge physical">${obj.stats?.physical || 0} 物理</span>
+            container.innerHTML = domains.map((d, i) => `
+                <label class="domain-item">
+                    <input type="radio" name="domain" value="${d.code}" ${i === 0 ? 'checked' : ''} onchange="switchDomain('${d.code}')">
+                    <span>${d.name}</span>
+                    <span class="domain-badge">${d.files?.length || 0}</span>
+                </label>
+            `).join('');
+
+            // Auto-select first domain
+            selectedDomain = domains[0].code;
+            loadObjects();
+        } catch(e) {
+            container.innerHTML = '<div style="padding:.5rem; color:#ef4444; font-size:.78rem;">加载失败</div>';
+            // Still try to load objects without domain
+            loadObjects();
+        }
+    }
+
+    function switchDomain(code) {
+        selectedDomain = code;
+        selectedObjectCode = null;
+        document.getElementById('section-relations').classList.remove('active');
+        loadObjects();
+    }
+
+    // ========== Object Loading ==========
+    async function loadObjects() {
+        const grid = document.getElementById('objectsGrid');
+        grid.innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto .75rem;"></div><p>加载中...</p></div>';
+
+        try {
+            const domainParam = selectedDomain ? `?domain=${selectedDomain}` : '';
+            const resp = await fetch('/api/olm/extracted-objects' + domainParam);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+
+            if (data.error) {
+                grid.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>${data.error}</p></div>`;
+                return;
+            }
+
+            extractedObjects = data.objects || [];
+            updateStats();
+            renderObjects();
+            updateFilterCounts();
+            initSankeyChart();
+        } catch(e) {
+            grid.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ${e.message}</p></div>`;
+        }
+    }
+
+    // ========== Stats ==========
+    function updateStats() {
+        let tc = 0, tl = 0, tp = 0;
+        extractedObjects.forEach(o => {
+            tc += o.stats?.concept || 0;
+            tl += o.stats?.logical || 0;
+            tp += o.stats?.physical || 0;
+        });
+        animateNumber('statObjects', extractedObjects.length);
+        animateNumber('statConcept', tc);
+        animateNumber('statLogical', tl);
+        animateNumber('statPhysical', tp);
+    }
+
+    function animateNumber(id, target) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const start = parseInt(el.textContent) || 0;
+        if (start === target) { el.textContent = target; return; }
+        const duration = 400;
+        const startTime = performance.now();
+        function tick(now) {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(start + (target - start) * ease);
+            if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    // ========== Filter & Search ==========
+    function updateFilterCounts() {
+        const visible = getVisibleObjects();
+        document.getElementById('countAll').textContent = visible.length;
+        document.getElementById('countCore').textContent = visible.filter(o => o.object_type === 'CORE').length;
+        document.getElementById('countDerived').textContent = visible.filter(o => o.object_type === 'DERIVED').length;
+        document.getElementById('countAuxiliary').textContent = visible.filter(o => o.object_type === 'AUXILIARY').length;
+    }
+
+    function getVisibleObjects() {
+        let objs = extractedObjects;
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            objs = objs.filter(o =>
+                (o.object_name || '').toLowerCase().includes(q) ||
+                (o.object_code || '').toLowerCase().includes(q) ||
+                (o.description || '').toLowerCase().includes(q)
+            );
+        }
+        return objs;
+    }
+
+    function filterObjects(type) {
+        currentFilter = type;
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.filter-tab[data-filter="${type}"]`)?.classList.add('active');
+        renderObjects();
+    }
+
+    function handleSearch(val) {
+        searchQuery = val.trim();
+        updateFilterCounts();
+        renderObjects();
+    }
+
+    // ========== Render Objects ==========
+    function renderObjects() {
+        const grid = document.getElementById('objectsGrid');
+        let objs = getVisibleObjects();
+        if (currentFilter !== 'ALL') {
+            objs = objs.filter(o => o.object_type === currentFilter);
+        }
+
+        if (!objs.length) {
+            const msg = extractedObjects.length === 0
+                ? '暂无对象，点击"执行抽取"开始'
+                : '没有匹配的对象';
+            grid.innerHTML = `<div class="empty-state"><i class="bi bi-inbox"></i><p>${msg}</p></div>`;
+            return;
+        }
+
+        grid.innerHTML = objs.map(obj => {
+            const iconClass = objectIcons[obj.object_code] || 'bi-box';
+            const type = obj.object_type || 'CORE';
+            const isActive = obj.object_code === selectedObjectCode;
+            return `
+            <div class="object-card type-${type} ${isActive ? 'active' : ''}"
+                 data-code="${obj.object_code}" onclick="selectObject('${obj.object_code}')">
+                <div class="obj-top">
+                    <div class="obj-icon"><i class="bi ${iconClass}"></i></div>
+                    <div class="obj-info">
+                        <div class="obj-name">${obj.object_name}</div>
+                        <div class="obj-code">${obj.object_code}</div>
                     </div>
                 </div>
-            `).join('');
+                ${obj.description ? `<div class="obj-desc">${obj.description}</div>` : ''}
+                <div class="obj-badges">
+                    <span class="badge badge-concept">${obj.stats?.concept || 0} 概念</span>
+                    <span class="badge badge-logical">${obj.stats?.logical || 0} 逻辑</span>
+                    <span class="badge badge-physical">${obj.stats?.physical || 0} 物理</span>
+                    <span class="badge badge-type badge-${type}">${type}</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ========== Select Object & Relations ==========
+    async function selectObject(code) {
+        selectedObjectCode = code;
+
+        // Update card states
+        document.querySelectorAll('.object-card').forEach(c => {
+            c.classList.toggle('active', c.dataset.code === code);
+        });
+
+        const obj = extractedObjects.find(o => o.object_code === code);
+        if (!obj) return;
+
+        const iconClass = objectIcons[code] || 'bi-box';
+        document.getElementById('relationObjIcon').innerHTML = `<i class="bi ${iconClass}" style="color:var(--primary)"></i>`;
+        document.getElementById('relationObjName').textContent = obj.object_name;
+
+        // Show relation section
+        const section = document.getElementById('section-relations');
+        section.classList.add('active');
+
+        // Reset columns
+        ['relConceptBody', 'relLogicalBody', 'relPhysicalBody'].forEach(id => {
+            document.getElementById(id).innerHTML = '<div style="text-align:center; padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
+        });
+
+        try {
+            const domainParam = selectedDomain ? `?domain=${selectedDomain}` : '';
+            const resp = await fetch(`/api/olm/object-relations/${code}${domainParam}`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            currentRelations = await resp.json();
+            renderRelations(currentRelations);
+
+            // Scroll to relations
+            section.scrollIntoView({ behavior: 'smooth' });
+        } catch(e) {
+            showToast('加载关联失败: ' + e.message, 'error');
         }
+    }
 
-        function updateStats() {
-            document.getElementById('stat-objects').textContent = extractedObjects.length;
+    function renderRelations(data) {
+        const concepts = data.concept || [];
+        const logicals = data.logical || [];
+        const physicals = data.physical || [];
 
-            let totalConcept = 0, totalLogical = 0, totalPhysical = 0;
-            extractedObjects.forEach(obj => {
-                totalConcept += obj.stats?.concept || 0;
-                totalLogical += obj.stats?.logical || 0;
-                totalPhysical += obj.stats?.physical || 0;
-            });
+        document.getElementById('relConceptCount').textContent = concepts.length;
+        document.getElementById('relLogicalCount').textContent = logicals.length;
+        document.getElementById('relPhysicalCount').textContent = physicals.length;
 
-            document.getElementById('stat-concept').textContent = totalConcept;
-            document.getElementById('stat-logical').textContent = totalLogical;
-            document.getElementById('stat-physical').textContent = totalPhysical;
-        }
-
-        async function selectObject(code) {
-            // 更新卡片状态
-            document.querySelectorAll('.object-card').forEach(card => {
-                card.classList.remove('active');
-                if (card.dataset.code === code) {
-                    card.classList.add('active');
-                }
-            });
-
-            const obj = extractedObjects.find(o => o.object_code === code);
-            if (!obj) return;
-
-            document.getElementById('selected-object-name').textContent = obj.object_name;
-            document.getElementById('selected-object-icon').textContent = objectIcons[code] || '📦';
-            document.getElementById('relation-panel').classList.add('active');
-
-            // 加载关联关系
-            try {
-                const selDomains = getSelectedDomains();
-                const relDomainParam = selDomains.length > 0 ? `?domain=${selDomains[0]}` : '';
-                const resp = await fetch(`/api/olm/object-relations/${code}${relDomainParam}`);
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const data = await resp.json();
-
-                renderHierarchicalRelations(data);
-                renderPhysicalEntities(data.physical || []);
-            } catch(e) {
-                console.error('加载关联失败:', e);
-            }
-        }
-
-        function renderHierarchicalRelations(relations) {
-            const container = document.getElementById('hierarchical-relations');
-            const concepts = relations?.concept || [];
-            const logicals = relations?.logical || [];
-
-            if (concepts.length === 0 && logicals.length === 0) {
-                container.innerHTML = '<p style="color:var(--text-muted);">暂无关联数据</p>';
-                return;
-            }
-
-            // 按概念实体分组逻辑实体
-            const logicalByConceptMap = {};
-            logicals.forEach(le => {
-                const via = le.via_concept_entity || '未分组';
-                if (!logicalByConceptMap[via]) logicalByConceptMap[via] = [];
-                logicalByConceptMap[via].push(le);
-            });
-
-            container.innerHTML = concepts.map((ce, idx) => {
-                const name = typeof ce === 'string' ? ce : ce.entity_name;
-                const logicalEntities = logicalByConceptMap[name] || [];
-                const logicalCount = ce.logical_count || logicalEntities.length;
-                const id = `logical-group-${idx}`;
-
-                return `
-                <div class="concept-group">
-                    <div class="concept-header" onclick="document.getElementById('${id}').style.display = document.getElementById('${id}').style.display === 'none' ? 'flex' : 'none'">
-                        <span class="concept-name">
-                            <span class="entity-strength strength-high"></span>
-                            ${name}
-                        </span>
-                        <span class="logical-count">${logicalCount} 个逻辑实体</span>
-                    </div>
-                    <div class="logical-list" id="${id}" style="display:none;">
-                        ${logicalEntities.length > 0
-                            ? logicalEntities.slice(0, 30).map(le => `
-                                <span class="entity-tag" title="通过 ${name} 间接关联" style="padding:0.3rem 0.6rem; border-radius:6px; font-size:0.75rem; background:white; border:1px solid var(--border);">
-                                    ${typeof le === 'string' ? le : le.entity_name}
-                                </span>
-                            `).join('') + (logicalEntities.length > 30 ? `<span class="entity-tag" style="color:var(--text-muted);">+${logicalEntities.length - 30} 更多</span>` : '')
-                            : '<span style="color:var(--text-muted); font-size:0.85rem;">无逻辑实体</span>'
-                        }
-                    </div>
+        // Concept column
+        const conceptBody = document.getElementById('relConceptBody');
+        if (!concepts.length) {
+            conceptBody.innerHTML = '<div class="empty-col"><i class="bi bi-lightbulb"></i><p>暂无概念实体</p></div>';
+        } else {
+            conceptBody.innerHTML = concepts.map(c => {
+                const name = typeof c === 'string' ? c : c.entity_name;
+                const strength = (c.relation_strength || 0);
+                const dotClass = strength >= 0.8 ? 'strong' : strength >= 0.5 ? 'medium' : 'weak';
+                const logCount = c.logical_count || 0;
+                return `<div class="entity-item" data-name="${name}" data-layer="concept"
+                             onclick="highlightByConceptEntity('${name.replace(/'/g, "\\'")}')">
+                    <span class="entity-dot ${dotClass}"></span>
+                    <span class="entity-text">${name}</span>
+                    ${logCount > 0 ? `<span class="entity-via">${logCount} 逻辑</span>` : ''}
                 </div>`;
             }).join('');
         }
 
-        function renderPhysicalEntities(entities) {
-            const row = document.getElementById('physical-row');
-            const container = document.getElementById('physical-entities');
-            if (!entities.length) {
-                row.style.display = 'none';
-                return;
+        // Logical column — grouped by via_concept_entity
+        const logicalBody = document.getElementById('relLogicalBody');
+        if (!logicals.length) {
+            logicalBody.innerHTML = '<div class="empty-col"><i class="bi bi-ui-checks-grid"></i><p>暂无逻辑实体</p></div>';
+        } else {
+            const groups = {};
+            logicals.forEach(l => {
+                const via = l.via_concept_entity || '未分组';
+                if (!groups[via]) groups[via] = [];
+                groups[via].push(l);
+            });
+
+            let html = '';
+            for (const [groupName, items] of Object.entries(groups)) {
+                html += `<div class="concept-group-header" data-group="${groupName}"
+                             onclick="toggleLogicalGroup(this)">
+                    <span>${groupName} (${items.length})</span>
+                    <span class="toggle"><i class="bi bi-chevron-down"></i></span>
+                </div>`;
+                html += `<div class="concept-group-items" data-group="${groupName}">`;
+                const displayItems = items.slice(0, 50);
+                displayItems.forEach(l => {
+                    const name = typeof l === 'string' ? l : l.entity_name;
+                    const strength = (l.relation_strength || 0);
+                    const dotClass = strength >= 0.8 ? 'strong' : strength >= 0.5 ? 'medium' : 'weak';
+                    html += `<div class="entity-item" data-name="${name}" data-layer="logical" data-via="${l.via_concept_entity || ''}">
+                        <span class="entity-dot ${dotClass}"></span>
+                        <span class="entity-text">${name}</span>
+                    </div>`;
+                });
+                if (items.length > 50) {
+                    html += `<div class="entity-item" style="color:var(--text-muted); font-style:italic;">+${items.length - 50} 更多</div>`;
+                }
+                html += '</div>';
             }
-            row.style.display = 'flex';
-            container.innerHTML = entities.slice(0, 30).map(e => {
-                const name = typeof e === 'string' ? e : e.entity_name;
-                return `<span class="entity-tag" title="${e.data_domain || ''}" style="padding:0.3rem 0.6rem; border-radius:6px; font-size:0.75rem; background:white; border:1px solid var(--border);">${name}</span>`;
-            }).join('');
-            if (entities.length > 30) {
-                container.innerHTML += `<span class="entity-tag" style="background:#f1f5f9;">+${entities.length - 30} 更多</span>`;
-            }
+            logicalBody.innerHTML = html;
         }
 
-        // 桑基图：对象 → 概念实体层 → 逻辑实体层 → 物理实体层
-        function initSankeyChart() {
-            const container = document.getElementById('sankey-chart');
-            if (!container) return;
+        // Physical column
+        const physicalBody = document.getElementById('relPhysicalBody');
+        if (!physicals.length) {
+            physicalBody.innerHTML = '<div class="empty-col"><i class="bi bi-hdd-stack"></i><p>暂无物理实体</p><p style="font-size:.72rem; margin-top:.25rem;">该对象暂未关联物理层数据</p></div>';
+        } else {
+            physicalBody.innerHTML = physicals.map(p => {
+                const name = typeof p === 'string' ? p : p.entity_name;
+                const strength = (p.relation_strength || 0);
+                const dotClass = strength >= 0.8 ? 'strong' : strength >= 0.5 ? 'medium' : 'weak';
+                return `<div class="entity-item" data-name="${name}" data-layer="physical">
+                    <span class="entity-dot ${dotClass}"></span>
+                    <span class="entity-text">${name}</span>
+                </div>`;
+            }).join('');
+        }
+    }
 
-            if (!sankeyChart) {
-                sankeyChart = echarts.init(container);
+    function toggleLogicalGroup(header) {
+        const group = header.getAttribute('data-group');
+        const items = header.nextElementSibling;
+        if (items) {
+            items.classList.toggle('collapsed');
+            const icon = header.querySelector('.toggle i');
+            icon.className = items.classList.contains('collapsed') ? 'bi bi-chevron-right' : 'bi bi-chevron-down';
+        }
+    }
+
+    function highlightByConceptEntity(conceptName) {
+        // Highlight concept item
+        document.querySelectorAll('#relConceptBody .entity-item').forEach(el => {
+            el.classList.toggle('highlighted', el.dataset.name === conceptName);
+        });
+        // Expand and highlight matching logical group
+        document.querySelectorAll('.concept-group-items').forEach(g => {
+            const isTarget = g.dataset.group === conceptName;
+            g.classList.toggle('collapsed', !isTarget);
+            // Update toggle icon
+            const header = g.previousElementSibling;
+            if (header) {
+                const icon = header.querySelector('.toggle i');
+                if (icon) icon.className = isTarget ? 'bi bi-chevron-down' : 'bi bi-chevron-right';
             }
+        });
+        // Scroll the target group into view
+        const targetGroup = document.querySelector(`.concept-group-items[data-group="${conceptName}"]`);
+        if (targetGroup) targetGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 
-            const nodes = [];
-            const links = [];
-            let totalLogical = 0, totalPhysical = 0;
-
-            extractedObjects.forEach(obj => {
-                nodes.push({ name: obj.object_name, itemStyle: { color: '#3b82f6' } });
+    function filterEntities(layer, query) {
+        const q = query.toLowerCase().trim();
+        const bodyId = layer === 'concept' ? 'relConceptBody' : 'relLogicalBody';
+        const items = document.querySelectorAll(`#${bodyId} .entity-item`);
+        items.forEach(item => {
+            const text = (item.querySelector('.entity-text')?.textContent || '').toLowerCase();
+            item.style.display = text.includes(q) || !q ? '' : 'none';
+        });
+        // Also handle group headers for logical
+        if (layer === 'logical') {
+            document.querySelectorAll(`#${bodyId} .concept-group-header`).forEach(h => {
+                if (!q) { h.style.display = ''; return; }
+                const group = h.nextElementSibling;
+                const hasVisible = group ? Array.from(group.querySelectorAll('.entity-item')).some(i => i.style.display !== 'none') : false;
+                h.style.display = hasVisible ? '' : 'none';
             });
+        }
+    }
 
-            nodes.push({ name: '概念实体层', itemStyle: { color: '#6366f1' } });
-            nodes.push({ name: '逻辑实体层', itemStyle: { color: '#22c55e' } });
-            nodes.push({ name: '物理实体层', itemStyle: { color: '#f59e0b' } });
+    // ========== Sankey Chart ==========
+    function initSankeyChart() {
+        const container = document.getElementById('sankey-chart');
+        if (!container) return;
 
-            extractedObjects.forEach(obj => {
-                if (obj.stats?.concept > 0) {
-                    links.push({ source: obj.object_name, target: '概念实体层', value: obj.stats.concept });
-                }
-                totalLogical += (obj.stats?.logical || 0);
-                totalPhysical += (obj.stats?.physical || 0);
-            });
+        if (!sankeyChart) {
+            sankeyChart = echarts.init(container);
+            window.addEventListener('resize', () => { if (sankeyChart) sankeyChart.resize(); });
+        }
 
-            if (totalLogical > 0) {
-                links.push({ source: '概念实体层', target: '逻辑实体层', value: totalLogical });
-            }
-            if (totalPhysical > 0) {
-                links.push({ source: '逻辑实体层', target: '物理实体层', value: totalPhysical });
-            }
-
-            if (links.length === 0) {
-                sankeyChart.clear();
-                sankeyChart.setOption({
-                    backgroundColor: 'transparent',
-                    graphic: { type: 'text', left: 'center', top: 'middle', style: { text: '暂无关联数据\n请先执行对象抽取或检查数据源', fontSize: 16, fill: '#94a3b8', textAlign: 'center' } }
-                });
-                return;
-            }
-
+        if (!extractedObjects.length) {
+            sankeyChart.clear();
             sankeyChart.setOption({
                 backgroundColor: 'transparent',
-                tooltip: {
-                    trigger: 'item',
-                    triggerOn: 'mousemove',
-                    formatter: function(params) {
-                        if (params.dataType === 'edge') {
-                            const relType = params.data.source === '概念实体层' ? '间接关联' : '直接关联';
-                            return `${params.data.source} → ${params.data.target}<br/>${relType}数量: ${params.data.value}`;
-                        }
-                        return params.name;
-                    }
-                },
-                series: [{
-                    type: 'sankey',
-                    layout: 'none',
-                    emphasis: { focus: 'adjacency' },
-                    nodeAlign: 'justify',
-                    data: nodes,
-                    links: links,
-                    lineStyle: { color: 'gradient', curveness: 0.5 },
-                    label: { color: '#0f172a', fontSize: 12 }
-                }]
-            }, true);
+                graphic: { type: 'text', left: 'center', top: 'middle',
+                    style: { text: '暂无关联数据\n请先执行对象抽取', fontSize: 14, fill: '#94a3b8', textAlign: 'center' } }
+            });
+            return;
         }
 
-        function getSelectedDomains() {
-            const checkboxes = document.querySelectorAll('.domain-checkbox:checked');
-            return Array.from(checkboxes).map(cb => cb.value);
-        }
+        const nodes = [];
+        const links = [];
+        const nodeSet = new Set();
 
-        async function runExtraction() {
-            const btn = document.getElementById('btn-extract');
-            const domains = getSelectedDomains();
-
-            if (domains.length === 0) {
-                alert('请至少选择一个数据域');
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = '抽取中...';
-
-            try {
-                const resp = await fetch('/api/olm/run-extraction', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ use_llm: false, target_clusters: 15, domains: domains })
+        // Add object nodes
+        extractedObjects.forEach(obj => {
+            const name = obj.object_name;
+            if (!nodeSet.has(name)) {
+                nodes.push({
+                    name,
+                    itemStyle: { color: '#6366f1', borderColor: '#4f46e5' },
+                    depth: 0
                 });
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const data = await resp.json();
+                nodeSet.add(name);
+            }
+        });
 
-                if (data.success) {
-                    alert(`抽取完成！\n对象数: ${data.objects_count}\n关联数: ${data.relations_count}`);
-                    loadExtractedObjects();
-                } else {
-                    alert('抽取失败: ' + (data.error || '未知错误'));
+        // Build per-object concept entity nodes (top 3 per object) and aggregated layer nodes
+        let totalLogical = 0, totalPhysical = 0;
+        const conceptEntitySet = new Set();
+
+        extractedObjects.forEach(obj => {
+            const conceptCount = obj.stats?.concept || 0;
+            const logicalCount = obj.stats?.logical || 0;
+            const physicalCount = obj.stats?.physical || 0;
+            totalLogical += logicalCount;
+            totalPhysical += physicalCount;
+
+            if (conceptCount > 0) {
+                // Link object to aggregated concept layer with concept count
+                const conceptNodeName = `概念实体(${obj.object_name})`;
+                if (!nodeSet.has(conceptNodeName)) {
+                    nodes.push({
+                        name: conceptNodeName,
+                        itemStyle: { color: '#818cf8', borderColor: '#6366f1' },
+                        depth: 1
+                    });
+                    nodeSet.add(conceptNodeName);
                 }
-            } catch(e) {
-                alert('抽取失败: ' + e);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '执行抽取';
+                links.push({ source: obj.object_name, target: conceptNodeName, value: conceptCount });
+
+                // Link concept to logical if there are logicals
+                if (logicalCount > 0) {
+                    links.push({ source: conceptNodeName, target: '逻辑实体层', value: logicalCount });
+                }
+            }
+        });
+
+        // Add aggregated layer nodes
+        if (totalLogical > 0) {
+            if (!nodeSet.has('逻辑实体层')) {
+                nodes.push({ name: '逻辑实体层', itemStyle: { color: '#10b981', borderColor: '#059669' }, depth: 2 });
+                nodeSet.add('逻辑实体层');
             }
         }
-
-        async function exportObjects() {
-            try {
-                const resp = await fetch('/api/olm/export-objects');
-                if (!resp.ok) throw new Error(`导出失败: HTTP ${resp.status}`);
-                const blob = await resp.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'extracted_objects.json';
-                a.click();
-            } catch(e) {
-                alert('导出失败: ' + e);
+        if (totalPhysical > 0) {
+            if (!nodeSet.has('物理实体层')) {
+                nodes.push({ name: '物理实体层', itemStyle: { color: '#f59e0b', borderColor: '#d97706' }, depth: 3 });
+                nodeSet.add('物理实体层');
             }
+            links.push({ source: '逻辑实体层', target: '物理实体层', value: totalPhysical });
         }
 
+        if (!links.length) {
+            sankeyChart.clear();
+            sankeyChart.setOption({
+                backgroundColor: 'transparent',
+                graphic: { type: 'text', left: 'center', top: 'middle',
+                    style: { text: '暂无关联数据', fontSize: 14, fill: '#94a3b8', textAlign: 'center' } }
+            });
+            return;
+        }
+
+        sankeyChart.setOption({
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'item',
+                triggerOn: 'mousemove',
+                formatter: params => {
+                    if (params.dataType === 'edge') {
+                        return `${params.data.source} → ${params.data.target}<br/>关联数量: ${params.data.value}`;
+                    }
+                    return params.name;
+                }
+            },
+            series: [{
+                type: 'sankey',
+                layout: 'none',
+                emphasis: { focus: 'adjacency' },
+                nodeAlign: 'left',
+                nodeGap: 14,
+                nodeWidth: 20,
+                data: nodes,
+                links: links,
+                lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.35 },
+                label: { color: '#334155', fontSize: 11, fontWeight: 500 },
+                levels: [
+                    { depth: 0, itemStyle: { color: '#6366f1' }, lineStyle: { color: 'source', opacity: 0.3 } },
+                    { depth: 1, itemStyle: { color: '#818cf8' }, lineStyle: { color: 'source', opacity: 0.25 } },
+                    { depth: 2, itemStyle: { color: '#10b981' }, lineStyle: { color: 'source', opacity: 0.25 } },
+                    { depth: 3, itemStyle: { color: '#f59e0b' }, lineStyle: { color: 'source', opacity: 0.2 } }
+                ]
+            }]
+        }, true);
+    }
+
+    // ========== Actions ==========
+    async function runExtraction() {
+        const btn = document.getElementById('btnExtract');
+        if (!selectedDomain) {
+            showToast('请先选择一个数据域', 'error');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div>抽取中...';
+
+        try {
+            const resp = await fetch('/api/olm/run-extraction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ use_llm: false, target_clusters: 15, domains: [selectedDomain] })
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+
+            if (data.success) {
+                showToast(`抽取完成！对象数: ${data.objects_count}，关联数: ${data.relations_count}`, 'success');
+                loadObjects();
+            } else {
+                showToast('抽取失败: ' + (data.error || '未知错误'), 'error');
+            }
+        } catch(e) {
+            showToast('抽取失败: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-cpu"></i>执行抽取';
+        }
+    }
+
+    async function exportObjects() {
+        try {
+            const domainParam = selectedDomain ? `?domain=${selectedDomain}` : '';
+            const resp = await fetch('/api/olm/export-objects' + domainParam);
+            if (!resp.ok) throw new Error(`导出失败: HTTP ${resp.status}`);
+            const blob = await resp.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `extracted_objects_${selectedDomain || 'all'}.json`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showToast('导出成功', 'success');
+        } catch(e) {
+            showToast('导出失败: ' + e.message, 'error');
+        }
+    }
+
+    function refreshAll() {
+        selectedObjectCode = null;
+        document.getElementById('section-relations').classList.remove('active');
+        loadObjects();
+        showToast('数据已刷新', 'info');
+    }
+
+    // ========== Toast ==========
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const icons = { success: 'bi-check-circle-fill', error: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
+        const colors = { success: '#10b981', error: '#ef4444', info: '#6366f1' };
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<i class="bi ${icons[type]}" style="color:${colors[type]}"></i><span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(20px)';
+            toast.style.transition = '.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
+    }
     </script>
 </body>
 </html>
