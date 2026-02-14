@@ -179,6 +179,36 @@
         .legend-dot.logical { background: var(--logical); }
         .legend-dot.physical { background: var(--physical); }
 
+        /* Search Dropdown */
+        .search-dropdown {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 8px; box-shadow: var(--shadow-lg);
+            max-height: 320px; overflow-y: auto; z-index: 60;
+        }
+        .search-dropdown.open { display: block; }
+        .search-dropdown-header {
+            padding: .4rem .75rem; font-size: .68rem; font-weight: 600;
+            color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: .04em; border-bottom: 1px solid var(--border-light);
+            background: var(--bg-body);
+        }
+        .search-result-item {
+            display: flex; align-items: center; gap: .5rem;
+            padding: .5rem .75rem; cursor: pointer; font-size: .82rem;
+            color: var(--text-sec); transition: var(--transition);
+        }
+        .search-result-item:hover { background: var(--bg-body); }
+        .search-result-item .sr-layer {
+            font-size: .62rem; font-weight: 700; padding: .1rem .35rem;
+            border-radius: 3px; text-transform: uppercase; flex-shrink: 0;
+        }
+        .sr-layer.CONCEPT { background: rgba(99,102,241,.1); color: var(--concept); }
+        .sr-layer.LOGICAL { background: rgba(16,185,129,.1); color: var(--logical); }
+        .sr-layer.PHYSICAL { background: rgba(245,158,11,.1); color: var(--physical); }
+        .search-result-item .sr-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .search-result-item .sr-obj { font-size: .7rem; color: var(--text-muted); flex-shrink: 0; }
+
         /* ========== Content Sections ========== */
         .content-area { padding: 1.5rem 2rem 3rem; }
         .section { margin-bottom: 2rem; scroll-margin-top: 4rem; }
@@ -545,7 +575,8 @@
         <div class="topbar">
             <div class="search-box">
                 <i class="bi bi-search"></i>
-                <input type="text" id="globalSearch" placeholder="搜索对象名称、编码..." oninput="handleSearch(this.value)">
+                <input type="text" id="globalSearch" placeholder="搜索对象或实体名称..." oninput="handleSearch(this.value)" autocomplete="off">
+                <div class="search-dropdown" id="searchDropdown"></div>
             </div>
             <div class="layer-legend">
                 <span class="legend-chip"><span class="legend-dot concept"></span>概念实体</span>
@@ -713,6 +744,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script>
+    // ========== XSS Protection ==========
+    function esc(str) {
+        const d = document.createElement('div');
+        d.textContent = str ?? '';
+        return d.innerHTML;
+    }
+
     // ========== Global State ==========
     let extractedObjects = [];
     let currentFilter = 'ALL';
@@ -721,6 +759,7 @@
     let selectedObjectCode = null;
     let currentRelations = null;
     let sankeyChart = null;
+    let searchTimer = null;
 
     const objectIcons = {
         'OBJ_PROJECT':'bi-building',       'OBJ_DEVICE':'bi-lightning-charge',
@@ -737,6 +776,12 @@
     document.addEventListener('DOMContentLoaded', () => {
         loadDomains();
         setupScrollSpy();
+        // Close search dropdown on outside click
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.search-box')) {
+                document.getElementById('searchDropdown').classList.remove('open');
+            }
+        });
     });
 
     // ========== Sidebar ==========
@@ -747,7 +792,6 @@
 
     function scrollToSection(id) {
         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-        // Close mobile sidebar
         if (window.innerWidth <= 768) toggleSidebar();
     }
 
@@ -780,18 +824,16 @@
 
             container.innerHTML = domains.map((d, i) => `
                 <label class="domain-item">
-                    <input type="radio" name="domain" value="${d.code}" ${i === 0 ? 'checked' : ''} onchange="switchDomain('${d.code}')">
-                    <span>${d.name}</span>
+                    <input type="radio" name="domain" value="${esc(d.code)}" ${i === 0 ? 'checked' : ''} onchange="switchDomain('${esc(d.code)}')">
+                    <span>${esc(d.name)}</span>
                     <span class="domain-badge">${d.files?.length || 0}</span>
                 </label>
             `).join('');
 
-            // Auto-select first domain
             selectedDomain = domains[0].code;
             loadObjects();
         } catch(e) {
             container.innerHTML = '<div style="padding:.5rem; color:#ef4444; font-size:.78rem;">加载失败</div>';
-            // Still try to load objects without domain
             loadObjects();
         }
     }
@@ -809,28 +851,43 @@
         grid.innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto .75rem;"></div><p>加载中...</p></div>';
 
         try {
-            const domainParam = selectedDomain ? `?domain=${selectedDomain}` : '';
-            const resp = await fetch('/api/olm/extracted-objects' + domainParam);
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const data = await resp.json();
+            const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+            const [objResp, summaryResp] = await Promise.all([
+                fetch('/api/olm/extracted-objects' + domainParam),
+                fetch('/api/olm/summary' + domainParam)
+            ]);
+
+            if (!objResp.ok) throw new Error(`HTTP ${objResp.status}`);
+            const data = await objResp.json();
 
             if (data.error) {
-                grid.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>${data.error}</p></div>`;
+                grid.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>${esc(data.error)}</p></div>`;
                 return;
             }
 
             extractedObjects = data.objects || [];
-            updateStats();
+
+            // Use summary API for accurate stats
+            if (summaryResp.ok) {
+                const summary = await summaryResp.json();
+                animateNumber('statObjects', summary.objects_count || extractedObjects.length);
+                animateNumber('statConcept', summary.concept_count || 0);
+                animateNumber('statLogical', summary.logical_count || 0);
+                animateNumber('statPhysical', summary.physical_count || 0);
+            } else {
+                updateStatsFromObjects();
+            }
+
             renderObjects();
             updateFilterCounts();
-            initSankeyChart();
+            loadSankeyData();
         } catch(e) {
-            grid.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ${e.message}</p></div>`;
+            grid.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ${esc(e.message)}</p></div>`;
         }
     }
 
     // ========== Stats ==========
-    function updateStats() {
+    function updateStatsFromObjects() {
         let tc = 0, tl = 0, tp = 0;
         extractedObjects.forEach(o => {
             tc += o.stats?.concept || 0;
@@ -892,6 +949,50 @@
         searchQuery = val.trim();
         updateFilterCounts();
         renderObjects();
+
+        // Debounced entity search via API
+        clearTimeout(searchTimer);
+        const dropdown = document.getElementById('searchDropdown');
+        if (!searchQuery || searchQuery.length < 2) {
+            dropdown.classList.remove('open');
+            return;
+        }
+        searchTimer = setTimeout(() => searchEntities(searchQuery), 300);
+    }
+
+    async function searchEntities(query) {
+        const dropdown = document.getElementById('searchDropdown');
+        try {
+            const params = new URLSearchParams({ q: query, limit: '15' });
+            if (selectedDomain) params.set('domain', selectedDomain);
+            const resp = await fetch('/api/olm/search-entities?' + params);
+            if (!resp.ok) return;
+            const data = await resp.json();
+            const results = data.results || [];
+
+            if (!results.length) {
+                dropdown.classList.remove('open');
+                return;
+            }
+
+            let html = '<div class="search-dropdown-header">实体搜索结果</div>';
+            results.forEach(r => {
+                html += `<div class="search-result-item" onclick="onSearchResultClick('${esc(r.object_code)}')">
+                    <span class="sr-layer ${esc(r.entity_layer)}">${esc(r.entity_layer)}</span>
+                    <span class="sr-name">${esc(r.entity_name)}</span>
+                    <span class="sr-obj">${esc(r.object_name)}</span>
+                </div>`;
+            });
+            dropdown.innerHTML = html;
+            dropdown.classList.add('open');
+        } catch(e) {
+            dropdown.classList.remove('open');
+        }
+    }
+
+    function onSearchResultClick(objectCode) {
+        document.getElementById('searchDropdown').classList.remove('open');
+        selectObject(objectCode);
     }
 
     // ========== Render Objects ==========
@@ -915,21 +1016,21 @@
             const type = obj.object_type || 'CORE';
             const isActive = obj.object_code === selectedObjectCode;
             return `
-            <div class="object-card type-${type} ${isActive ? 'active' : ''}"
-                 data-code="${obj.object_code}" onclick="selectObject('${obj.object_code}')">
+            <div class="object-card type-${esc(type)} ${isActive ? 'active' : ''}"
+                 data-code="${esc(obj.object_code)}" onclick="selectObject('${esc(obj.object_code)}')">
                 <div class="obj-top">
                     <div class="obj-icon"><i class="bi ${iconClass}"></i></div>
                     <div class="obj-info">
-                        <div class="obj-name">${obj.object_name}</div>
-                        <div class="obj-code">${obj.object_code}</div>
+                        <div class="obj-name">${esc(obj.object_name)}</div>
+                        <div class="obj-code">${esc(obj.object_code)}</div>
                     </div>
                 </div>
-                ${obj.description ? `<div class="obj-desc">${obj.description}</div>` : ''}
+                ${obj.description ? `<div class="obj-desc">${esc(obj.description)}</div>` : ''}
                 <div class="obj-badges">
                     <span class="badge badge-concept">${obj.stats?.concept || 0} 概念</span>
                     <span class="badge badge-logical">${obj.stats?.logical || 0} 逻辑</span>
                     <span class="badge badge-physical">${obj.stats?.physical || 0} 物理</span>
-                    <span class="badge badge-type badge-${type}">${type}</span>
+                    <span class="badge badge-type badge-${esc(type)}">${esc(type)}</span>
                 </div>
             </div>`;
         }).join('');
@@ -939,7 +1040,6 @@
     async function selectObject(code) {
         selectedObjectCode = code;
 
-        // Update card states
         document.querySelectorAll('.object-card').forEach(c => {
             c.classList.toggle('active', c.dataset.code === code);
         });
@@ -951,23 +1051,19 @@
         document.getElementById('relationObjIcon').innerHTML = `<i class="bi ${iconClass}" style="color:var(--primary)"></i>`;
         document.getElementById('relationObjName').textContent = obj.object_name;
 
-        // Show relation section
         const section = document.getElementById('section-relations');
         section.classList.add('active');
 
-        // Reset columns
         ['relConceptBody', 'relLogicalBody', 'relPhysicalBody'].forEach(id => {
             document.getElementById(id).innerHTML = '<div style="text-align:center; padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
         });
 
         try {
-            const domainParam = selectedDomain ? `?domain=${selectedDomain}` : '';
-            const resp = await fetch(`/api/olm/object-relations/${code}${domainParam}`);
+            const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+            const resp = await fetch(`/api/olm/object-relations/${encodeURIComponent(code)}${domainParam}`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             currentRelations = await resp.json();
             renderRelations(currentRelations);
-
-            // Scroll to relations
             section.scrollIntoView({ behavior: 'smooth' });
         } catch(e) {
             showToast('加载关联失败: ' + e.message, 'error');
@@ -993,10 +1089,10 @@
                 const strength = (c.relation_strength || 0);
                 const dotClass = strength >= 0.8 ? 'strong' : strength >= 0.5 ? 'medium' : 'weak';
                 const logCount = c.logical_count || 0;
-                return `<div class="entity-item" data-name="${name}" data-layer="concept"
-                             onclick="highlightByConceptEntity('${name.replace(/'/g, "\\'")}')">
+                return `<div class="entity-item" data-name="${esc(name)}" data-layer="concept"
+                             onclick="highlightByConceptEntity(this.dataset.name)">
                     <span class="entity-dot ${dotClass}"></span>
-                    <span class="entity-text">${name}</span>
+                    <span class="entity-text">${esc(name)}</span>
                     ${logCount > 0 ? `<span class="entity-via">${logCount} 逻辑</span>` : ''}
                 </div>`;
             }).join('');
@@ -1016,20 +1112,20 @@
 
             let html = '';
             for (const [groupName, items] of Object.entries(groups)) {
-                html += `<div class="concept-group-header" data-group="${groupName}"
+                html += `<div class="concept-group-header" data-group="${esc(groupName)}"
                              onclick="toggleLogicalGroup(this)">
-                    <span>${groupName} (${items.length})</span>
+                    <span>${esc(groupName)} (${items.length})</span>
                     <span class="toggle"><i class="bi bi-chevron-down"></i></span>
                 </div>`;
-                html += `<div class="concept-group-items" data-group="${groupName}">`;
+                html += `<div class="concept-group-items" data-group="${esc(groupName)}">`;
                 const displayItems = items.slice(0, 50);
                 displayItems.forEach(l => {
                     const name = typeof l === 'string' ? l : l.entity_name;
                     const strength = (l.relation_strength || 0);
                     const dotClass = strength >= 0.8 ? 'strong' : strength >= 0.5 ? 'medium' : 'weak';
-                    html += `<div class="entity-item" data-name="${name}" data-layer="logical" data-via="${l.via_concept_entity || ''}">
+                    html += `<div class="entity-item" data-name="${esc(name)}" data-layer="logical" data-via="${esc(l.via_concept_entity || '')}">
                         <span class="entity-dot ${dotClass}"></span>
-                        <span class="entity-text">${name}</span>
+                        <span class="entity-text">${esc(name)}</span>
                     </div>`;
                 });
                 if (items.length > 50) {
@@ -1049,16 +1145,15 @@
                 const name = typeof p === 'string' ? p : p.entity_name;
                 const strength = (p.relation_strength || 0);
                 const dotClass = strength >= 0.8 ? 'strong' : strength >= 0.5 ? 'medium' : 'weak';
-                return `<div class="entity-item" data-name="${name}" data-layer="physical">
+                return `<div class="entity-item" data-name="${esc(name)}" data-layer="physical">
                     <span class="entity-dot ${dotClass}"></span>
-                    <span class="entity-text">${name}</span>
+                    <span class="entity-text">${esc(name)}</span>
                 </div>`;
             }).join('');
         }
     }
 
     function toggleLogicalGroup(header) {
-        const group = header.getAttribute('data-group');
         const items = header.nextElementSibling;
         if (items) {
             items.classList.toggle('collapsed');
@@ -1068,23 +1163,19 @@
     }
 
     function highlightByConceptEntity(conceptName) {
-        // Highlight concept item
         document.querySelectorAll('#relConceptBody .entity-item').forEach(el => {
             el.classList.toggle('highlighted', el.dataset.name === conceptName);
         });
-        // Expand and highlight matching logical group
         document.querySelectorAll('.concept-group-items').forEach(g => {
             const isTarget = g.dataset.group === conceptName;
             g.classList.toggle('collapsed', !isTarget);
-            // Update toggle icon
             const header = g.previousElementSibling;
             if (header) {
                 const icon = header.querySelector('.toggle i');
                 if (icon) icon.className = isTarget ? 'bi bi-chevron-down' : 'bi bi-chevron-right';
             }
         });
-        // Scroll the target group into view
-        const targetGroup = document.querySelector(`.concept-group-items[data-group="${conceptName}"]`);
+        const targetGroup = document.querySelector(`.concept-group-items[data-group="${CSS.escape(conceptName)}"]`);
         if (targetGroup) targetGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
@@ -1096,7 +1187,6 @@
             const text = (item.querySelector('.entity-text')?.textContent || '').toLowerCase();
             item.style.display = text.includes(q) || !q ? '' : 'none';
         });
-        // Also handle group headers for logical
         if (layer === 'logical') {
             document.querySelectorAll(`#${bodyId} .concept-group-header`).forEach(h => {
                 if (!q) { h.style.display = ''; return; }
@@ -1107,8 +1197,8 @@
         }
     }
 
-    // ========== Sankey Chart ==========
-    function initSankeyChart() {
+    // ========== Sankey Chart (uses /api/olm/sankey-data) ==========
+    async function loadSankeyData() {
         const container = document.getElementById('sankey-chart');
         if (!container) return;
 
@@ -1127,68 +1217,29 @@
             return;
         }
 
-        const nodes = [];
-        const links = [];
-        const nodeSet = new Set();
-
-        // Add object nodes
-        extractedObjects.forEach(obj => {
-            const name = obj.object_name;
-            if (!nodeSet.has(name)) {
-                nodes.push({
-                    name,
-                    itemStyle: { color: '#6366f1', borderColor: '#4f46e5' },
-                    depth: 0
-                });
-                nodeSet.add(name);
-            }
-        });
-
-        // Build per-object concept entity nodes (top 3 per object) and aggregated layer nodes
-        let totalLogical = 0, totalPhysical = 0;
-        const conceptEntitySet = new Set();
-
-        extractedObjects.forEach(obj => {
-            const conceptCount = obj.stats?.concept || 0;
-            const logicalCount = obj.stats?.logical || 0;
-            const physicalCount = obj.stats?.physical || 0;
-            totalLogical += logicalCount;
-            totalPhysical += physicalCount;
-
-            if (conceptCount > 0) {
-                // Link object to aggregated concept layer with concept count
-                const conceptNodeName = `概念实体(${obj.object_name})`;
-                if (!nodeSet.has(conceptNodeName)) {
-                    nodes.push({
-                        name: conceptNodeName,
-                        itemStyle: { color: '#818cf8', borderColor: '#6366f1' },
-                        depth: 1
-                    });
-                    nodeSet.add(conceptNodeName);
-                }
-                links.push({ source: obj.object_name, target: conceptNodeName, value: conceptCount });
-
-                // Link concept to logical if there are logicals
-                if (logicalCount > 0) {
-                    links.push({ source: conceptNodeName, target: '逻辑实体层', value: logicalCount });
-                }
-            }
-        });
-
-        // Add aggregated layer nodes
-        if (totalLogical > 0) {
-            if (!nodeSet.has('逻辑实体层')) {
-                nodes.push({ name: '逻辑实体层', itemStyle: { color: '#10b981', borderColor: '#059669' }, depth: 2 });
-                nodeSet.add('逻辑实体层');
-            }
+        try {
+            const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+            const resp = await fetch('/api/olm/sankey-data' + domainParam);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            renderSankeyChart(data);
+        } catch(e) {
+            // Fallback: build from object stats
+            renderSankeyFallback();
         }
-        if (totalPhysical > 0) {
-            if (!nodeSet.has('物理实体层')) {
-                nodes.push({ name: '物理实体层', itemStyle: { color: '#f59e0b', borderColor: '#d97706' }, depth: 3 });
-                nodeSet.add('物理实体层');
-            }
-            links.push({ source: '逻辑实体层', target: '物理实体层', value: totalPhysical });
-        }
+    }
+
+    function renderSankeyChart(data) {
+        const nodes = (data.nodes || []).map(n => {
+            const colors = { object: '#6366f1', concept: '#818cf8', logical_agg: '#10b981', physical_agg: '#f59e0b' };
+            const borders = { object: '#4f46e5', concept: '#6366f1', logical_agg: '#059669', physical_agg: '#d97706' };
+            return {
+                name: n.name,
+                depth: n.depth,
+                itemStyle: { color: colors[n.type] || '#6366f1', borderColor: borders[n.type] || '#4f46e5' }
+            };
+        });
+        const links = data.links || [];
 
         if (!links.length) {
             sankeyChart.clear();
@@ -1203,24 +1254,19 @@
         sankeyChart.setOption({
             backgroundColor: 'transparent',
             tooltip: {
-                trigger: 'item',
-                triggerOn: 'mousemove',
+                trigger: 'item', triggerOn: 'mousemove',
                 formatter: params => {
                     if (params.dataType === 'edge') {
-                        return `${params.data.source} → ${params.data.target}<br/>关联数量: ${params.data.value}`;
+                        return `${esc(params.data.source)} → ${esc(params.data.target)}<br/>关联数量: ${params.data.value}`;
                     }
-                    return params.name;
+                    return esc(params.name);
                 }
             },
             series: [{
-                type: 'sankey',
-                layout: 'none',
+                type: 'sankey', layout: 'none',
                 emphasis: { focus: 'adjacency' },
-                nodeAlign: 'left',
-                nodeGap: 14,
-                nodeWidth: 20,
-                data: nodes,
-                links: links,
+                nodeAlign: 'left', nodeGap: 14, nodeWidth: 20,
+                data: nodes, links: links,
                 lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.35 },
                 label: { color: '#334155', fontSize: 11, fontWeight: 500 },
                 levels: [
@@ -1233,13 +1279,40 @@
         }, true);
     }
 
+    function renderSankeyFallback() {
+        // Fallback using object-level stats when API unavailable
+        const nodes = [];
+        const links = [];
+        const nodeSet = new Set();
+        let totalLogical = 0, totalPhysical = 0;
+
+        extractedObjects.forEach(obj => {
+            const name = obj.object_name;
+            if (!nodeSet.has(name)) {
+                nodes.push({ name, itemStyle: { color: '#6366f1', borderColor: '#4f46e5' }, depth: 0 });
+                nodeSet.add(name);
+            }
+            const cc = obj.stats?.concept || 0, lc = obj.stats?.logical || 0, pc = obj.stats?.physical || 0;
+            totalLogical += lc; totalPhysical += pc;
+            if (cc > 0) {
+                const cn = `概念实体(${name})`;
+                if (!nodeSet.has(cn)) { nodes.push({ name: cn, itemStyle: { color: '#818cf8' }, depth: 1 }); nodeSet.add(cn); }
+                links.push({ source: name, target: cn, value: cc });
+                if (lc > 0) links.push({ source: cn, target: '逻辑实体层', value: lc });
+            }
+        });
+        if (totalLogical > 0 && !nodeSet.has('逻辑实体层')) { nodes.push({ name: '逻辑实体层', itemStyle: { color: '#10b981' }, depth: 2 }); nodeSet.add('逻辑实体层'); }
+        if (totalPhysical > 0) {
+            if (!nodeSet.has('物理实体层')) { nodes.push({ name: '物理实体层', itemStyle: { color: '#f59e0b' }, depth: 3 }); nodeSet.add('物理实体层'); }
+            links.push({ source: '逻辑实体层', target: '物理实体层', value: totalPhysical });
+        }
+        renderSankeyChart({ nodes: nodes.map(n => ({ ...n, type: 'object' })), links });
+    }
+
     // ========== Actions ==========
     async function runExtraction() {
         const btn = document.getElementById('btnExtract');
-        if (!selectedDomain) {
-            showToast('请先选择一个数据域', 'error');
-            return;
-        }
+        if (!selectedDomain) { showToast('请先选择一个数据域', 'error'); return; }
 
         btn.disabled = true;
         btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div>抽取中...';
@@ -1269,7 +1342,7 @@
 
     async function exportObjects() {
         try {
-            const domainParam = selectedDomain ? `?domain=${selectedDomain}` : '';
+            const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
             const resp = await fetch('/api/olm/export-objects' + domainParam);
             if (!resp.ok) throw new Error(`导出失败: HTTP ${resp.status}`);
             const blob = await resp.blob();
@@ -1299,7 +1372,7 @@
         const colors = { success: '#10b981', error: '#ef4444', info: '#6366f1' };
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        toast.innerHTML = `<i class="bi ${icons[type]}" style="color:${colors[type]}"></i><span>${message}</span>`;
+        toast.innerHTML = `<i class="bi ${icons[type]}" style="color:${colors[type]}"></i><span>${esc(message)}</span>`;
         container.appendChild(toast);
         setTimeout(() => {
             toast.style.opacity = '0';

@@ -783,3 +783,437 @@ def api_domain_stats():
         return jsonify({'stats': result, 'total': len(result)})
     except Exception as e:
         return jsonify({'stats': [], 'error': str(e)})
+
+
+# ============================================================================
+# 桑基图数据 API
+# ============================================================================
+
+def get_sankey_from_json(domain: str = '') -> dict:
+    """从 JSON 文件构建桑基图数据"""
+    data = load_json_data(domain or 'shupeidian')
+    objects = data.get('objects', [])
+    relations = data.get('relations', [])
+
+    nodes = []
+    links = []
+    node_set = set()
+
+    # 按 object_code 分组 relations
+    obj_concepts = {}  # {obj_code: [(entity_name, strength, logical_count)]}
+    layer_counts = {'LOGICAL': 0, 'PHYSICAL': 0}
+
+    for rel in relations:
+        layer = rel.get('entity_layer', '').upper()
+        if layer in ('LOGICAL', 'PHYSICAL'):
+            layer_counts[layer] += 1
+
+    # 构建 concept→logical 映射
+    concept_logical_count = {}
+    for rel in relations:
+        if rel.get('entity_layer', '').upper() == 'LOGICAL':
+            via = rel.get('via_concept_entity', '')
+            obj_code = rel.get('object_code', '')
+            key = (obj_code, via)
+            concept_logical_count[key] = concept_logical_count.get(key, 0) + 1
+
+    for obj in objects:
+        code = obj.get('object_code', '')
+        name = obj.get('object_name', '')
+        if name and name not in node_set:
+            nodes.append({'name': name, 'depth': 0, 'type': 'object'})
+            node_set.add(name)
+
+        # 该对象的 concept 实体
+        obj_concepts_list = []
+        for rel in relations:
+            if rel.get('object_code') == code and rel.get('entity_layer', '').upper() == 'CONCEPT':
+                e_name = rel.get('entity_name', '')
+                strength = rel.get('relation_strength', 0)
+                lc = concept_logical_count.get((code, e_name), 0)
+                obj_concepts_list.append((e_name, strength, lc))
+
+        # Top 5 by strength
+        obj_concepts_list.sort(key=lambda x: x[1], reverse=True)
+        for e_name, strength, lc in obj_concepts_list[:5]:
+            concept_node = f"{e_name}({name})"
+            if concept_node not in node_set:
+                nodes.append({'name': concept_node, 'depth': 1, 'type': 'concept'})
+                node_set.add(concept_node)
+            links.append({'source': name, 'target': concept_node, 'value': max(1, lc)})
+            if lc > 0:
+                links.append({'source': concept_node, 'target': '逻辑实体层', 'value': lc})
+
+    # 聚合节点
+    if layer_counts['LOGICAL'] > 0:
+        if '逻辑实体层' not in node_set:
+            nodes.append({'name': '逻辑实体层', 'depth': 2, 'type': 'logical_agg'})
+            node_set.add('逻辑实体层')
+    if layer_counts['PHYSICAL'] > 0:
+        if '物理实体层' not in node_set:
+            nodes.append({'name': '物理实体层', 'depth': 3, 'type': 'physical_agg'})
+            node_set.add('物理实体层')
+        links.append({'source': '逻辑实体层', 'target': '物理实体层', 'value': layer_counts['PHYSICAL']})
+
+    return {'nodes': nodes, 'links': links, 'domain': domain or 'shupeidian'}
+
+
+@olm_api.route('/api/olm/sankey-data')
+def api_sankey_data():
+    """获取桑基图可视化数据
+
+    返回对象→Top5概念实体→逻辑实体层→物理实体层的完整流向数据。
+
+    Query参数:
+        domain (str): 数据域过滤
+    """
+    domain = request.args.get('domain', '')
+
+    if is_db_available():
+        try:
+            # 1. 获取对象列表
+            if domain:
+                objects = execute_query(
+                    "SELECT object_id, object_code, object_name FROM extracted_objects WHERE data_domain = %s ORDER BY object_type, object_name",
+                    (domain,)
+                )
+            else:
+                objects = execute_query(
+                    "SELECT object_id, object_code, object_name FROM extracted_objects ORDER BY object_type, object_name"
+                )
+
+            if isinstance(objects, dict) and 'error' in objects:
+                raise Exception(objects['error'])
+
+            nodes = []
+            links = []
+            node_set = set()
+
+            # 2. 为每个对象查询 Top-5 概念实体
+            for obj in objects:
+                obj_name = obj['object_name']
+                obj_id = obj['object_id']
+
+                if obj_name not in node_set:
+                    nodes.append({'name': obj_name, 'depth': 0, 'type': 'object'})
+                    node_set.add(obj_name)
+
+                top_concepts = execute_query("""
+                    SELECT r.entity_name, r.relation_strength,
+                           (SELECT COUNT(DISTINCT r2.entity_name) FROM object_entity_relations r2
+                            WHERE r2.object_id = r.object_id AND r2.entity_layer = 'LOGICAL'
+                            AND r2.via_concept_entity = r.entity_name) as logical_count
+                    FROM object_entity_relations r
+                    WHERE r.object_id = %s AND r.entity_layer = 'CONCEPT'
+                    ORDER BY r.relation_strength DESC
+                    LIMIT 5
+                """, (obj_id,))
+
+                if isinstance(top_concepts, dict):
+                    continue
+
+                for c in top_concepts:
+                    concept_node = f"{c['entity_name']}({obj_name})"
+                    lc = c.get('logical_count', 0)
+                    if concept_node not in node_set:
+                        nodes.append({'name': concept_node, 'depth': 1, 'type': 'concept'})
+                        node_set.add(concept_node)
+                    links.append({'source': obj_name, 'target': concept_node, 'value': max(1, lc)})
+                    if lc > 0:
+                        links.append({'source': concept_node, 'target': '逻辑实体层', 'value': lc})
+
+            # 3. 汇总逻辑和物理层总数
+            domain_filter = " AND o.data_domain = %s" if domain else ""
+            params = (domain,) if domain else ()
+            layer_agg = execute_query(f"""
+                SELECT r.entity_layer, COUNT(*) as cnt
+                FROM object_entity_relations r
+                JOIN extracted_objects o ON o.object_id = r.object_id
+                WHERE r.entity_layer IN ('LOGICAL', 'PHYSICAL'){domain_filter}
+                GROUP BY r.entity_layer
+            """, params)
+
+            layer_map = {}
+            if not isinstance(layer_agg, dict):
+                layer_map = {r['entity_layer']: r['cnt'] for r in layer_agg}
+
+            if layer_map.get('LOGICAL', 0) > 0:
+                if '逻辑实体层' not in node_set:
+                    nodes.append({'name': '逻辑实体层', 'depth': 2, 'type': 'logical_agg'})
+                    node_set.add('逻辑实体层')
+
+            if layer_map.get('PHYSICAL', 0) > 0:
+                if '物理实体层' not in node_set:
+                    nodes.append({'name': '物理实体层', 'depth': 3, 'type': 'physical_agg'})
+                    node_set.add('物理实体层')
+                links.append({'source': '逻辑实体层', 'target': '物理实体层', 'value': layer_map['PHYSICAL']})
+
+            return jsonify({'nodes': nodes, 'links': links, 'domain': domain or 'all', 'source': 'database'})
+
+        except Exception as e:
+            print(f"[WARN] 桑基图数据库查询失败，使用 JSON 后备: {e}")
+
+    result = get_sankey_from_json(domain)
+    result['source'] = 'json_file'
+    return jsonify(result)
+
+
+# ============================================================================
+# 实体搜索 API
+# ============================================================================
+
+def search_entities_from_json(query: str, layer: str = '', domain: str = '', limit: int = 30) -> list:
+    """从 JSON 文件搜索实体"""
+    data = load_json_data(domain or 'shupeidian')
+    relations = data.get('relations', [])
+    objects = {o.get('object_code', ''): o.get('object_name', '') for o in data.get('objects', [])}
+
+    q = query.lower()
+    results = []
+    seen = set()
+
+    for rel in relations:
+        e_name = rel.get('entity_name', '')
+        e_layer = rel.get('entity_layer', '').upper()
+        obj_code = rel.get('object_code', '')
+
+        if layer and e_layer != layer.upper():
+            continue
+        if q not in e_name.lower():
+            continue
+
+        key = (e_name, e_layer, obj_code)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        results.append({
+            'entity_name': e_name,
+            'entity_layer': e_layer,
+            'object_code': obj_code,
+            'object_name': objects.get(obj_code, ''),
+            'relation_strength': rel.get('relation_strength', 0)
+        })
+
+        if len(results) >= limit:
+            break
+
+    results.sort(key=lambda x: x.get('relation_strength', 0), reverse=True)
+    return results
+
+
+@olm_api.route('/api/olm/search-entities')
+def api_search_entities():
+    """搜索实体名称
+
+    在三层架构的实体中按名称模糊搜索。
+
+    Query参数:
+        q (str): 搜索关键词（必填）
+        layer (str): 层级过滤 concept/logical/physical（可选）
+        domain (str): 数据域过滤（可选）
+        limit (int): 返回上限，默认30，最大100
+    """
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify({'error': 'q parameter is required', 'results': []}), 400
+
+    layer = request.args.get('layer', '').strip().upper()
+    domain = request.args.get('domain', '').strip()
+    limit = min(int(request.args.get('limit', '30')), 100)
+
+    if layer and layer not in ('CONCEPT', 'LOGICAL', 'PHYSICAL'):
+        return jsonify({'error': 'layer must be concept, logical, or physical', 'results': []}), 400
+
+    if is_db_available():
+        try:
+            like_q = f'%{query}%'
+
+            # 构建动态 WHERE 条件
+            conditions = ["r.entity_name LIKE %s"]
+            params = [like_q]
+
+            if layer:
+                conditions.append("r.entity_layer = %s")
+                params.append(layer)
+
+            if domain:
+                conditions.append("o.data_domain = %s")
+                params.append(domain)
+
+            params.append(limit)
+
+            where_clause = " AND ".join(conditions)
+            result = execute_query(f"""
+                SELECT DISTINCT r.entity_name, r.entity_layer,
+                       o.object_code, o.object_name, r.relation_strength
+                FROM object_entity_relations r
+                JOIN extracted_objects o ON o.object_id = r.object_id
+                WHERE {where_clause}
+                ORDER BY r.relation_strength DESC
+                LIMIT %s
+            """, tuple(params))
+
+            if isinstance(result, dict) and 'error' in result:
+                raise Exception(result['error'])
+
+            # 处理 Decimal 类型
+            for row in result:
+                if row.get('relation_strength'):
+                    row['relation_strength'] = float(row['relation_strength'])
+
+            return jsonify({
+                'results': result,
+                'total': len(result),
+                'query': query,
+                'source': 'database'
+            })
+        except Exception as e:
+            print(f"[WARN] 实体搜索数据库查询失败，使用 JSON 后备: {e}")
+
+    results = search_entities_from_json(query, layer, domain, limit)
+    return jsonify({
+        'results': results,
+        'total': len(results),
+        'query': query,
+        'source': 'json_file'
+    })
+
+
+# ============================================================================
+# 汇总统计 API
+# ============================================================================
+
+def get_summary_from_json(domain: str = '') -> dict:
+    """从 JSON 文件计算汇总统计"""
+    data = load_json_data(domain or 'shupeidian')
+    objects = data.get('objects', [])
+    relations = data.get('relations', [])
+
+    by_type = {}
+    for obj in objects:
+        t = obj.get('object_type', 'CORE')
+        by_type[t] = by_type.get(t, 0) + 1
+
+    concept_count = 0
+    logical_count = 0
+    physical_count = 0
+    by_rel_type = {}
+
+    for rel in relations:
+        layer = rel.get('entity_layer', '').upper()
+        if layer == 'CONCEPT':
+            concept_count += 1
+        elif layer == 'LOGICAL':
+            logical_count += 1
+        elif layer == 'PHYSICAL':
+            physical_count += 1
+
+        rt = rel.get('relation_type', '')
+        by_rel_type[rt] = by_rel_type.get(rt, 0) + 1
+
+    # Top objects
+    obj_totals = {}
+    for rel in relations:
+        code = rel.get('object_code', '')
+        obj_totals[code] = obj_totals.get(code, 0) + 1
+    obj_name_map = {o.get('object_code', ''): o.get('object_name', '') for o in objects}
+    top_objects = sorted(
+        [{'object_code': k, 'object_name': obj_name_map.get(k, k), 'total_relations': v}
+         for k, v in obj_totals.items()],
+        key=lambda x: x['total_relations'], reverse=True
+    )[:5]
+
+    return {
+        'domain': domain or 'shupeidian',
+        'objects_count': len(objects),
+        'objects_by_type': by_type,
+        'concept_count': concept_count,
+        'logical_count': logical_count,
+        'physical_count': physical_count,
+        'relations_count': len(relations),
+        'relations_by_type': by_rel_type,
+        'top_objects': top_objects,
+    }
+
+
+@olm_api.route('/api/olm/summary')
+def api_summary():
+    """获取仪表板汇总统计
+
+    一次请求返回前端仪表板需要的所有统计数据。
+
+    Query参数:
+        domain (str): 数据域过滤，默认返回全局统计
+    """
+    domain = request.args.get('domain', '')
+
+    if is_db_available():
+        try:
+            summary = {'domain': domain or 'all'}
+
+            domain_filter = " WHERE data_domain = %s" if domain else ""
+            rel_domain_filter = " AND o.data_domain = %s" if domain else ""
+            params = (domain,) if domain else ()
+
+            # 对象统计
+            result = execute_query(
+                f"SELECT COUNT(*) as cnt FROM extracted_objects{domain_filter}", params
+            )
+            summary['objects_count'] = result[0]['cnt'] if result and not isinstance(result, dict) else 0
+
+            # 按类型统计
+            result = execute_query(
+                f"SELECT object_type, COUNT(*) as cnt FROM extracted_objects{domain_filter} GROUP BY object_type",
+                params
+            )
+            summary['objects_by_type'] = {r['object_type']: r['cnt'] for r in result} if result and not isinstance(result, dict) else {}
+
+            # 各层关联数量
+            result = execute_query(f"""
+                SELECT r.entity_layer, COUNT(*) as cnt
+                FROM object_entity_relations r
+                JOIN extracted_objects o ON o.object_id = r.object_id
+                WHERE 1=1{rel_domain_filter}
+                GROUP BY r.entity_layer
+            """, params)
+            layer_map = {}
+            if result and not isinstance(result, dict):
+                layer_map = {r['entity_layer']: r['cnt'] for r in result}
+
+            summary['concept_count'] = layer_map.get('CONCEPT', 0)
+            summary['logical_count'] = layer_map.get('LOGICAL', 0)
+            summary['physical_count'] = layer_map.get('PHYSICAL', 0)
+            summary['relations_count'] = sum(layer_map.values())
+
+            # 按关联类型统计
+            result = execute_query(f"""
+                SELECT r.relation_type, COUNT(*) as cnt
+                FROM object_entity_relations r
+                JOIN extracted_objects o ON o.object_id = r.object_id
+                WHERE 1=1{rel_domain_filter}
+                GROUP BY r.relation_type
+            """, params)
+            summary['relations_by_type'] = {r['relation_type']: r['cnt'] for r in result} if result and not isinstance(result, dict) else {}
+
+            # Top 对象
+            result = execute_query(f"""
+                SELECT o.object_code, o.object_name, COUNT(*) as total_relations
+                FROM object_entity_relations r
+                JOIN extracted_objects o ON o.object_id = r.object_id
+                WHERE 1=1{rel_domain_filter}
+                GROUP BY o.object_code, o.object_name
+                ORDER BY total_relations DESC
+                LIMIT 5
+            """, params)
+            summary['top_objects'] = list(result) if result and not isinstance(result, dict) else []
+
+            summary['source'] = 'database'
+            return jsonify(summary)
+
+        except Exception as e:
+            print(f"[WARN] 汇总统计数据库查询失败，使用 JSON 后备: {e}")
+
+    result = get_summary_from_json(domain)
+    result['source'] = 'json_file'
+    return jsonify(result)
