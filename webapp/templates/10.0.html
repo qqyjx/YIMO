@@ -222,6 +222,47 @@
         }
         .section-title i { color: var(--text-muted); font-size: 1rem; }
 
+        /* Algorithm Info Banner */
+        .algo-info {
+            background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(59,130,246,.06));
+            border: 1px solid rgba(99,102,241,.2);
+            border-radius: var(--radius);
+            padding: .75rem 1rem;
+            display: flex; align-items: flex-start; gap: .75rem;
+            margin-bottom: 1rem; font-size: .82rem; color: var(--text-sub);
+        }
+        .algo-info i { color: var(--accent); font-size: 1.1rem; margin-top: .1rem; flex-shrink: 0; }
+        .algo-info strong { color: var(--text-main); }
+        .algo-info-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .4rem; }
+        .algo-tag { background: rgba(99,102,241,.12); color: var(--accent); padding: 2px 8px;
+            border-radius: 4px; font-size: .72rem; font-weight: 500; }
+
+        /* View Tabs */
+        .view-tab {
+            padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border);
+            background: var(--bg-card); color: var(--text-muted); cursor: pointer;
+            font-size: .78rem; transition: var(--transition);
+        }
+        .view-tab.active {
+            background: var(--accent); color: #fff; border-color: var(--accent);
+        }
+        .view-tab:hover:not(.active) { background: var(--bg-hover); }
+
+        /* Small button */
+        .btn-sm {
+            padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
+            background: var(--bg-card); color: var(--text-muted); cursor: pointer;
+            font-size: .75rem;
+        }
+        .btn-sm:hover { background: var(--bg-hover); }
+
+        /* Bridge badge */
+        .bridge-badge {
+            display: inline-block; padding: 1px 6px; border-radius: 4px;
+            font-size: .65rem; background: #f0fdf4; color: #16a34a;
+            border: 1px solid #bbf7d0; margin-left: 4px;
+        }
+
         /* Stats Cards */
         .stats-grid {
             display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
@@ -554,6 +595,9 @@
             <div class="nav-item" data-section="section-sankey" onclick="scrollToSection('section-sankey')">
                 <i class="bi bi-bar-chart-steps"></i><span>流向图</span>
             </div>
+            <div class="nav-item" data-section="section-granularity" onclick="scrollToSection('section-granularity');loadGranularity();">
+                <i class="bi bi-bar-chart"></i><span>颗粒度</span>
+            </div>
             <div class="nav-item" data-section="section-datasets" onclick="scrollToSection('section-datasets')">
                 <i class="bi bi-database"></i><span>数据集</span>
             </div>
@@ -625,6 +669,20 @@
                 </div>
             </section>
 
+            <!-- Algorithm Info -->
+            <div class="algo-info">
+                <i class="bi bi-cpu"></i>
+                <div>
+                    <strong>统一算法架构</strong> — 所有数据域使用相同的语义对象抽取流水线，确保跨域一致性与可比较性。
+                    <div class="algo-info-tags">
+                        <span class="algo-tag">SBERT text2vec-base-chinese</span>
+                        <span class="algo-tag">Agglomerative Clustering</span>
+                        <span class="algo-tag">Cosine Distance</span>
+                        <span class="algo-tag">BA-04 桥接关联</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Section: Object Cards -->
             <section class="section" id="section-objects">
                 <div class="section-header">
@@ -654,6 +712,10 @@
                         <span id="relationObjIcon"></span>
                         <span id="relationObjName">-</span>
                         <span class="relation-subtitle">的三层架构关联</span>
+                    </div>
+                    <div style="display:flex;gap:4px;">
+                        <button class="view-tab active" data-view="table" onclick="switchRelView('table')"><i class="bi bi-table"></i> 列表</button>
+                        <button class="view-tab" data-view="graph" onclick="switchRelView('graph')"><i class="bi bi-share"></i> 图谱</button>
                     </div>
                 </div>
                 <div class="relation-columns">
@@ -688,6 +750,22 @@
                         <div class="rel-col-body" id="relPhysicalBody"></div>
                     </div>
                 </div>
+                <!-- Knowledge Graph View (hidden by default) -->
+                <div id="graphViewContainer" style="display:none;">
+                    <div id="graph-chart" style="width:100%;height:520px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);"></div>
+                </div>
+            </section>
+
+            <!-- Section: Granularity Analysis -->
+            <section class="section" id="section-granularity" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-bar-chart"></i>颗粒度分析
+                    </div>
+                    <button class="btn-sm" onclick="loadGranularity()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                </div>
+                <div id="granularity-chart" style="width:100%;height:320px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);"></div>
+                <div id="smallObjectsPanel" style="margin-top:12px;"></div>
             </section>
 
             <!-- Section: Sankey -->
@@ -1030,6 +1108,7 @@
                     <span class="badge badge-concept">${obj.stats?.concept || 0} 概念</span>
                     <span class="badge badge-logical">${obj.stats?.logical || 0} 逻辑</span>
                     <span class="badge badge-physical">${obj.stats?.physical || 0} 物理</span>
+                    ${(obj.stats?.biz_match_count || 0) > 0 ? `<span class="bridge-badge">${obj.stats.biz_match_count} 业务对象</span>` : ''}
                     <span class="badge badge-type badge-${esc(type)}">${esc(type)}</span>
                 </div>
             </div>`;
@@ -1064,6 +1143,13 @@
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             currentRelations = await resp.json();
             renderRelations(currentRelations);
+
+            // 如果当前是图谱视图，同时加载图谱数据
+            const graphTab = document.querySelector('.view-tab[data-view="graph"]');
+            if (graphTab && graphTab.classList.contains('active')) {
+                loadGraphData(code);
+            }
+
             section.scrollIntoView({ behavior: 'smooth' });
         } catch(e) {
             showToast('加载关联失败: ' + e.message, 'error');
@@ -1380,6 +1466,279 @@
             toast.style.transition = '.3s ease';
             setTimeout(() => toast.remove(), 300);
         }, 3500);
+    }
+    // ========== Knowledge Graph ==========
+    let graphChart = null;
+
+    function switchRelView(view) {
+        document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+        const tableView = document.querySelector('.relation-columns');
+        const graphView = document.getElementById('graphViewContainer');
+        if (view === 'graph') {
+            tableView.style.display = 'none';
+            graphView.style.display = 'block';
+            if (selectedObjectCode) loadGraphData(selectedObjectCode);
+        } else {
+            tableView.style.display = 'grid';
+            graphView.style.display = 'none';
+        }
+    }
+
+    async function loadGraphData(objectCode) {
+        const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+        try {
+            const resp = await fetch(`/api/olm/graph-data/${encodeURIComponent(objectCode)}${domainParam}`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            renderGraph(data);
+        } catch(e) {
+            showToast('加载图谱失败: ' + e.message, 'error');
+        }
+    }
+
+    function renderGraph(data) {
+        const container = document.getElementById('graph-chart');
+        if (!graphChart) {
+            graphChart = echarts.init(container);
+            window.addEventListener('resize', () => graphChart && graphChart.resize());
+        }
+
+        const categoryColors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b'];
+        data.categories.forEach((c, i) => { c.itemStyle = { color: categoryColors[i] }; });
+
+        graphChart.setOption({
+            tooltip: {
+                trigger: 'item',
+                formatter: p => {
+                    if (p.dataType === 'node') {
+                        const cat = data.categories[p.data.category]?.name || '';
+                        return `<b>${esc(p.data.name)}</b><br/>${esc(cat)}`;
+                    }
+                    return `${esc(p.data.source)} -> ${esc(p.data.target)}`;
+                }
+            },
+            legend: { data: data.categories.map(c => c.name), bottom: 10, textStyle: { color: '#94a3b8' } },
+            series: [{
+                type: 'graph',
+                layout: 'force',
+                data: data.nodes,
+                links: data.links,
+                categories: data.categories,
+                roam: true,
+                draggable: true,
+                label: {
+                    show: true,
+                    position: 'right',
+                    fontSize: 10,
+                    color: '#cbd5e1',
+                    formatter: p => p.data.name.length > 10 ? p.data.name.slice(0, 10) + '...' : p.data.name
+                },
+                force: {
+                    repulsion: 200,
+                    gravity: 0.1,
+                    edgeLength: [60, 150],
+                    layoutAnimation: true
+                },
+                lineStyle: { color: 'source', opacity: 0.4, curveness: 0.1 },
+                emphasis: {
+                    focus: 'adjacency',
+                    lineStyle: { width: 3, opacity: 0.8 }
+                }
+            }]
+        }, true);
+    }
+
+    // ========== Granularity Analysis ==========
+    let granularityChart = null;
+
+    async function loadGranularity() {
+        document.getElementById('section-granularity').style.display = 'block';
+        const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+        try {
+            const resp = await fetch('/api/olm/granularity-report' + domainParam);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            renderGranularityChart(data.report);
+            renderSmallObjects(data.report, data.summary);
+        } catch(e) {
+            showToast('颗粒度分析失败: ' + e.message, 'error');
+        }
+    }
+
+    function renderGranularityChart(report) {
+        const container = document.getElementById('granularity-chart');
+        if (!granularityChart) {
+            granularityChart = echarts.init(container);
+            window.addEventListener('resize', () => granularityChart && granularityChart.resize());
+        }
+        const names = report.map(r => r.object_name);
+        const clusterSizes = report.map(r => r.cluster_size);
+        const conceptCounts = report.map(r => r.concept_count);
+        const logicalCounts = report.map(r => r.logical_count);
+
+        granularityChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { data: ['聚类大小', '概念实体', '逻辑实体'], bottom: 0, textStyle: { color: '#94a3b8' } },
+            grid: { left: '3%', right: '4%', bottom: '15%', top: '5%', containLabel: true },
+            xAxis: { type: 'category', data: names, axisLabel: { rotate: 30, fontSize: 10, color: '#94a3b8' } },
+            yAxis: { type: 'value', axisLabel: { color: '#94a3b8' } },
+            series: [
+                { name: '聚类大小', type: 'bar', data: clusterSizes, itemStyle: { color: '#6366f1' } },
+                { name: '概念实体', type: 'bar', data: conceptCounts, itemStyle: { color: '#3b82f6' } },
+                { name: '逻辑实体', type: 'bar', data: logicalCounts, itemStyle: { color: '#10b981' } }
+            ]
+        }, true);
+    }
+
+    function renderSmallObjects(report, summary) {
+        const panel = document.getElementById('smallObjectsPanel');
+        const small = report.filter(r => r.cluster_size < 3);
+        if (!small.length) {
+            panel.textContent = '';
+            const msg = document.createElement('div');
+            msg.style.cssText = 'padding:12px;color:var(--text-muted);font-size:.85rem;';
+            const icon = document.createElement('i');
+            icon.className = 'bi bi-check-circle';
+            icon.style.color = '#10b981';
+            msg.appendChild(icon);
+            msg.appendChild(document.createTextNode(' 所有对象实体数量均 >= 3，无需合并'));
+            panel.appendChild(msg);
+            return;
+        }
+        const large = report.filter(r => r.cluster_size >= 3);
+        buildSmallObjectsTable(panel, small, large);
+    }
+
+    function buildSmallObjectsTable(panel, small, large) {
+        panel.textContent = '';
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'padding:12px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);';
+
+        const header = document.createElement('div');
+        header.style.cssText = 'font-weight:600;margin-bottom:8px;color:var(--text-main);';
+        const warnIcon = document.createElement('i');
+        warnIcon.className = 'bi bi-exclamation-triangle';
+        warnIcon.style.color = '#f59e0b';
+        header.appendChild(warnIcon);
+        header.appendChild(document.createTextNode(` ${small.length} 个小对象（聚类大小 < 3）建议合并或删除`));
+        wrapper.appendChild(header);
+
+        const table = document.createElement('table');
+        table.style.cssText = 'width:100%;font-size:.82rem;border-collapse:collapse;';
+
+        const thead = document.createElement('thead');
+        const headRow = document.createElement('tr');
+        headRow.style.borderBottom = '1px solid var(--border)';
+        ['对象', '聚类大小', '实体数', '操作'].forEach(text => {
+            const th = document.createElement('th');
+            th.style.cssText = text === '对象' ? 'text-align:left;padding:6px;' : 'padding:6px;text-align:center;';
+            th.textContent = text;
+            headRow.appendChild(th);
+        });
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        for (const s of small) {
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid var(--border)';
+
+            // Name cell
+            const tdName = document.createElement('td');
+            tdName.style.padding = '6px';
+            tdName.textContent = s.object_name + ' ';
+            const codeSpan = document.createElement('span');
+            codeSpan.style.cssText = 'color:var(--text-muted);font-size:.72rem;';
+            codeSpan.textContent = s.object_code;
+            tdName.appendChild(codeSpan);
+            row.appendChild(tdName);
+
+            // Cluster size
+            const tdSize = document.createElement('td');
+            tdSize.style.cssText = 'text-align:center;color:#ef4444;font-weight:600;';
+            tdSize.textContent = s.cluster_size;
+            row.appendChild(tdSize);
+
+            // Entity counts
+            const tdCount = document.createElement('td');
+            tdCount.style.textAlign = 'center';
+            tdCount.textContent = `${s.concept_count}/${s.logical_count}`;
+            row.appendChild(tdCount);
+
+            // Actions
+            const tdAction = document.createElement('td');
+            tdAction.style.textAlign = 'center';
+            const select = document.createElement('select');
+            select.id = 'merge_' + s.object_code;
+            select.style.cssText = 'font-size:.75rem;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);';
+            for (const l of large.slice(0, 5)) {
+                const opt = document.createElement('option');
+                opt.value = l.object_code;
+                opt.textContent = `${l.object_name} (${l.cluster_size})`;
+                select.appendChild(opt);
+            }
+            tdAction.appendChild(select);
+
+            const mergeBtn = document.createElement('button');
+            mergeBtn.textContent = '合并';
+            mergeBtn.style.cssText = 'margin-left:4px;padding:2px 8px;border-radius:4px;border:1px solid #ef4444;background:transparent;color:#ef4444;cursor:pointer;font-size:.72rem;';
+            mergeBtn.addEventListener('click', () => mergeObject(s.object_code));
+            tdAction.appendChild(mergeBtn);
+
+            const delBtn = document.createElement('button');
+            delBtn.textContent = '删除';
+            delBtn.style.cssText = 'margin-left:2px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-size:.72rem;';
+            delBtn.addEventListener('click', () => deleteObject(s.object_code));
+            tdAction.appendChild(delBtn);
+
+            row.appendChild(tdAction);
+            tbody.appendChild(row);
+        }
+        table.appendChild(tbody);
+        wrapper.appendChild(table);
+        panel.appendChild(wrapper);
+    }
+
+    async function mergeObject(sourceCode) {
+        const select = document.getElementById('merge_' + sourceCode);
+        const targetCode = select ? select.value : null;
+        if (!targetCode) { showToast('请选择合并目标', 'error'); return; }
+        if (!confirm(`确认将 ${sourceCode} 合并到 ${targetCode}？`)) return;
+
+        try {
+            const resp = await fetch('/api/olm/merge-objects', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ source_code: sourceCode, target_code: targetCode })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                showToast(data.message, 'success');
+                loadObjects();
+                loadGranularity();
+            } else {
+                showToast('合并失败: ' + data.error, 'error');
+            }
+        } catch(e) {
+            showToast('合并失败: ' + e.message, 'error');
+        }
+    }
+
+    async function deleteObject(objectCode) {
+        if (!confirm(`确认删除对象 ${objectCode}？`)) return;
+        try {
+            const resp = await fetch(`/api/olm/objects/${encodeURIComponent(objectCode)}`, { method: 'DELETE' });
+            const data = await resp.json();
+            if (data.success) {
+                showToast('已删除 ' + objectCode, 'success');
+                loadObjects();
+                loadGranularity();
+            } else {
+                showToast('删除失败: ' + (data.error || ''), 'error');
+            }
+        } catch(e) {
+            showToast('删除失败: ' + e.message, 'error');
+        }
     }
     </script>
 </body>

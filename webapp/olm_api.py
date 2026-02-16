@@ -82,9 +82,14 @@ def get_objects_from_json(domain: str = '') -> list:
                 stats_map[code] = {'concept': 0, 'logical': 0, 'physical': 0}
             stats_map[code][layer] += 1
 
+    # 预计算业务对象匹配数
+    biz_matches = data.get('biz_obj_matches', {})
+
     result = []
     for idx, obj in enumerate(objects, start=1):
         obj_code = obj.get('object_code', '')
+        st = obj.get('stats') or stats_map.get(obj_code, {'concept': 0, 'logical': 0, 'physical': 0})
+        st['biz_match_count'] = len(biz_matches.get(obj_code, []))
         result.append({
             'object_id': idx,
             'object_code': obj_code,
@@ -93,7 +98,7 @@ def get_objects_from_json(domain: str = '') -> list:
             'object_type': obj.get('object_type', 'CORE'),
             'data_domain': domain or data.get('data_domain', 'shupeidian'),
             'description': obj.get('description', ''),
-            'stats': obj.get('stats') or stats_map.get(obj_code, {'concept': 0, 'logical': 0, 'physical': 0})
+            'stats': st
         })
 
     return result
@@ -251,7 +256,8 @@ def api_extracted_objects():
                     row['stats'] = {
                         'concept': row.pop('concept_count', 0),
                         'logical': row.pop('logical_count', 0),
-                        'physical': row.pop('physical_count', 0)
+                        'physical': row.pop('physical_count', 0),
+                        'biz_match_count': 0
                     }
                     objects.append(row)
 
@@ -384,6 +390,330 @@ def api_relation_stats():
         return jsonify({'stats': result, 'total': len(result), 'domain': domain or 'all'})
     except Exception as e:
         return jsonify({'stats': [], 'error': str(e)})
+
+
+# ============================================================================
+# BA-04 业务对象桥接 API
+# ============================================================================
+
+@olm_api.route('/api/olm/object-business-objects/<object_code>')
+def api_object_business_objects(object_code):
+    """查询抽取对象匹配的BA-04业务对象"""
+    domain = request.args.get('domain', '')
+
+    # 尝试数据库
+    if is_db_available():
+        try:
+            query = """
+                SELECT m.business_object_name, m.match_method, m.match_score, m.data_domain
+                FROM object_business_object_mapping m
+                WHERE m.object_code = %s
+            """
+            params = [object_code]
+            if domain:
+                query += " AND m.data_domain = %s"
+                params.append(domain)
+            query += " ORDER BY m.match_score DESC LIMIT 100"
+            result = execute_query(query, tuple(params))
+            if isinstance(result, list):
+                for row in result:
+                    if row.get('match_score'):
+                        row['match_score'] = float(row['match_score'])
+                return jsonify({'business_objects': result, 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 查询业务对象映射失败: {e}")
+
+    # JSON 后备
+    data = load_json_data(domain or 'shupeidian')
+    biz_matches = data.get('biz_obj_matches', {}).get(object_code, [])
+    result = [{'business_object_name': name, 'match_score': score,
+               'match_method': 'CLUSTER_ENTITY'} for name, score in biz_matches]
+    return jsonify({'business_objects': result, 'source': 'json_file'})
+
+
+@olm_api.route('/api/olm/small-objects')
+def api_small_objects():
+    """列出实体数量过少的小对象及推荐合并目标"""
+    domain = request.args.get('domain', '')
+    threshold = int(request.args.get('threshold', '3'))
+
+    data = load_json_data(domain or 'shupeidian')
+    objects = data.get('objects', [])
+    stats = data.get('stats', {})
+
+    small_objects = []
+    large_objects = []
+    for obj in objects:
+        obj_stats = stats.get(obj.get('object_code', ''), {})
+        cluster_size = obj.get('cluster_size', 0)
+        if cluster_size < threshold:
+            small_objects.append({
+                'object_code': obj['object_code'],
+                'object_name': obj['object_name'],
+                'cluster_size': cluster_size,
+                'concept_count': obj_stats.get('concept', 0),
+                'logical_count': obj_stats.get('logical', 0)
+            })
+        else:
+            large_objects.append({
+                'object_code': obj['object_code'],
+                'object_name': obj['object_name'],
+                'cluster_size': cluster_size
+            })
+
+    # 推荐合并目标: 按 cluster_size 排序的大对象
+    large_objects.sort(key=lambda x: -x['cluster_size'])
+    for so in small_objects:
+        so['merge_candidates'] = [lo['object_code'] for lo in large_objects[:5]]
+
+    return jsonify({
+        'small_objects': small_objects,
+        'threshold': threshold,
+        'total_objects': len(objects),
+        'small_count': len(small_objects)
+    })
+
+
+@olm_api.route('/api/olm/merge-objects', methods=['POST'])
+def api_merge_objects():
+    """合并两个对象（将 source 的关联合并到 target）"""
+    body = request.get_json(force=True)
+    source_code = body.get('source_code')
+    target_code = body.get('target_code')
+
+    if not source_code or not target_code:
+        return jsonify({'success': False, 'error': '缺少 source_code 或 target_code'}), 400
+
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        # 获取 source 和 target 的 object_id
+        src = execute_query("SELECT object_id FROM extracted_objects WHERE object_code = %s", (source_code,))
+        tgt = execute_query("SELECT object_id FROM extracted_objects WHERE object_code = %s", (target_code,))
+        if not src or not tgt:
+            return jsonify({'success': False, 'error': '对象不存在'}), 404
+
+        src_id = src[0]['object_id']
+        tgt_id = tgt[0]['object_id']
+
+        # 将 source 的关联转移到 target（降低 strength 0.9 倍）
+        execute_query("""
+            INSERT IGNORE INTO object_entity_relations
+            (object_id, entity_layer, entity_name, entity_code, relation_type,
+             relation_strength, match_method, via_concept_entity, data_domain,
+             data_subdomain, source_file, source_sheet, source_row)
+            SELECT %s, entity_layer, entity_name, entity_code, relation_type,
+                   relation_strength * 0.9, 'MERGE', via_concept_entity, data_domain,
+                   data_subdomain, source_file, source_sheet, source_row
+            FROM object_entity_relations WHERE object_id = %s
+        """, (tgt_id, src_id), fetch=False)
+
+        # 删除 source 对象及其关联
+        execute_query("DELETE FROM object_entity_relations WHERE object_id = %s", (src_id,), fetch=False)
+        execute_query("DELETE FROM object_business_object_mapping WHERE object_id = %s", (src_id,), fetch=False)
+        execute_query("DELETE FROM extracted_objects WHERE object_id = %s", (src_id,), fetch=False)
+
+        return jsonify({
+            'success': True,
+            'message': f'已将 {source_code} 合并到 {target_code}'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/graph-data/<object_code>')
+def api_graph_data(object_code):
+    """获取单对象的知识图谱数据（ECharts Graph 格式）"""
+    domain = request.args.get('domain', '')
+    max_nodes = int(request.args.get('max_nodes', '80'))
+
+    # 复用 object-relations 数据
+    data = load_json_data(domain or 'shupeidian')
+    relations = data.get('relations', [])
+
+    obj_info = None
+    for obj in data.get('objects', []):
+        if obj.get('object_code') == object_code:
+            obj_info = obj
+            break
+    if not obj_info:
+        return jsonify({'nodes': [], 'links': [], 'categories': []})
+
+    # 构建节点和边
+    nodes = []
+    links = []
+    categories = [
+        {"name": "对象"},
+        {"name": "概念实体"},
+        {"name": "逻辑实体"},
+        {"name": "物理实体"}
+    ]
+    category_map = {"CONCEPT": 1, "LOGICAL": 2, "PHYSICAL": 3}
+
+    # 对象节点
+    obj_stats = data.get('stats', {}).get(object_code, {})
+    nodes.append({
+        "id": object_code,
+        "name": obj_info.get('object_name', object_code),
+        "category": 0,
+        "symbolSize": 50,
+        "value": obj_stats.get('total', 0),
+        "label": {"show": True}
+    })
+
+    # 筛选该对象的关联
+    obj_rels = [r for r in relations if r.get('object_code') == object_code]
+
+    # 按层分组，每层取 top N（按 strength 排序）
+    layer_limits = {"CONCEPT": 20, "LOGICAL": min(40, max_nodes - 20), "PHYSICAL": 20}
+    added_nodes = {object_code}
+
+    for layer in ["CONCEPT", "LOGICAL", "PHYSICAL"]:
+        layer_rels = sorted(
+            [r for r in obj_rels if r.get('entity_layer') == layer],
+            key=lambda r: -r.get('relation_strength', 0)
+        )[:layer_limits.get(layer, 20)]
+
+        for r in layer_rels:
+            entity_name = r.get('entity_name', '')
+            node_id = f"{layer.lower()}_{entity_name}"
+            if node_id not in added_nodes:
+                added_nodes.add(node_id)
+                strength = r.get('relation_strength', 0.5)
+                size_map = {"CONCEPT": 30, "LOGICAL": 18, "PHYSICAL": 12}
+                nodes.append({
+                    "id": node_id,
+                    "name": entity_name,
+                    "category": category_map[layer],
+                    "symbolSize": size_map[layer],
+                    "value": strength
+                })
+
+            # 边
+            is_bridge = r.get('match_method') == 'BA04_BRIDGE'
+            links.append({
+                "source": object_code,
+                "target": node_id,
+                "value": r.get('relation_strength', 0.5),
+                "lineStyle": {
+                    "width": max(1, r.get('relation_strength', 0.5) * 3),
+                    "type": "dashed" if is_bridge else "solid"
+                }
+            })
+
+    return jsonify({
+        "nodes": nodes,
+        "links": links,
+        "categories": categories
+    })
+
+
+@olm_api.route('/api/olm/graph-data-global')
+def api_graph_data_global():
+    """获取全局知识图谱数据（所有对象 + Top概念实体）"""
+    domain = request.args.get('domain', '')
+    top_concepts = int(request.args.get('top_concepts', '5'))
+
+    data = load_json_data(domain or 'shupeidian')
+    objects = data.get('objects', [])
+    relations = data.get('relations', [])
+    stats = data.get('stats', {})
+
+    categories = [
+        {"name": "对象"},
+        {"name": "概念实体"},
+        {"name": "逻辑实体"}
+    ]
+
+    nodes = []
+    links = []
+    added_nodes = set()
+
+    for obj in objects:
+        obj_code = obj.get('object_code', '')
+        obj_stats = stats.get(obj_code, {})
+        size = min(60, max(20, obj.get('cluster_size', 1) * 2))
+        nodes.append({
+            "id": obj_code,
+            "name": obj.get('object_name', obj_code),
+            "category": 0,
+            "symbolSize": size,
+            "value": obj_stats.get('total', 0),
+            "label": {"show": True}
+        })
+        added_nodes.add(obj_code)
+
+        # Top N concept entities per object
+        obj_concepts = sorted(
+            [r for r in relations if r.get('object_code') == obj_code and r.get('entity_layer') == 'CONCEPT'],
+            key=lambda r: -r.get('relation_strength', 0)
+        )[:top_concepts]
+
+        for r in obj_concepts:
+            entity_name = r.get('entity_name', '')
+            node_id = f"concept_{entity_name}"
+            if node_id not in added_nodes:
+                added_nodes.add(node_id)
+                nodes.append({
+                    "id": node_id,
+                    "name": entity_name,
+                    "category": 1,
+                    "symbolSize": 15,
+                    "value": r.get('relation_strength', 0.5)
+                })
+            links.append({
+                "source": obj_code,
+                "target": node_id,
+                "value": r.get('relation_strength', 0.5)
+            })
+
+    return jsonify({
+        "nodes": nodes,
+        "links": links,
+        "categories": categories
+    })
+
+
+@olm_api.route('/api/olm/granularity-report')
+def api_granularity_report():
+    """颗粒度分析报告"""
+    domain = request.args.get('domain', '')
+    data = load_json_data(domain or 'shupeidian')
+    objects = data.get('objects', [])
+    stats = data.get('stats', {})
+
+    report = []
+    for obj in objects:
+        obj_code = obj.get('object_code', '')
+        obj_stats = stats.get(obj_code, {})
+        report.append({
+            'object_code': obj_code,
+            'object_name': obj.get('object_name', ''),
+            'object_type': obj.get('object_type', ''),
+            'cluster_size': obj.get('cluster_size', 0),
+            'concept_count': obj_stats.get('concept', 0),
+            'logical_count': obj_stats.get('logical', 0),
+            'physical_count': obj_stats.get('physical', 0),
+            'total_relations': obj_stats.get('total', 0),
+            'cluster_relations': obj_stats.get('cluster_relations', 0),
+            'bridge_relations': obj_stats.get('bridge_relations', 0)
+        })
+
+    report.sort(key=lambda x: -x['cluster_size'])
+
+    sizes = [r['cluster_size'] for r in report]
+    return jsonify({
+        'report': report,
+        'summary': {
+            'total_objects': len(report),
+            'avg_cluster_size': round(sum(sizes) / len(sizes), 1) if sizes else 0,
+            'max_cluster_size': max(sizes) if sizes else 0,
+            'min_cluster_size': min(sizes) if sizes else 0,
+            'small_objects': len([s for s in sizes if s < 3]),
+            'domain': domain or 'all'
+        }
+    })
 
 
 # ============================================================================

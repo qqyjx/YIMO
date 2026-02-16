@@ -248,6 +248,24 @@ FROM `extracted_objects` o
 LEFT JOIN `object_entity_relations` r ON o.`object_id` = r.`object_id`
 GROUP BY o.`data_domain`;
 
+-- 5.2 对象与BA-04业务对象匹配映射表
+CREATE TABLE IF NOT EXISTS `object_business_object_mapping` (
+    `mapping_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `object_id` INT NOT NULL COMMENT '抽取对象ID',
+    `object_code` VARCHAR(64) NOT NULL COMMENT '抽取对象编码',
+    `business_object_name` VARCHAR(512) NOT NULL COMMENT 'BA-04业务对象名称',
+    `match_method` VARCHAR(64) DEFAULT 'CLUSTER_ENTITY' COMMENT '匹配方法',
+    `match_score` DECIMAL(5,4) DEFAULT 0 COMMENT '匹配分数',
+    `data_domain` VARCHAR(128) COMMENT '数据域编码',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`object_id`) REFERENCES `extracted_objects`(`object_id`) ON DELETE CASCADE,
+    INDEX `idx_object_id` (`object_id`),
+    INDEX `idx_object_code` (`object_code`),
+    INDEX `idx_biz_obj_name` (`business_object_name`(255)),
+    INDEX `idx_data_domain` (`data_domain`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='抽取对象与BA-04业务对象匹配映射表';
+
 -- 6. 对象抽取批次记录表
 CREATE TABLE IF NOT EXISTS `object_extraction_batches` (
     `batch_id` INT AUTO_INCREMENT PRIMARY KEY,

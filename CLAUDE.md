@@ -401,3 +401,48 @@ python scripts/check_db_semantic.py
 ---
 
 *Last updated: 2026-02*
+
+---
+
+## Long-Running Agent Workflow
+
+本项目使用 agent harness 实现跨 session 持续工作。状态文件：
+- `task.json` — 结构化任务列表（JSON，防误改）
+- `claude-progress.txt` — session 日志
+- `init.sh` — 环境验证脚本
+
+### Session 启动（每次必须执行）
+
+1. `bash init.sh` — 验证环境
+2. `tail -80 claude-progress.txt` — 读上次进度
+3. `git log --oneline -20` — 读 git 历史
+4. 解析 task.json → 选最高优先级的可执行任务
+5. 向用户报告选定任务，开始执行
+
+### 任务执行
+
+- 按 task.steps 逐步执行，不跳步
+- 所有 task.verification 通过才能标记 completed
+- 用 Conventional Commits 提交（feat/fix/docs/chore）
+
+### 障碍处理
+
+- 记录到 progress.txt（OBSTACLE-ID）
+- 记录到 task.json notes
+- 不标记为 completed
+- 切换到下一可用任务
+
+### task.json 修改规则
+
+可改：`status`, `completed_at`, `session_id`, `notes`
+禁改：`id`, `title`, `steps`, `verification`, `blocked_by`, `priority`
+
+### 命令映射
+
+| 任务类别 | 命令 |
+|---------|------|
+| assessment | 环境验证 + 代码审计 |
+| development | 功能开发 |
+| testing | 功能测试 |
+| review | 代码审查 |
+| documentation | 文档与部署 |

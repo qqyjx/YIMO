@@ -147,8 +147,10 @@ DOMAIN_CONFIG = {
         "sheet_config": {
             "concept": "DA-01 数据实体清单-概念实体清单",
             "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单"
-        }
+            "physical": "DA-03数据实体清单-物理实体清单",
+            "ba04": "BA-04 业务对象清单"
+        },
+        "ba04_file": "1.xlsx"  # BA-04 所在文件
     },
     "jicai": {
         "name": "计划财务",
@@ -156,8 +158,10 @@ DOMAIN_CONFIG = {
         "sheet_config": {
             "concept": "DA-01 数据实体清单-概念实体清单",
             "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单"
-        }
+            "physical": "DA-03数据实体清单-物理实体清单",
+            "ba04": "BA-04 业务对象清单"
+        },
+        "ba04_file": "2.xlsx"
     },
     "yingxiao": {
         "name": "营销",
@@ -165,7 +169,8 @@ DOMAIN_CONFIG = {
         "sheet_config": {
             "concept": "DA-01 数据实体清单-概念实体清单",
             "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单"
+            "physical": "DA-03数据实体清单-物理实体清单",
+            "ba04": "BA-04 业务对象清单"
         }
     },
     "caiwu": {
@@ -174,7 +179,8 @@ DOMAIN_CONFIG = {
         "sheet_config": {
             "concept": "DA-01 数据实体清单-概念实体清单",
             "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单"
+            "physical": "DA-03数据实体清单-物理实体清单",
+            "ba04": "BA-04 业务对象清单"
         }
     },
     "renliziyuan": {
@@ -183,7 +189,8 @@ DOMAIN_CONFIG = {
         "sheet_config": {
             "concept": "DA-01 数据实体清单-概念实体清单",
             "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单"
+            "physical": "DA-03数据实体清单-物理实体清单",
+            "ba04": "BA-04 业务对象清单"
         }
     },
     "default": {
@@ -192,7 +199,8 @@ DOMAIN_CONFIG = {
         "sheet_config": {
             "concept": "DA-01 数据实体清单-概念实体清单",
             "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单"
+            "physical": "DA-03数据实体清单-物理实体清单",
+            "ba04": "BA-04 业务对象清单"
         }
     }
 }
@@ -611,6 +619,84 @@ class DataArchitectureReader:
                     ))
         except Exception as e:
             print(f"[ERROR] 读取物理实体失败 ({file_path.name}): {e}")
+
+    def read_business_objects_from_ba04(self) -> List[str]:
+        """从 BA-04 业务对象清单读取唯一业务对象名称列表
+
+        BA-04 sheet 存在于每个域的特定 Excel 文件中（由 ba04_file 配置指定）。
+        列名"业务对象名称"或"业务对象名称 "（可能有尾部空格），用 strip 统一。
+        """
+        sheet_name = self.config.get("sheet_config", {}).get("ba04", "BA-04 业务对象清单")
+        ba04_file = self.config.get("ba04_file")
+
+        # 确定 BA-04 所在文件
+        files_to_try = []
+        if ba04_file:
+            domain_subdir = self.data_dir / self.data_domain
+            if domain_subdir.exists():
+                files_to_try.append(domain_subdir / ba04_file)
+            files_to_try.append(self.data_dir / ba04_file)
+        else:
+            files_to_try = self._get_files_to_read()
+
+        business_objects = set()
+        for file_path in files_to_try:
+            if not file_path.exists():
+                continue
+            try:
+                df = pd.read_excel(file_path, sheet_name=sheet_name)
+                # 列名可能是"业务对象名称"或"业务对象名称 "（带空格）
+                col_name = None
+                for c in df.columns:
+                    if c.strip() == "业务对象名称":
+                        col_name = c
+                        break
+                if col_name is None:
+                    continue
+                for val in df[col_name].dropna():
+                    name = str(val).strip()
+                    if name and name != "nan":
+                        business_objects.add(name)
+                print(f"[INFO] 从 {file_path.name}/{sheet_name} 读取到 {len(business_objects)} 个唯一业务对象")
+                break  # 找到就停
+            except Exception as e:
+                print(f"[WARN] 读取 BA-04 失败 ({file_path.name}): {e}")
+
+        return sorted(business_objects)
+
+    def build_biz_object_to_concept_mapping(self) -> Dict[str, List[str]]:
+        """从 DA-01 的"业务对象"列构建 业务对象→概念实体 映射
+
+        DA-01 中每行有"业务对象"和"概念实体"两列，构成多对多映射。
+        返回: {业务对象名称: [概念实体名称列表]}
+        """
+        sheet_name = self.config.get("sheet_config", {}).get("concept",
+                     "DA-01 数据实体清单-概念实体清单")
+        files_to_read = self._get_files_to_read()
+
+        mapping: Dict[str, List[str]] = defaultdict(list)
+        seen: Set[Tuple[str, str]] = set()
+
+        for file_path in files_to_read:
+            try:
+                df = pd.read_excel(file_path, sheet_name=sheet_name)
+                if "业务对象" not in df.columns or "概念实体" not in df.columns:
+                    continue
+                for _, row in df.iterrows():
+                    biz_obj = str(row.get("业务对象", "")).strip()
+                    concept = str(row.get("概念实体", "")).strip()
+                    if (not biz_obj or biz_obj == "nan"
+                            or not concept or concept == "nan"):
+                        continue
+                    key = (biz_obj, concept)
+                    if key not in seen:
+                        seen.add(key)
+                        mapping[biz_obj].append(concept)
+            except Exception as e:
+                print(f"[WARN] 构建业务对象→概念实体映射失败 ({file_path.name}): {e}")
+
+        print(f"[INFO] 业务对象→概念实体映射: {len(mapping)} 个业务对象 → {sum(len(v) for v in mapping.values())} 个概念实体")
+        return dict(mapping)
 
 
 # ============================================================
@@ -1211,6 +1297,267 @@ class HierarchicalRelationBuilder:
 
 
 # ============================================================
+# BA-04 业务对象桥接匹配器
+# ============================================================
+
+class BusinessObjectMatcher:
+    """通过 BA-04 业务对象做桥梁，将抽取对象与三层实体关联
+
+    匹配路径: 抽取对象 → (语义匹配) → 业务对象 → (DA-01映射) → 概念实体 → 逻辑实体 → 物理实体
+    """
+
+    def __init__(self,
+                 biz_obj_to_concept: Dict[str, List[str]],
+                 concept_to_logical: Dict[str, List[EntityInfo]],
+                 logical_to_physical: Dict[str, List[EntityInfo]],
+                 concept_info_map: Dict[str, EntityInfo]):
+        self.biz_obj_to_concept = biz_obj_to_concept
+        self.concept_to_logical = concept_to_logical
+        self.logical_to_physical = logical_to_physical
+        self.concept_info_map = concept_info_map
+
+    def match_objects(self, extracted_objects: List[ExtractedObject],
+                      business_objects: List[str]) -> Dict[str, List[Tuple[str, float]]]:
+        """将抽取对象与业务对象匹配
+
+        策略: 用抽取对象的 sample_entities 与业务对象名称做精确/模糊匹配。
+        每个抽取对象的 sample_entities 是聚类中最具代表性的概念实体名称，
+        而 DA-01 中"业务对象"列的值就是概念实体的上层分组名。
+
+        Returns: {object_code: [(business_object_name, match_score), ...]}
+        """
+        print(f"[INFO] 开始 BA-04 业务对象匹配... ({len(extracted_objects)} 个对象 × {len(business_objects)} 个业务对象)")
+
+        # 构建概念实体→业务对象的反向索引
+        concept_to_biz: Dict[str, List[str]] = defaultdict(list)
+        for biz_name, concepts in self.biz_obj_to_concept.items():
+            for c in concepts:
+                concept_to_biz[c].append(biz_name)
+
+        matches: Dict[str, List[Tuple[str, float]]] = {}
+        for obj in extracted_objects:
+            obj_matches: Dict[str, float] = {}
+
+            # 通过聚类中的概念实体找到对应的业务对象
+            for entity_name in obj.sample_entities:
+                for biz_name in concept_to_biz.get(entity_name, []):
+                    # 越多概念实体指向同一个业务对象，匹配分越高
+                    obj_matches[biz_name] = obj_matches.get(biz_name, 0) + 1.0
+
+            if obj_matches:
+                # 归一化分数
+                max_score = max(obj_matches.values())
+                sorted_matches = sorted(
+                    [(name, score / max_score) for name, score in obj_matches.items()],
+                    key=lambda x: -x[1]
+                )
+                matches[obj.object_code] = sorted_matches
+            else:
+                matches[obj.object_code] = []
+
+        matched_count = sum(1 for v in matches.values() if v)
+        total_biz_matched = sum(len(v) for v in matches.values())
+        print(f"[INFO] BA-04 匹配完成: {matched_count}/{len(extracted_objects)} 个对象找到匹配, 共匹配 {total_biz_matched} 个业务对象")
+        return matches
+
+    def build_bridged_relations(self,
+                                matches: Dict[str, List[Tuple[str, float]]],
+                                existing_relations: List[EntityRelation]) -> List[EntityRelation]:
+        """通过 BA-04 业务对象桥梁构建补充关联
+
+        只添加现有聚类关联中未覆盖的实体关联，避免重复。
+        """
+        # 构建已有关联集合（用于去重）
+        existing_keys: Set[Tuple[str, str, str]] = set()
+        for r in existing_relations:
+            existing_keys.add((r.object_code, r.entity_layer, r.entity_name))
+
+        new_relations: List[EntityRelation] = []
+
+        for obj_code, biz_matches in matches.items():
+            for biz_name, match_score in biz_matches:
+                # 通过业务对象→概念实体映射
+                concepts = self.biz_obj_to_concept.get(biz_name, [])
+                for concept_name in concepts:
+                    concept_info = self.concept_info_map.get(concept_name)
+                    if not concept_info:
+                        continue
+
+                    # 概念层关联（如果不在已有关联中）
+                    key_c = (obj_code, "CONCEPT", concept_name)
+                    if key_c not in existing_keys:
+                        existing_keys.add(key_c)
+                        new_relations.append(EntityRelation(
+                            object_code=obj_code,
+                            entity_layer="CONCEPT",
+                            entity_name=concept_name,
+                            entity_code=concept_info.code,
+                            relation_type="INDIRECT",
+                            relation_strength=round(0.75 * match_score, 4),
+                            match_method="BA04_BRIDGE",
+                            via_concept_entity=biz_name,
+                            data_domain=concept_info.data_domain,
+                            data_subdomain=concept_info.data_subdomain,
+                            source_file=concept_info.source_file,
+                            source_sheet=concept_info.source_sheet,
+                            source_row=concept_info.source_row
+                        ))
+
+                    # 逻辑层关联
+                    for le in self.concept_to_logical.get(concept_name, []):
+                        key_l = (obj_code, "LOGICAL", le.name)
+                        if key_l not in existing_keys:
+                            existing_keys.add(key_l)
+                            new_relations.append(EntityRelation(
+                                object_code=obj_code,
+                                entity_layer="LOGICAL",
+                                entity_name=le.name,
+                                entity_code=le.code,
+                                relation_type="INDIRECT",
+                                relation_strength=round(0.55 * match_score, 4),
+                                match_method="BA04_BRIDGE",
+                                via_concept_entity=concept_name,
+                                data_domain=le.data_domain,
+                                data_subdomain=le.data_subdomain,
+                                source_file=le.source_file,
+                                source_sheet=le.source_sheet,
+                                source_row=le.source_row
+                            ))
+
+                    # 物理层关联
+                    for le in self.concept_to_logical.get(concept_name, []):
+                        for pe in self.logical_to_physical.get(le.name, []):
+                            key_p = (obj_code, "PHYSICAL", pe.name)
+                            if key_p not in existing_keys:
+                                existing_keys.add(key_p)
+                                new_relations.append(EntityRelation(
+                                    object_code=obj_code,
+                                    entity_layer="PHYSICAL",
+                                    entity_name=pe.name,
+                                    entity_code=pe.code,
+                                    relation_type="INDIRECT",
+                                    relation_strength=round(0.45 * match_score, 4),
+                                    match_method="BA04_BRIDGE",
+                                    via_concept_entity=le.name,
+                                    data_domain=pe.data_domain,
+                                    data_subdomain=pe.data_subdomain,
+                                    source_file=pe.source_file,
+                                    source_sheet=pe.source_sheet,
+                                    source_row=pe.source_row
+                                ))
+
+        if new_relations:
+            c_new = len([r for r in new_relations if r.entity_layer == "CONCEPT"])
+            l_new = len([r for r in new_relations if r.entity_layer == "LOGICAL"])
+            p_new = len([r for r in new_relations if r.entity_layer == "PHYSICAL"])
+            print(f"[INFO] BA-04 桥接新增关联:")
+            print(f"  - 概念实体: +{c_new} 条")
+            print(f"  - 逻辑实体: +{l_new} 条")
+            print(f"  - 物理实体: +{p_new} 条")
+        else:
+            print(f"[INFO] BA-04 桥接未产生新增关联（已被聚类关联覆盖）")
+
+        return new_relations
+
+
+# ============================================================
+# 小对象处理器
+# ============================================================
+
+class SmallObjectHandler:
+    """识别和处理实体数量过少的对象"""
+
+    def __init__(self, min_entity_count: int = 3):
+        self.min_entity_count = min_entity_count
+
+    def identify_small_objects(self, objects: List[ExtractedObject]) -> List[ExtractedObject]:
+        """识别聚类大小低于阈值的对象"""
+        small = [o for o in objects if o.cluster_size < self.min_entity_count]
+        if small:
+            print(f"[INFO] 发现 {len(small)} 个小对象 (cluster_size < {self.min_entity_count}):")
+            for o in small:
+                print(f"  - {o.object_code} ({o.object_name}): {o.cluster_size} 个实体")
+        return small
+
+    def find_merge_target(self, small_obj: ExtractedObject,
+                          other_objects: List[ExtractedObject],
+                          embeddings: np.ndarray = None,
+                          entity_names: List[str] = None) -> Optional[ExtractedObject]:
+        """找到与小对象语义最相近的大对象作为合并目标
+
+        如果有 SBERT embeddings，用余弦相似度找最近的大聚类。
+        否则用 sample_entities 的文本重叠度。
+        """
+        candidates = [o for o in other_objects
+                      if o.object_code != small_obj.object_code
+                      and o.cluster_size >= self.min_entity_count]
+        if not candidates:
+            return None
+
+        if embeddings is not None and entity_names is not None and HAS_SKLEARN:
+            # 用 SBERT embeddings 计算聚类中心相似度
+            name_to_idx = {n: i for i, n in enumerate(entity_names)}
+            small_indices = [name_to_idx[e] for e in small_obj.sample_entities if e in name_to_idx]
+            if not small_indices:
+                return candidates[0]
+
+            small_center = np.mean(embeddings[small_indices], axis=0, keepdims=True)
+            best_sim, best_target = -1, None
+            for cand in candidates:
+                cand_indices = [name_to_idx[e] for e in cand.sample_entities if e in name_to_idx]
+                if not cand_indices:
+                    continue
+                cand_center = np.mean(embeddings[cand_indices], axis=0, keepdims=True)
+                sim = cosine_similarity(small_center, cand_center)[0][0]
+                if sim > best_sim:
+                    best_sim, best_target = sim, cand
+            return best_target
+        else:
+            # 文本重叠度 fallback
+            small_set = set(small_obj.sample_entities)
+            best_overlap, best_target = 0, None
+            for cand in candidates:
+                overlap = len(small_set & set(cand.sample_entities))
+                if overlap > best_overlap:
+                    best_overlap, best_target = overlap, cand
+            return best_target or candidates[0]
+
+    def merge_objects(self, source: ExtractedObject, target: ExtractedObject,
+                      relations: List[EntityRelation]) -> List[EntityRelation]:
+        """将 source 对象的关联合并到 target 对象，返回更新后的关联列表"""
+        updated = []
+        for r in relations:
+            if r.object_code == source.object_code:
+                # 将 source 的关联转移到 target
+                updated.append(EntityRelation(
+                    object_code=target.object_code,
+                    entity_layer=r.entity_layer,
+                    entity_name=r.entity_name,
+                    entity_code=r.entity_code,
+                    relation_type=r.relation_type,
+                    relation_strength=r.relation_strength * 0.9,
+                    match_method=r.match_method,
+                    via_concept_entity=r.via_concept_entity,
+                    data_domain=r.data_domain,
+                    data_subdomain=r.data_subdomain,
+                    source_file=r.source_file,
+                    source_sheet=r.source_sheet,
+                    source_row=r.source_row
+                ))
+            else:
+                updated.append(r)
+        # 去重
+        seen: Set[Tuple[str, str, str]] = set()
+        deduped = []
+        for r in updated:
+            key = (r.object_code, r.entity_layer, r.entity_name)
+            if key not in seen:
+                seen.add(key)
+                deduped.append(r)
+        return deduped
+
+
+# ============================================================
 # 数据库写入器
 # ============================================================
 
@@ -1448,6 +1795,23 @@ class SemanticObjectExtractionPipeline:
         )
         relations = builder.build_relations()
 
+        # 4.5 BA-04 业务对象桥接关联（补充聚类关联覆盖不到的实体）
+        biz_obj_matches = {}
+        try:
+            business_objects = reader.read_business_objects_from_ba04()
+            biz_obj_to_concept = reader.build_biz_object_to_concept_mapping()
+            if business_objects and biz_obj_to_concept:
+                concept_info_map = {ce.name: ce for ce in concept_entities}
+                matcher = BusinessObjectMatcher(
+                    biz_obj_to_concept, concept_to_logical, logical_to_physical, concept_info_map
+                )
+                biz_obj_matches = matcher.match_objects(objects, business_objects)
+                bridged_relations = matcher.build_bridged_relations(biz_obj_matches, relations)
+                if bridged_relations:
+                    relations.extend(bridged_relations)
+        except Exception as e:
+            print(f"[WARN] BA-04 桥接关联失败: {e}")
+
         # 5. 统计
         stats = self._compute_stats(objects, relations)
         print("\n[INFO] 关联关系统计:")
@@ -1474,9 +1838,11 @@ class SemanticObjectExtractionPipeline:
         return {
             "objects": [asdict(o) for o in objects],
             "clusters": [{k: v for k, v in c.items() if k != "all_entities"} for c in clusters],
-            "relations": [asdict(r) for r in relations],  # 添加关联关系
+            "relations": [asdict(r) for r in relations],
             "relations_count": len(relations),
             "stats": stats,
+            "biz_obj_matches": {k: [(name, round(score, 4)) for name, score in v[:20]]
+                                for k, v in biz_obj_matches.items()},
             "data_domain": self.data_domain,
             "data_domain_name": self.data_domain_name
         }
@@ -1486,14 +1852,18 @@ class SemanticObjectExtractionPipeline:
         stats = {}
         for obj in objects:
             obj_rels = [r for r in relations if r.object_code == obj.object_code]
+            cluster_rels = [r for r in obj_rels if r.match_method == "SEMANTIC_CLUSTER"]
+            bridge_rels = [r for r in obj_rels if r.match_method == "BA04_BRIDGE"]
             stats[obj.object_code] = {
                 "object_name": obj.object_name,
                 "cluster_id": obj.cluster_id,
                 "cluster_size": obj.cluster_size,
-                "concept": len([r for r in obj_rels if r.entity_layer == "CONCEPT" and r.relation_type == "DIRECT"]),
-                "logical": len([r for r in obj_rels if r.entity_layer == "LOGICAL" and r.relation_type == "INDIRECT"]),
+                "concept": len([r for r in obj_rels if r.entity_layer == "CONCEPT"]),
+                "logical": len([r for r in obj_rels if r.entity_layer == "LOGICAL"]),
                 "physical": len([r for r in obj_rels if r.entity_layer == "PHYSICAL"]),
-                "total": len(obj_rels)
+                "total": len(obj_rels),
+                "cluster_relations": len(cluster_rels),
+                "bridge_relations": len(bridge_rels)
             }
         return stats
 

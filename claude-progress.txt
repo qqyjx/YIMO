@@ -1,0 +1,10 @@
+# Claude Progress Log — YIMO (Object Extraction & Three-Tier Architecture)
+# 追加式日志，每次 session 在末尾追加，不修改历史条目
+
+## 2026-02-16 — Harness Bootstrap
+- 项目状态：代码项目，EAV 数据对象提取与三层架构关联系统
+- 技术栈：Python, Flask, MySQL, SBERT (语义聚类)
+- 核心模块：scripts/（数据处理脚本）+ webapp/（Flask Web 界面）+ mysql-local/（数据库配置）
+- 工作流：Excel/CSV 导入 → SBERT 语义去重 → 对象提取 → Web 展示
+- Harness 文件已创建：init.sh, task.json, claude-progress.txt
+- 下一步：T001 — 环境验证与代码审计
