@@ -14,7 +14,7 @@ Data architecture documents contain three layers of entities:
 - **Physical Entity (物理实体)**: Database layer (DA-03 sheets)
 
 YIMO extracts abstract "objects" from these entities and builds association relationships, enabling:
-- Unified object model across different data domains (输配电, 集采, etc.)
+- Unified object model across different data domains (输配电, 计划财务, etc.)
 - Traceable relationships between objects and three-tier entities
 - Foundation for comparison with enterprise data center
 - Penetrating business supervision (穿透式业务监管)
@@ -28,7 +28,7 @@ YIMO extracts abstract "objects" from these entities and builds association rela
 1. **对象抽取 Object extraction from three-tier architecture**: Automatically extract high-level "objects" (项目, 设备, 资产, etc.) from DA-01/02/03 Excel sheets
 2. **三层关联可视化 Three-tier association visualization**: Frontend must show object-to-entity associations across concept/logical/physical layers
 3. **必须包含"项目" Required object "项目" (Project)**: Must always be extracted; likely compared with enterprise data center
-4. **多域支持 Multi-domain support**: Currently 输配电 (power distribution) and 集采 (procurement) domains; more to be added (计划财务域, etc.)
+4. **多域支持 Multi-domain support**: Currently 输配电 (power distribution) and 计划财务 (planning & finance, jicai=计财) domains; more to be added
 5. **EAV动态扩展 Dynamic extensibility**: EAV model allows flexible attribute/entity additions without schema changes
 6. **保留SBERT+EAV**: SBERT语义相似度匹配和EAV建库功能需要保留
 7. **删除旧统一本体功能**: 按甲方要求删除，仅保留对象抽取+三层关联
@@ -36,7 +36,7 @@ YIMO extracts abstract "objects" from these entities and builds association rela
 
 **0.md 中长期愿景需求（优先级较低，待甲方进一步确认）：**
 
-9. **穿透式业务溯源 Penetrating traceability**: From financial settlement → project initiation → procurement contracts → field construction records（当前缺少财务域数据）
+9. **穿透式业务溯源 Penetrating traceability**: From financial settlement → project initiation → procurement contracts → field construction records（计划财务域数据已有，目录 DATA/jicai/）
 10. **全生命周期与时态建模 Lifecycle & temporal modeling**: Objects have lifecycle stages with different attributes per stage（概念已提出，具体规格未定义）
 11. **机理函数 Mechanism functions**: Business rules and physical formulas between objects, e.g., "合同额度>300万走路径A"（0.md多次提及，1.md未要求，具体定义缺失）
 12. **穿透式预警 Risk alerting**: Auto-trigger risk warnings based on mechanism functions（依赖机理函数实现）
@@ -92,12 +92,12 @@ YIMO/
 ├── DATA/                           # Data directory (per-domain subdirectories)
 │   ├── shupeidian/                # 输配电域 (Power Distribution)
 │   │   ├── 1.xlsx, 2.xlsx, 3.xlsx
-│   └── jicai/                     # 集采域 (Procurement)
+│   └── jicai/                     # 计划财务域 (Planning & Finance, 计财=jicai)
 │       ├── 1.xlsx, 2.xlsx, 3.xlsx
 │
 ├── outputs/                        # Extraction results (JSON fallback source)
 │   ├── extraction_shupeidian.json # Power distribution results (~3.6MB)
-│   ├── extraction_jicai.json      # Procurement results (~720KB)
+│   ├── extraction_jicai.json      # Planning & Finance results (~720KB)
 │   └── semantic_dedupe_gpu_full/  # Deduplication artifacts
 │
 ├── figures/                        # Architecture diagrams
@@ -367,7 +367,7 @@ CREATE TABLE object_entity_relations (
 - Constants: `UPPER_SNAKE_CASE`
 - Database tables: `snake_case` with `eav_` prefix for EAV tables
 - Object codes: `OBJ_PROJECT`, `OBJ_ASSET` (UPPER_SNAKE_CASE with `OBJ_` prefix)
-- Data domains: `snake_case` directory names (`shupeidian`, `jicai`)
+- Data domains: `snake_case` directory names (`shupeidian`=输配电, `jicai`=计划财务/计财)
 
 ---
 
@@ -511,7 +511,7 @@ Data is organized by business domain under `DATA/`:
 | Domain | Directory | Description | Files |
 |--------|-----------|-------------|-------|
 | 输配电 | `DATA/shupeidian/` | Power Distribution | 3 Excel files (~26MB total) |
-| 集采 | `DATA/jicai/` | Procurement | 3 Excel files (~11MB total) |
+| 计划财务 | `DATA/jicai/` | Planning & Finance (计财=jicai) | 3 Excel files (~11MB total) |
 
 Each Excel file contains standardized sheet names:
 - `DA-01 数据实体清单-概念实体清单` (Concept Entities)
@@ -648,10 +648,10 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 | 需求 | 状态 | 阻塞原因 |
 |------|------|----------|
-| 财务域落地场景演示 | ❌ 缺数据 | DATA中无财务域Excel数据，无法演示"数字化项目结算"穿透场景 |
+| 财务域落地场景演示 | ⚠️ 数据已有 | `DATA/jicai/`（计划财务域）数据已存在，可基于此演示穿透场景，但完整的"数字化项目结算"端到端演示尚未构建 |
 | HTAP非结构化数据融合 | ❌ 未实现 | 视频/图像数据源未定义，技术方案未给出 |
 | 与企业数据中台对比 | ❌ 未实现 | 中台数据格式和对比规则均未定义 |
-| 财务数据一致性治理看板 | ❌ 未实现 | 比对规则和阈值未定义，依赖财务域数据 |
+| 财务数据一致性治理看板 | ⚠️ 数据已有 | 计划财务域数据已有(`DATA/jicai/`)，但比对规则和阈值未定义 |
 
 ### 需求文档本身的问题
 
