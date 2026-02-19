@@ -1,0 +1,14 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: 单元测试（无外部依赖）",
+    "api: API 端点测试（需要 Flask test client）",
+]
+addopts = "--tb=short -q"
+
+[tool.coverage.run]
+source = ["scripts", "webapp"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
