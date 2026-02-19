@@ -468,6 +468,131 @@ INSERT INTO `mechanism_functions` (`func_code`, `func_name`, `func_type`, `categ
 ON DUPLICATE KEY UPDATE `func_name` = VALUES(`func_name`);
 
 -- ============================================================================
+-- 预置溯源链路（计划财务域穿透式结算溯源演示）
+-- ============================================================================
+INSERT INTO `traceability_chains` (`chain_code`, `chain_name`, `chain_type`, `data_domain`, `description`) VALUES
+('CHAIN_SETTLE_TRACE', '数字化项目结算穿透溯源', 'FINANCIAL', 'jicai',
+ '从财务结算出发，向上穿透至项目立项概算，横向穿透至采购合同合规性，向下穿透至资产台账，实现全链路业务溯源'),
+('CHAIN_CONTRACT_AUDIT', '合同金额审计穿透链', 'FINANCIAL', 'jicai',
+ '从合同金额出发，穿透至项目预算、资产入账、指标核算，验证合同执行的财务一致性'),
+('CHAIN_ASSET_LIFECYCLE', '资产全生命周期溯源', 'PROCUREMENT', 'jicai',
+ '从资产登记出发，溯源至采购合同、项目立项、票据凭证，覆盖资产从采购到入账的全过程')
+ON DUPLICATE KEY UPDATE `chain_name` = VALUES(`chain_name`);
+
+-- 链路1节点：数字化项目结算穿透溯源
+-- 项目(立项) → 合同(签订) → 资产(入账) → 指标(核算) → 票据(结算)
+INSERT INTO `traceability_chain_nodes` (`chain_id`, `node_order`, `object_id`, `entity_layer`, `entity_name`, `node_label`, `node_type`, `source_file`, `source_sheet`) VALUES
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_SETTLE_TRACE'), 0,
+ (SELECT object_id FROM extracted_objects WHERE object_code='OBJ_PROJECT' LIMIT 1),
+ 'CONCEPT', '项目', '项目立项/概算', 'SOURCE', 'DATA/jicai/1.xlsx', 'DA-01'),
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_SETTLE_TRACE'), 1,
+ (SELECT object_id FROM extracted_objects WHERE object_code='OBJ_CONTRACT' LIMIT 1),
+ 'CONCEPT', '合同', '合同签订/合规审查', 'INTERMEDIATE', 'DATA/jicai/1.xlsx', 'DA-01'),
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_SETTLE_TRACE'), 2,
+ (SELECT object_id FROM extracted_objects WHERE object_code='OBJ_ASSET' LIMIT 1),
+ 'LOGICAL', '资产', '资产入账/台账登记', 'INTERMEDIATE', 'DATA/jicai/1.xlsx', 'DA-02'),
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_SETTLE_TRACE'), 3,
+ NULL, 'LOGICAL', '指标', '指标核算/费用归集', 'INTERMEDIATE', 'DATA/jicai/1.xlsx', 'DA-02'),
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_SETTLE_TRACE'), 4,
+ NULL, 'PHYSICAL', '票据', '结算票据/凭证核销', 'TARGET', 'DATA/jicai/1.xlsx', 'DA-03');
+
+-- 链路2节点：合同金额审计穿透链
+INSERT INTO `traceability_chain_nodes` (`chain_id`, `node_order`, `object_id`, `entity_layer`, `entity_name`, `node_label`, `node_type`, `source_file`, `source_sheet`) VALUES
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_CONTRACT_AUDIT'), 0,
+ (SELECT object_id FROM extracted_objects WHERE object_code='OBJ_CONTRACT' LIMIT 1),
+ 'CONCEPT', '合同', '合同金额/条款', 'SOURCE', 'DATA/jicai/1.xlsx', 'DA-01'),
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_CONTRACT_AUDIT'), 1,
+ (SELECT object_id FROM extracted_objects WHERE object_code='OBJ_PROJECT' LIMIT 1),
+ 'CONCEPT', '项目', '项目预算/概算对比', 'INTERMEDIATE', 'DATA/jicai/1.xlsx', 'DA-01'),
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_CONTRACT_AUDIT'), 2,
+ (SELECT object_id FROM extracted_objects WHERE object_code='OBJ_ASSET' LIMIT 1),
+ 'LOGICAL', '资产', '资产入账金额', 'INTERMEDIATE', 'DATA/jicai/1.xlsx', 'DA-02'),
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_CONTRACT_AUDIT'), 3,
+ NULL, 'PHYSICAL', '指标', '财务指标核算结果', 'TARGET', 'DATA/jicai/1.xlsx', 'DA-03');
+
+-- 链路3节点：资产全生命周期溯源
+INSERT INTO `traceability_chain_nodes` (`chain_id`, `node_order`, `object_id`, `entity_layer`, `entity_name`, `node_label`, `node_type`, `source_file`, `source_sheet`) VALUES
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_ASSET_LIFECYCLE'), 0,
+ (SELECT object_id FROM extracted_objects WHERE object_code='OBJ_ASSET' LIMIT 1),
+ 'CONCEPT', '资产', '资产登记/分类', 'SOURCE', 'DATA/jicai/1.xlsx', 'DA-01'),
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_ASSET_LIFECYCLE'), 1,
+ (SELECT object_id FROM extracted_objects WHERE object_code='OBJ_CONTRACT' LIMIT 1),
+ 'CONCEPT', '合同', '采购合同关联', 'INTERMEDIATE', 'DATA/jicai/1.xlsx', 'DA-01'),
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_ASSET_LIFECYCLE'), 2,
+ (SELECT object_id FROM extracted_objects WHERE object_code='OBJ_PROJECT' LIMIT 1),
+ 'LOGICAL', '项目', '项目立项来源', 'INTERMEDIATE', 'DATA/jicai/1.xlsx', 'DA-02'),
+((SELECT chain_id FROM traceability_chains WHERE chain_code='CHAIN_ASSET_LIFECYCLE'), 3,
+ NULL, 'LOGICAL', '票据', '票据凭证核对', 'TARGET', 'DATA/jicai/1.xlsx', 'DA-02');
+
+-- ============================================================================
+-- 治理看板视图（财务数据一致性分析）
+-- ============================================================================
+
+-- 对象治理完整性视图：检查每个对象的三层关联完整性和属性覆盖
+CREATE OR REPLACE VIEW `v_governance_completeness` AS
+SELECT
+    o.object_id,
+    o.object_code,
+    o.object_name,
+    o.object_type,
+    o.data_domain,
+    COALESCE(rs.concept_count, 0) AS concept_count,
+    COALESCE(rs.logical_count, 0) AS logical_count,
+    COALESCE(rs.physical_count, 0) AS physical_count,
+    COALESCE(rs.total_relations, 0) AS total_relations,
+    CASE
+        WHEN COALESCE(rs.concept_count,0) > 0 AND COALESCE(rs.logical_count,0) > 0 AND COALESCE(rs.physical_count,0) > 0 THEN 'COMPLETE'
+        WHEN COALESCE(rs.total_relations,0) = 0 THEN 'EMPTY'
+        ELSE 'PARTIAL'
+    END AS completeness_status,
+    (SELECT COUNT(*) FROM object_attribute_definitions ad WHERE ad.object_id = o.object_id) AS attr_defined_count,
+    (SELECT COUNT(*) FROM object_lifecycle_history lh WHERE lh.object_id = o.object_id) AS lifecycle_record_count,
+    (SELECT COUNT(DISTINCT c.chain_id) FROM traceability_chain_nodes cn
+     JOIN traceability_chains c ON c.chain_id = cn.chain_id
+     WHERE cn.object_id = o.object_id) AS traceability_chain_count
+FROM extracted_objects o
+LEFT JOIN v_object_relation_stats rs ON rs.object_id = o.object_id;
+
+-- 治理缺陷视图：识别关联缺失、弱关联、孤立对象
+CREATE OR REPLACE VIEW `v_governance_defects` AS
+SELECT
+    o.object_code,
+    o.object_name,
+    o.data_domain,
+    'MISSING_LAYER' AS defect_type,
+    CASE
+        WHEN NOT EXISTS (SELECT 1 FROM object_entity_relations r WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') THEN '缺少概念层关联'
+        WHEN NOT EXISTS (SELECT 1 FROM object_entity_relations r WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') THEN '缺少逻辑层关联'
+        WHEN NOT EXISTS (SELECT 1 FROM object_entity_relations r WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') THEN '缺少物理层关联'
+    END AS defect_detail,
+    'WARNING' AS severity
+FROM extracted_objects o
+WHERE NOT EXISTS (SELECT 1 FROM object_entity_relations r WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT')
+   OR NOT EXISTS (SELECT 1 FROM object_entity_relations r WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL')
+   OR NOT EXISTS (SELECT 1 FROM object_entity_relations r WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL')
+UNION ALL
+SELECT
+    o.object_code,
+    o.object_name,
+    r.data_domain,
+    'WEAK_RELATION' AS defect_type,
+    CONCAT('弱关联: ', r.entity_name, ' (强度=', ROUND(r.relation_strength, 2), ')') AS defect_detail,
+    'INFO' AS severity
+FROM object_entity_relations r
+JOIN extracted_objects o ON o.object_id = r.object_id
+WHERE r.relation_strength < 0.5
+UNION ALL
+SELECT
+    o.object_code,
+    o.object_name,
+    o.data_domain,
+    'NO_ATTRIBUTES' AS defect_type,
+    '对象未定义任何属性' AS defect_detail,
+    'INFO' AS severity
+FROM extracted_objects o
+WHERE NOT EXISTS (SELECT 1 FROM object_attribute_definitions ad WHERE ad.object_id = o.object_id);
+
+-- ============================================================================
 -- 完成提示
 -- ============================================================================
-SELECT '✅ YIMO 对象抽取与三层架构关联 Schema 初始化完成（含生命周期、溯源链路、机理函数、预警表）!' AS message;
+SELECT '✅ YIMO 对象抽取与三层架构关联 Schema 初始化完成（含生命周期、溯源链路、机理函数、预警表、治理看板视图）!' AS message;

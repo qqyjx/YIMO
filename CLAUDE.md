@@ -456,6 +456,14 @@ CREATE TABLE object_entity_relations (
 | `/api/olm/alerts/summary` | GET | Alert statistics overview |
 | `/api/olm/alerts/run-check` | POST | Run all active rules against EAV data |
 
+#### Governance Dashboard (Phase 6)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/olm/governance/metrics` | GET | Governance metrics summary (completeness, strength, coverage) |
+| `/api/olm/governance/completeness` | GET | Per-object three-tier completeness detail |
+| `/api/olm/governance/defects` | GET | Defect identification (missing layers, weak relations, no attributes) |
+| `/api/olm/governance/domain-comparison` | GET | Cross-domain object consistency comparison |
+
 #### Data Source Strategy
 
 All endpoints implement **database-first with JSON fallback**:
@@ -632,10 +640,10 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 | 算法流程图 | ✅ 已实现 | `figures/architecture/object_extraction_algorithm.mmd` |
 | 关键字规则回退抽取器 | ✅ 已实现 | `scripts/simple_extractor.py` (20+关键词, 12个核心对象) |
 | 数据库优先+JSON回退策略 | ✅ 已实现 | `olm_api.py` 所有端点均实现 MySQL → JSON fallback |
-| 20+ REST API端点 | ✅ 已实现 | `olm_api.py` (1577行, CRUD + 可视化 + 分析) |
+| 20+ REST API端点 | ✅ 已实现 | `olm_api.py` (2541行, CRUD + 可视化 + 分析 + 治理) |
 | BA-04业务对象映射 | ✅ 已实现 | `object_business_object_mapping` 表 + API端点 |
 
-### 已实现需求（0.md 愿景需求，Phase 2-5 新增）
+### 已实现需求（0.md 愿景需求，Phase 2-6 新增）
 
 | 需求 | 状态 | 实现位置 |
 |------|------|----------|
@@ -643,15 +651,15 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 | 穿透式业务溯源 | ✅ 已实现 | `traceability_chains` + `traceability_chain_nodes` 表 + 4个API端点 + 前端溯源链路面板（创建/查看/节点流程图） |
 | 机理函数（业务规则+物理公式） | ✅ 已实现 | `mechanism_functions` 表 + 6个API端点 + 表达式求值引擎 + 3个预置函数（合同审计红线/功率公式/审批路径规则） + 前端管理面板（CRUD+测试） |
 | 穿透式预警与辅助决策 | ✅ 已实现 | `alert_records` 表 + 4个API端点 + 规则检查引擎（遍历EAV数据触发阈值检查） + 前端预警看板（统计卡片+列表+处理） |
+| 财务域穿透式结算溯源演示 | ✅ 已实现 | `bootstrap.sql` 预置3条计财域溯源链路（结算穿透/合同审计/资产生命周期） + 含完整节点定义（项目→合同→资产→指标→票据） |
+| 财务数据一致性治理看板 | ✅ 已实现 | `olm_api.py` 4个治理API端点 + 2个SQL视图(`v_governance_completeness` + `v_governance_defects`) + 前端治理看板面板（8项指标卡片+完整性表格+缺陷列表+跨域对比） |
 
 ### 未实现需求（依赖甲方输入，待确认优先级）
 
 | 需求 | 状态 | 阻塞原因 |
 |------|------|----------|
-| 财务域落地场景演示 | ⚠️ 数据已有 | `DATA/jicai/`（计划财务域）数据已存在，可基于此演示穿透场景，但完整的"数字化项目结算"端到端演示尚未构建 |
 | HTAP非结构化数据融合 | ❌ 未实现 | 视频/图像数据源未定义，技术方案未给出 |
 | 与企业数据中台对比 | ❌ 未实现 | 中台数据格式和对比规则均未定义 |
-| 财务数据一致性治理看板 | ⚠️ 数据已有 | 计划财务域数据已有(`DATA/jicai/`)，但比对规则和阈值未定义 |
 
 ### 需求文档本身的问题
 
@@ -687,7 +695,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 ---
 
-*Last updated: 2026-02-19 (Phase 1-5 实施完成: 生命周期管理+溯源链路+机理函数+穿透式预警)*
+*Last updated: 2026-02-19 (Phase 1-6 实施完成: 生命周期管理+溯源链路+机理函数+穿透式预警+财务域穿透演示+治理看板)*
 
 ---
 
