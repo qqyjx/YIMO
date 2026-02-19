@@ -15,18 +15,18 @@
       "cluster_id": 0,
       "cluster_size": 81,
       "sample_entities": [
-        "项目类收入信息",
+        "合同台账信息",
+        "统计系统单位数据信息",
         "填报帮助信息",
         "挂账支付信息",
-        "运营监控指标属性信息",
-        "合同台账信息",
         "收入监控分析信息",
-        "运营监控指标数据信息",
-        "资产成本台账信息",
+        "项目类收入信息",
+        "运营监控指标属性信息",
         "日常差旅信息",
-        "报账基础信息",
         "税费核算信息",
-        "统计系统单位数据信息"
+        "报账基础信息",
+        "运营监控指标数据信息",
+        "资产成本台账信息"
       ]
     },
     {
@@ -44,19 +44,19 @@
       "cluster_id": 4,
       "cluster_size": 19,
       "sample_entities": [
-        "土地租赁信息",
-        "资产调拨信息",
-        "不动产业务管理信息",
-        "不动产年度实施计划信息",
-        "房屋建筑物资不动产信息",
-        "不动产更名信息",
-        "房屋建筑物资产调整信息",
-        "房价信息",
+        "土地不动产信息",
         "可再生能源补贴资金信息",
+        "土地租赁信息",
+        "不动产业务管理信息",
         "土地资产调整信息",
-        "地价信息",
         "不动产确权信息",
-        "土地不动产信息"
+        "不动产年度实施计划信息",
+        "资产调拨信息",
+        "房价信息",
+        "房屋建筑物资不动产信息",
+        "地价信息",
+        "房屋建筑物资产调整信息",
+        "不动产更名信息"
       ]
     },
     {
@@ -74,25 +74,25 @@
       "cluster_id": 3,
       "cluster_size": 10,
       "sample_entities": [
-        "融资计划",
-        "借款合同",
-        "担保合同",
         "担保合同上报国资委信息",
-        "函证信息",
-        "授信协议",
+        "融资合同",
         "授权信息",
-        "担保代偿与追索信息",
+        "函证信息",
+        "担保合同",
         "担保解除信息",
-        "融资合同"
+        "授信协议",
+        "担保代偿与追索信息",
+        "融资计划",
+        "借款合同"
       ]
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
-      "object_name": "对象3",
-      "object_name_en": "Object3",
+      "object_code": "OBJ_票据",
+      "object_name": "票据",
+      "object_name_en": "票据",
       "parent_object_code": null,
       "object_type": "AUXILIARY",
-      "description": "自动聚类生成的对象，代表性实体：应收票据",
+      "description": "语义聚类对象，代表性实体：应收票据",
       "extraction_source": "SEMANTIC_CLUSTER_AUTO",
       "extraction_confidence": 0.5,
       "llm_reasoning": "",
@@ -109,12 +109,12 @@
       ]
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
-      "object_name": "对象2",
-      "object_name_en": "Object2",
+      "object_code": "OBJ_发电",
+      "object_name": "发电",
+      "object_name_en": "发电",
       "parent_object_code": null,
       "object_type": "AUXILIARY",
-      "description": "自动聚类生成的对象，代表性实体：发电厂信息",
+      "description": "语义聚类对象，代表性实体：发电厂信息",
       "extraction_source": "SEMANTIC_CLUSTER_AUTO",
       "extraction_confidence": 0.5,
       "llm_reasoning": "",
@@ -130,12 +130,12 @@
       ]
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
-      "object_name": "对象6",
-      "object_name_en": "Object6",
+      "object_code": "OBJ_监督",
+      "object_name": "监督",
+      "object_name_en": "监督",
       "parent_object_code": null,
       "object_type": "AUXILIARY",
-      "description": "自动聚类生成的对象，代表性实体：监督计划",
+      "description": "语义聚类对象，代表性实体：监督计划",
       "extraction_source": "SEMANTIC_CLUSTER_AUTO",
       "extraction_confidence": 0.5,
       "llm_reasoning": "",
@@ -150,9 +150,9 @@
       ]
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "object_name": "项目",
-      "object_name_en": "项目",
+      "object_name_en": "Project",
       "parent_object_code": null,
       "object_type": "CORE",
       "description": "核心对象：项目",
@@ -18464,7 +18464,7 @@
       "source_row": 5600
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "CONCEPT",
       "entity_name": "会计凭证",
       "entity_code": "nan",
@@ -18480,7 +18480,7 @@
       "source_row": 75
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "2025凭证主表",
       "entity_code": "FM_ACC_BILL2025",
@@ -18496,7 +18496,7 @@
       "source_row": 5126
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "2025凭证主表",
       "entity_code": "FM_ACC_BILL2025",
@@ -18512,7 +18512,7 @@
       "source_row": 4365
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "2025凭证明细表",
       "entity_code": "FM_ACC_BILL_DTL2025",
@@ -18528,7 +18528,7 @@
       "source_row": 5148
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "2025凭证明细表",
       "entity_code": "FM_ACC_BILL_DTL2025",
@@ -18544,7 +18544,7 @@
       "source_row": 4416
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "凭证主表",
       "entity_code": "FM_ACC_BILL",
@@ -18560,7 +18560,7 @@
       "source_row": 8633
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "凭证主表",
       "entity_code": "FM_ACC_BILL",
@@ -18576,7 +18576,7 @@
       "source_row": 11512
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "CONCEPT",
       "entity_name": "抵销凭证",
       "entity_code": "nan",
@@ -18592,7 +18592,7 @@
       "source_row": 77
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "抵销凭证表",
       "entity_code": "FM_CFS_OFFSET_VOUCHER",
@@ -18608,7 +18608,7 @@
       "source_row": 11601
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "抵销凭证表",
       "entity_code": "FM_CFS_OFFSET_VOUCHER",
@@ -18624,7 +18624,7 @@
       "source_row": 11441
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "抵销凭证明细表",
       "entity_code": "FM_CFS_OFFSET_VOUCHER_DT",
@@ -18640,7 +18640,7 @@
       "source_row": 11630
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "抵销凭证明细表",
       "entity_code": "FM_CFS_OFFSET_VOUCHER_DT",
@@ -18656,7 +18656,7 @@
       "source_row": 11470
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "股权抵销模板表",
       "entity_code": "FM_CFS_EQ_TEMPLET",
@@ -18672,7 +18672,7 @@
       "source_row": 11659
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "股权抵销模板表",
       "entity_code": "FM_CFS_EQ_TEMPLET",
@@ -18688,7 +18688,7 @@
       "source_row": 11499
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "CONCEPT",
       "entity_name": "银行票据",
       "entity_code": "nan",
@@ -18704,7 +18704,7 @@
       "source_row": 109
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表银行票据盘点单新盘点子表",
       "entity_code": "FM_BL_BILL_C_INVENTORY_NEW_SUB",
@@ -18720,7 +18720,7 @@
       "source_row": 12028
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表银行票据盘点单新盘点子表",
       "entity_code": "FM_BL_BILL_C_INVENTORY_NEW_SUB",
@@ -18736,7 +18736,7 @@
       "source_row": 11906
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据主表银行票据采购单新",
       "entity_code": "FM_BL_BILL_C_PURCHASE",
@@ -18752,7 +18752,7 @@
       "source_row": 12055
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据主表银行票据采购单新",
       "entity_code": "FM_BL_BILL_C_PURCHASE",
@@ -18768,7 +18768,7 @@
       "source_row": 11933
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "CONCEPT",
       "entity_name": "应收票据",
       "entity_code": "nan",
@@ -18784,7 +18784,7 @@
       "source_row": 111
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "南网获取票据信息到管控",
       "entity_code": "FM_BILL_RECV_BILL_INFO",
@@ -18800,7 +18800,7 @@
       "source_row": 3356
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "南网获取票据信息到管控",
       "entity_code": "FM_BILL_RECV_BILL_INFO",
@@ -18816,7 +18816,7 @@
       "source_row": 5776
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表应收票据背书转让付息单单据子表",
       "entity_code": "FM_BL_BILL_ENDORSE_INTE_SUB",
@@ -18832,7 +18832,7 @@
       "source_row": 3401
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表应收票据背书转让付息单单据子表",
       "entity_code": "FM_BL_BILL_ENDORSE_INTE_SUB",
@@ -18848,7 +18848,7 @@
       "source_row": 5821
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表资金收支应收票据背书财务审批单支付融合子表",
       "entity_code": "FM_BL_FUND_RECE_BILL_SUB",
@@ -18864,7 +18864,7 @@
       "source_row": 3436
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表资金收支应收票据背书财务审批单支付融合子表",
       "entity_code": "FM_BL_FUND_RECE_BILL_SUB",
@@ -18880,7 +18880,7 @@
       "source_row": 5856
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "应收票据支付实体表",
       "entity_code": "FM_FUND_PS_REC_BILL",
@@ -18896,7 +18896,7 @@
       "source_row": 3466
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "应收票据支付实体表",
       "entity_code": "FM_FUND_PS_REC_BILL",
@@ -18912,7 +18912,7 @@
       "source_row": 5886
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "管理对象主表应收票据",
       "entity_code": "FM_OBJ_BILL_RECE",
@@ -18928,7 +18928,7 @@
       "source_row": 7993
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "管理对象主表应收票据",
       "entity_code": "FM_OBJ_BILL_RECE",
@@ -18944,7 +18944,7 @@
       "source_row": 10388
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表应收票据对内背书电子票据票据背书子表",
       "entity_code": "FM_BL_BILL_R_E_IN_ENDORSE_SUB",
@@ -18960,7 +18960,7 @@
       "source_row": 8036
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表应收票据对内背书电子票据票据背书子表",
       "entity_code": "FM_BL_BILL_R_E_IN_ENDORSE_SUB",
@@ -18976,7 +18976,7 @@
       "source_row": 10431
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表应收票据签收申请单票据子表",
       "entity_code": "FM_BL_BILL_R_RECV_APPLY_SUB",
@@ -18992,7 +18992,7 @@
       "source_row": 8095
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表应收票据签收申请单票据子表",
       "entity_code": "FM_BL_BILL_R_RECV_APPLY_SUB",
@@ -19008,7 +19008,7 @@
       "source_row": 10490
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表应收票据收取单票据子表",
       "entity_code": "FM_BL_BILL_R_RECV_SUB",
@@ -19024,7 +19024,7 @@
       "source_row": 8114
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表应收票据收取单票据子表",
       "entity_code": "FM_BL_BILL_R_RECV_SUB",
@@ -19040,7 +19040,7 @@
       "source_row": 10509
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表应收票据贴现单电子票据贴现子表",
       "entity_code": "FM_BL_BILL_R_E_DISCOUNT_SUB",
@@ -19056,7 +19056,7 @@
       "source_row": 8177
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表应收票据贴现单电子票据贴现子表",
       "entity_code": "FM_BL_BILL_R_E_DISCOUNT_SUB",
@@ -19072,7 +19072,7 @@
       "source_row": 10572
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表应收票据到期托收单电子票据票据子表",
       "entity_code": "FM_BL_BILL_R_E_DUE_COLL_SUB",
@@ -19088,7 +19088,7 @@
       "source_row": 12108
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表应收票据到期托收单电子票据票据子表",
       "entity_code": "FM_BL_BILL_R_E_DUE_COLL_SUB",
@@ -19104,7 +19104,7 @@
       "source_row": 11986
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "CONCEPT",
       "entity_name": "应付票据",
       "entity_code": "nan",
@@ -19120,7 +19120,7 @@
       "source_row": 120
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表应付票据开立登记单应付票据子表",
       "entity_code": "FM_BL_BILL_P_REGISTER_SUB",
@@ -19136,7 +19136,7 @@
       "source_row": 3378
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表应付票据开立登记单应付票据子表",
       "entity_code": "FM_BL_BILL_P_REGISTER_SUB",
@@ -19152,7 +19152,7 @@
       "source_row": 5798
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "应付票据支付实体表",
       "entity_code": "FM_FUND_PS_DEAL_BILL",
@@ -19168,7 +19168,7 @@
       "source_row": 3491
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "应付票据支付实体表",
       "entity_code": "FM_FUND_PS_DEAL_BILL",
@@ -19184,7 +19184,7 @@
       "source_row": 5911
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表应付票据到期兑付资金计划预测票据子表",
       "entity_code": "FM_BL_BILL_P_CASHF_SUB",
@@ -19200,7 +19200,7 @@
       "source_row": 3509
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表应付票据到期兑付资金计划预测票据子表",
       "entity_code": "FM_BL_BILL_P_CASHF_SUB",
@@ -19216,7 +19216,7 @@
       "source_row": 5929
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "管理对象主表应付票据",
       "entity_code": "FM_OBJ_BILL_PAYABLE",
@@ -19232,7 +19232,7 @@
       "source_row": 8018
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "管理对象主表应付票据",
       "entity_code": "FM_OBJ_BILL_PAYABLE",
@@ -19248,7 +19248,7 @@
       "source_row": 10413
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表资金收支应付票据开立财务审批单支付融合子表",
       "entity_code": "FM_BL_FUND_PAY_BILL_SUB",
@@ -19264,7 +19264,7 @@
       "source_row": 8067
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表资金收支应付票据开立财务审批单支付融合子表",
       "entity_code": "FM_BL_FUND_PAY_BILL_SUB",
@@ -19280,7 +19280,7 @@
       "source_row": 10462
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表应付票据贴现付息单单据子表",
       "entity_code": "FM_BL_BILL_PAY_INTE_SUB",
@@ -19296,7 +19296,7 @@
       "source_row": 8144
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表应付票据贴现付息单单据子表",
       "entity_code": "FM_BL_BILL_PAY_INTE_SUB",
@@ -19312,7 +19312,7 @@
       "source_row": 10539
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表应付票据到期兑付单工资表",
       "entity_code": "FM_BL_BILL_P_DUE_CASH_SUB",
@@ -19328,7 +19328,7 @@
       "source_row": 12078
     },
     {
-      "object_code": "OBJ_CLUSTER_2",
+      "object_code": "OBJ_票据",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表应付票据到期兑付单工资表",
       "entity_code": "FM_BL_BILL_P_DUE_CASH_SUB",
@@ -19344,7 +19344,7 @@
       "source_row": 11956
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "CONCEPT",
       "entity_name": "场所信息",
       "entity_code": "nan",
@@ -19360,7 +19360,7 @@
       "source_row": 10
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "LOGICAL",
       "entity_name": "不动产空间位置场所表",
       "entity_code": "FI_IMMOVABLES_LOCATION_PLACE",
@@ -19376,7 +19376,7 @@
       "source_row": 274
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "PHYSICAL",
       "entity_name": "不动产空间位置场所表",
       "entity_code": "FI_IMMOVABLES_LOCATION_PLACE",
@@ -19392,7 +19392,7 @@
       "source_row": 274
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "LOGICAL",
       "entity_name": "不动产空间位置楼栋表",
       "entity_code": "FI_IMMOVABLES_LOCATION_BUILD",
@@ -19408,7 +19408,7 @@
       "source_row": 376
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "PHYSICAL",
       "entity_name": "不动产空间位置楼栋表",
       "entity_code": "FI_IMMOVABLES_LOCATION_BUILD",
@@ -19424,7 +19424,7 @@
       "source_row": 376
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "LOGICAL",
       "entity_name": "不动产空间位置楼层表",
       "entity_code": "FI_IMMOVABLES_LOCATION_FLOOR",
@@ -19440,7 +19440,7 @@
       "source_row": 403
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "PHYSICAL",
       "entity_name": "不动产空间位置楼层表",
       "entity_code": "FI_IMMOVABLES_LOCATION_FLOOR",
@@ -19456,7 +19456,7 @@
       "source_row": 403
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "CONCEPT",
       "entity_name": "发电机组信息",
       "entity_code": "nan",
@@ -19472,7 +19472,7 @@
       "source_row": 256
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "LOGICAL",
       "entity_name": "数据集",
       "entity_code": "FI_DATA_SET",
@@ -19488,7 +19488,7 @@
       "source_row": 14556
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "PHYSICAL",
       "entity_name": "数据集",
       "entity_code": "FI_DATA_SET",
@@ -19504,7 +19504,7 @@
       "source_row": 14556
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "CONCEPT",
       "entity_name": "发电厂信息",
       "entity_code": "nan",
@@ -19520,7 +19520,7 @@
       "source_row": 258
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "LOGICAL",
       "entity_name": "数据集对象",
       "entity_code": "FI_DS_MB",
@@ -19536,7 +19536,7 @@
       "source_row": 14634
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "PHYSICAL",
       "entity_name": "数据集对象",
       "entity_code": "FI_DS_MB",
@@ -19552,7 +19552,7 @@
       "source_row": 14634
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "CONCEPT",
       "entity_name": "用电分类表信息",
       "entity_code": "nan",
@@ -19568,7 +19568,7 @@
       "source_row": 259
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "LOGICAL",
       "entity_name": "业务模块",
       "entity_code": "FI_BUZ_MODULE",
@@ -19584,7 +19584,7 @@
       "source_row": 14428
     },
     {
-      "object_code": "OBJ_CLUSTER_1",
+      "object_code": "OBJ_发电",
       "entity_layer": "PHYSICAL",
       "entity_name": "业务模块",
       "entity_code": "FI_BUZ_MODULE",
@@ -19600,7 +19600,7 @@
       "source_row": 14428
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "CONCEPT",
       "entity_name": "监督规则",
       "entity_code": "nan",
@@ -19616,7 +19616,7 @@
       "source_row": 68
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "LOGICAL",
       "entity_name": "业务规则对象",
       "entity_code": "FM_RTM_RULE_INVENTORY",
@@ -19632,7 +19632,7 @@
       "source_row": 4605
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "PHYSICAL",
       "entity_name": "业务规则对象",
       "entity_code": "FM_RTM_RULE_INVENTORY",
@@ -19648,7 +19648,7 @@
       "source_row": 5493
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "LOGICAL",
       "entity_name": "保存监控系统规则分类对象",
       "entity_code": "FM_RTM_MONITOR_RULE_CATALOG",
@@ -19664,7 +19664,7 @@
       "source_row": 4607
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "PHYSICAL",
       "entity_name": "保存监控系统规则分类对象",
       "entity_code": "FM_RTM_MONITOR_RULE_CATALOG",
@@ -19680,7 +19680,7 @@
       "source_row": 5533
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "CONCEPT",
       "entity_name": "监督计划",
       "entity_code": "nan",
@@ -19696,7 +19696,7 @@
       "source_row": 69
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "LOGICAL",
       "entity_name": "稽核项目对象",
       "entity_code": "FM_AUD_PROJECT",
@@ -19712,7 +19712,7 @@
       "source_row": 4625
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "PHYSICAL",
       "entity_name": "稽核项目对象",
       "entity_code": "FM_AUD_PROJECT",
@@ -19728,7 +19728,7 @@
       "source_row": 5474
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "CONCEPT",
       "entity_name": "监督结果",
       "entity_code": "nan",
@@ -19744,7 +19744,7 @@
       "source_row": 252
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "LOGICAL",
       "entity_name": "稽核模型结果明细",
       "entity_code": "FM_AUDIT_MODEL_RESULT_DETAIL",
@@ -19760,7 +19760,7 @@
       "source_row": 4628
     },
     {
-      "object_code": "OBJ_CLUSTER_5",
+      "object_code": "OBJ_监督",
       "entity_layer": "PHYSICAL",
       "entity_name": "稽核模型结果明细",
       "entity_code": "FM_AUDIT_MODEL_RESULT_DETAIL",
@@ -20192,7 +20192,7 @@
       "source_row": 9266
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "CONCEPT",
       "entity_name": "项目类收入信息",
       "entity_code": "nan",
@@ -20208,7 +20208,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "收入确认单",
       "entity_code": "FM_BL_PFM_REVE_CONFIRM",
@@ -20224,7 +20224,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "收入确认单",
       "entity_code": "FM_BL_PFM_REVE_CONFIRM",
@@ -20240,7 +20240,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "收款确认单",
       "entity_code": "FM_BL_PFM_ACKNOWLE_RECEIPT",
@@ -20256,7 +20256,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "收款确认单",
       "entity_code": "FM_BL_PFM_ACKNOWLE_RECEIPT",
@@ -20272,7 +20272,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "CONCEPT",
       "entity_name": "储备项目优选评价信息",
       "entity_code": "nan",
@@ -20288,7 +20288,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "项目优选评价方案详细",
       "entity_code": "FM_PP_OPT_EVALSCHEME_DETAIL",
@@ -20304,7 +20304,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "项目优选评价方案详细",
       "entity_code": "FM_PP_OPT_EVALSCHEME_DETAIL",
@@ -20320,7 +20320,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "储备项目自评单主表",
       "entity_code": "FM_BL_PP_PROJ_SELF_SCORE",
@@ -20336,7 +20336,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "储备项目自评单主表",
       "entity_code": "FM_BL_PP_PROJ_SELF_SCORE",
@@ -20352,7 +20352,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "CONCEPT",
       "entity_name": "储备项目评价信息",
       "entity_code": "nan",
@@ -20368,7 +20368,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "单个项目评价单主表",
       "entity_code": "FM_BL_PP_PROJ_EVAL",
@@ -20384,7 +20384,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "单个项目评价单主表",
       "entity_code": "FM_BL_PP_PROJ_EVAL",
@@ -20400,7 +20400,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "CONCEPT",
       "entity_name": "费用项目年度预算分解信息",
       "entity_code": "nan",
@@ -20416,7 +20416,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "项目年度金额计划表",
       "entity_code": "FM_PP_DECOMPOSE_PLAN",
@@ -20432,7 +20432,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "项目年度金额计划表",
       "entity_code": "FM_PP_DECOMPOSE_PLAN",
@@ -20448,7 +20448,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "CONCEPT",
       "entity_name": "工程项目信息",
       "entity_code": "nan",
@@ -20464,7 +20464,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "概预算模板版本",
       "entity_code": "FM_PFM_BUDGET_TEMP_VERSION",
@@ -20480,7 +20480,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "概预算模板版本",
       "entity_code": "FM_PFM_BUDGET_TEMP_VERSION",
@@ -20496,7 +20496,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "管理对象主表_概预算项目",
       "entity_code": "FM_OBJ_PFM_BUDGET_ESTIMATE",
@@ -20512,7 +20512,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "管理对象主表_概预算项目",
       "entity_code": "FM_OBJ_PFM_BUDGET_ESTIMATE",
@@ -20528,7 +20528,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "CONCEPT",
       "entity_name": "投资项目信息",
       "entity_code": "nan",
@@ -20544,7 +20544,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "分组表",
       "entity_code": "FI_GROUP",
@@ -20560,7 +20560,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "分组表",
       "entity_code": "FI_GROUP",
@@ -20576,7 +20576,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "分组集合表",
       "entity_code": "FI_GROUP_GATHER",
@@ -20592,7 +20592,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "分组集合表",
       "entity_code": "FI_GROUP_GATHER",
@@ -20608,7 +20608,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "分组项表",
       "entity_code": "FI_GROUP_ITEM",
@@ -20624,7 +20624,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "分组项表",
       "entity_code": "FI_GROUP_ITEM",
@@ -20640,7 +20640,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "指标分类分组嵌套",
       "entity_code": "FI_PROP_GROUP_NEST",
@@ -20656,7 +20656,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "指标分类分组嵌套",
       "entity_code": "FI_PROP_GROUP_NEST",
@@ -20672,7 +20672,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "体系表",
       "entity_code": "FI_WORKSPACE",
@@ -20688,7 +20688,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "体系表",
       "entity_code": "FI_WORKSPACE",
@@ -20704,7 +20704,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "度量单位关系",
       "entity_code": "FI_MEAUNITRELATION",
@@ -20720,7 +20720,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "度量单位关系",
       "entity_code": "FI_MEAUNITRELATION",
@@ -20736,7 +20736,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "度量单位分类",
       "entity_code": "FI_METROLOGY",
@@ -20752,7 +20752,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "度量单位分类",
       "entity_code": "FI_METROLOGY",
@@ -20768,7 +20768,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "对象指标集合表",
       "entity_code": "FI_PROPERTY_GATHER",
@@ -20784,7 +20784,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "对象指标集合表",
       "entity_code": "FI_PROPERTY_GATHER",
@@ -20800,7 +20800,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "对象指标公式表",
       "entity_code": "FI_PROPERTY_FORMULA",
@@ -20816,7 +20816,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "对象指标公式表",
       "entity_code": "FI_PROPERTY_FORMULA",
@@ -20832,7 +20832,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "指标集指标列表",
       "entity_code": "FI_DS_PROP_IDS",
@@ -20848,7 +20848,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "指标集指标列表",
       "entity_code": "FI_DS_PROP_IDS",
@@ -20864,7 +20864,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "记录集",
       "entity_code": "FI_DS_IT",
@@ -20880,7 +20880,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "记录集",
       "entity_code": "FI_DS_IT",
@@ -20896,7 +20896,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "记录集指定记录列表",
       "entity_code": "FI_DS_IT_IDS",
@@ -20912,7 +20912,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "记录集指定记录列表",
       "entity_code": "FI_DS_IT_IDS",
@@ -20928,7 +20928,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "期号集",
       "entity_code": "FI_DS_ISSUE",
@@ -20944,7 +20944,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "期号集",
       "entity_code": "FI_DS_ISSUE",
@@ -20960,7 +20960,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "期号维表",
       "entity_code": "FI_DS_DIM_ISSUE",
@@ -20976,7 +20976,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "期号维表",
       "entity_code": "FI_DS_DIM_ISSUE",
@@ -20992,7 +20992,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "LOGICAL",
       "entity_name": "对象指标公式表_旧",
       "entity_code": "FI_PROPFORMULA",
@@ -21008,7 +21008,7 @@
       "source_row": 0
     },
     {
-      "object_code": "OBJ_项目",
+      "object_code": "OBJ_PROJECT",
       "entity_layer": "PHYSICAL",
       "entity_name": "对象指标公式表_旧",
       "entity_code": "FI_PROPFORMULA",
@@ -21059,8 +21059,8 @@
       "cluster_relations": 114,
       "bridge_relations": 0
     },
-    "OBJ_CLUSTER_2": {
-      "object_name": "对象3",
+    "OBJ_票据": {
+      "object_name": "票据",
       "cluster_id": 2,
       "cluster_size": 5,
       "concept": 5,
@@ -21070,8 +21070,8 @@
       "cluster_relations": 55,
       "bridge_relations": 0
     },
-    "OBJ_CLUSTER_1": {
-      "object_name": "对象2",
+    "OBJ_发电": {
+      "object_name": "发电",
       "cluster_id": 1,
       "cluster_size": 4,
       "concept": 4,
@@ -21081,8 +21081,8 @@
       "cluster_relations": 16,
       "bridge_relations": 0
     },
-    "OBJ_CLUSTER_5": {
-      "object_name": "对象6",
+    "OBJ_监督": {
+      "object_name": "监督",
       "cluster_id": 5,
       "cluster_size": 3,
       "concept": 3,
@@ -21092,7 +21092,7 @@
       "cluster_relations": 11,
       "bridge_relations": 0
     },
-    "OBJ_项目": {
+    "OBJ_PROJECT": {
       "object_name": "项目",
       "cluster_id": -1,
       "cluster_size": 0,
@@ -21307,7 +21307,7 @@
         1.0
       ]
     ],
-    "OBJ_CLUSTER_2": [
+    "OBJ_票据": [
       [
         "应收票据收取申请单",
         1.0
@@ -21389,7 +21389,7 @@
         1.0
       ]
     ],
-    "OBJ_CLUSTER_1": [
+    "OBJ_发电": [
       [
         "南方五省电力行业发电统计报表",
         1.0
@@ -21407,7 +21407,7 @@
         1.0
       ]
     ],
-    "OBJ_CLUSTER_5": [
+    "OBJ_监督": [
       [
         "财务监督计划",
         1.0
@@ -21421,7 +21421,7 @@
         1.0
       ]
     ],
-    "OBJ_CLUSTER_11": [
+    "OBJ_价信": [
       [
         "地价信息",
         1.0
@@ -21431,19 +21431,19 @@
         1.0
       ]
     ],
-    "OBJ_CLUSTER_6": [
+    "OBJ_填报": [
       [
         "土地填报帮助维护信息",
         1.0
       ]
     ],
-    "OBJ_CLUSTER_7": [
+    "OBJ_授权": [
       [
         "土地授权信息",
         1.0
       ]
     ],
-    "OBJ_CLUSTER_8": [
+    "OBJ_日常": [
       [
         "差旅费报销单",
         1.0
@@ -21453,13 +21453,13 @@
         1.0
       ]
     ],
-    "OBJ_CLUSTER_9": [
+    "OBJ_可再": [
       [
         "补贴支付清单",
         1.0
       ]
     ],
-    "OBJ_项目": []
+    "OBJ_PROJECT": []
   },
   "data_domain": "jicai",
   "data_domain_name": "计划财务"

@@ -486,6 +486,15 @@ class DataArchitectureReader:
         print(f"  - 概念→逻辑映射: {len(concept_to_logical)} 个概念实体 → {total_logical} 个逻辑实体")
         print(f"  - 逻辑→物理映射: {len(logical_to_physical)} 个逻辑实体 → {total_physical} 个物理实体")
 
+        # 如果物理实体映射为空（源数据缺失），从逻辑实体推断物理实体
+        if total_physical == 0 and total_logical > 0:
+            print(f"[WARN] DA-03 物理实体数据为空，从逻辑实体推断物理实体...")
+            logical_to_physical = self._infer_physical_from_logical(
+                concept_to_logical, logical_to_physical
+            )
+            total_physical = sum(len(v) for v in logical_to_physical.values())
+            print(f"[INFO] 推断完成: {len(logical_to_physical)} 个逻辑实体 → {total_physical} 个物理实体")
+
         return concept_entities, dict(concept_to_logical), dict(logical_to_physical)
 
     def _build_concept_logical_mapping(self, file_path: Path,
@@ -623,6 +632,41 @@ class DataArchitectureReader:
                 print(f"[INFO] fallback 成功，构建 {len(set(k for k,_ in seen_fb))} 个逻辑→{count} 个物理映射")
             except Exception as e2:
                 print(f"[WARN] fallback 也失败 ({file_path.name}): {e2}")
+
+    def _infer_physical_from_logical(self,
+                                     concept_to_logical: Dict[str, List['EntityInfo']],
+                                     logical_to_physical: Dict[str, List['EntityInfo']]) -> Dict[str, List['EntityInfo']]:
+        """当 DA-03 数据为空时，从逻辑实体推断物理实体
+
+        策略：每个逻辑实体生成一个同名的推断物理实体，
+        标记 match_method 为 INFERRED，relation_strength 较低。
+        这样保证三层关联链路完整，前端可以展示。
+        """
+        inferred = defaultdict(list)
+        seen = set()
+        for concept_name, logical_list in concept_to_logical.items():
+            for le in logical_list:
+                if le.name in seen:
+                    continue
+                seen.add(le.name)
+                # 用逻辑实体名称生成推断的物理实体
+                inferred[le.name].append(EntityInfo(
+                    name=f"{le.name}（推断）",
+                    layer="PHYSICAL",
+                    code=f"INFERRED_{le.code}" if le.code else "",
+                    data_domain=le.data_domain,
+                    data_subdomain=le.data_subdomain,
+                    source_file=le.source_file,
+                    source_sheet="INFERRED_FROM_DA02",
+                    source_row=le.source_row
+                ))
+        # 合并已有映射（如果有的话）
+        for k, v in logical_to_physical.items():
+            if k in inferred:
+                inferred[k].extend(v)
+            else:
+                inferred[k] = v
+        return dict(inferred)
 
     def _read_physical_entities(self, file_path: Path):
         """读取物理实体清单"""
@@ -1026,6 +1070,62 @@ class LLMObjectNamer:
 
         return objects
 
+    @staticmethod
+    def _name_from_cluster_content(cluster: Dict, used_codes: set) -> Tuple[str, str, str]:
+        """从聚类内容中提取最具代表性的短词作为对象名
+
+        分析聚类的 centroid_entity 和 sample_entities，
+        提取最常见的 2 字词作为对象名，避免"对象N"。
+        """
+        centroid = cluster.get("centroid_entity", "")
+        samples = cluster.get("sample_entities", [])
+
+        # 提取所有实体名中出现的 2-4 字常见子串
+        word_counts = Counter()
+        all_names = [centroid] + samples
+        for name in all_names:
+            if not name:
+                continue
+            # 提取 2 字和 3 字子串
+            for length in (2, 3):
+                for i in range(len(name) - length + 1):
+                    word = name[i:i+length]
+                    # 过滤掉纯数字、含标点的
+                    if any(c in word for c in "0123456789-_()（）、，。 "):
+                        continue
+                    word_counts[word] += 1
+
+        # 排除已被使用的关键词
+        existing_names = {"信息", "数据", "管理", "记录", "清单", "明细", "编码", "名称", "类型", "状态"}
+
+        if word_counts:
+            for word, count in word_counts.most_common(20):
+                if word in existing_names:
+                    continue
+                # 用这个词作为对象名
+                # 生成 pinyin 风格编码
+                code = f"OBJ_{word}"
+                if code not in used_codes:
+                    return word, word, code
+
+        # 最终回退：使用聚类中心实体的前两个字
+        if centroid and len(centroid) >= 2:
+            short_name = centroid[:4] if len(centroid) >= 4 else centroid[:2]
+            code = f"OBJ_{short_name}"
+            if code not in used_codes:
+                return short_name, short_name, code
+
+        # 极端回退
+        cid = cluster.get("cluster_id", 0)
+        return f"聚类{cid + 1}", f"Cluster{cid + 1}", f"OBJ_CLUSTER_{cid}"
+
+    # 必需对象的标准编码映射（避免中文 upper() 问题）
+    REQUIRED_OBJECT_CODE_MAP = {
+        "项目": ("OBJ_PROJECT", "Project"),
+        "设备": ("OBJ_DEVICE", "Device"),
+        "资产": ("OBJ_ASSET", "Asset"),
+    }
+
     def _ensure_required_objects(self, objects: List[ExtractedObject], clusters: List[Dict]) -> List[ExtractedObject]:
         """确保必须的对象存在（不重复已有对象的聚类）"""
         object_names = {obj.object_name for obj in objects}
@@ -1051,10 +1151,15 @@ class LLMObjectNamer:
                 if cid >= 0:
                     used_cluster_ids.add(cid)
 
+                # 使用标准编码映射
+                code_info = self.REQUIRED_OBJECT_CODE_MAP.get(required)
+                obj_code = code_info[0] if code_info else f"OBJ_{required}"
+                obj_name_en = code_info[1] if code_info else required.title()
+
                 objects.append(ExtractedObject(
-                    object_code=f"OBJ_{required.upper()}",
+                    object_code=obj_code,
                     object_name=required,
-                    object_name_en=required.title(),
+                    object_name_en=obj_name_en,
                     object_type="CORE",
                     description=f"核心对象：{required}",
                     extraction_source="REQUIRED",
@@ -1133,16 +1238,18 @@ class LLMObjectNamer:
                         sample_entities=cluster["sample_entities"][:10]
                     ))
             else:
-                # 无法识别的聚类，使用通用命名
-                generic_code = f"OBJ_CLUSTER_{cluster['cluster_id']}"
-                if generic_code not in used_codes:
-                    used_codes.add(generic_code)
+                # 无法通过关键词识别的聚类，从聚类内容中提取最有代表性的词作为名称
+                obj_name, obj_name_en, obj_code = self._name_from_cluster_content(
+                    cluster, used_codes
+                )
+                if obj_code not in used_codes:
+                    used_codes.add(obj_code)
                     objects.append(ExtractedObject(
-                        object_code=generic_code,
-                        object_name=f"对象{cluster['cluster_id'] + 1}",
-                        object_name_en=f"Object{cluster['cluster_id'] + 1}",
+                        object_code=obj_code,
+                        object_name=obj_name,
+                        object_name_en=obj_name_en,
                         object_type="AUXILIARY",
-                        description=f"自动聚类生成的对象，代表性实体：{cluster['centroid_entity']}",
+                        description=f"语义聚类对象，代表性实体：{cluster['centroid_entity']}",
                         extraction_source="SEMANTIC_CLUSTER_AUTO",
                         extraction_confidence=0.5,
                         cluster_id=cluster["cluster_id"],
