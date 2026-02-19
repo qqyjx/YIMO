@@ -62,6 +62,11 @@ models/
 *.bin
 *.safetensors
 
+# Test / Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
 # Temp files
 *.tmp
 *.temp
