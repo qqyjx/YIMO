@@ -2252,3 +2252,290 @@ def api_run_alert_check():
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================================
+# Phase 6: 财务数据一致性治理看板 API
+# ============================================================================
+
+def _compute_governance_from_json(domain: str) -> dict:
+    """从 JSON 文件计算治理指标（数据库不可用时的后备）"""
+    data = load_json_data(domain or 'shupeidian')
+    objects = data.get('objects', [])
+    relations = data.get('relations', [])
+
+    if not objects:
+        return {'metrics': {}, 'completeness': [], 'defects': [], 'source': 'json_file'}
+
+    # 按对象统计各层关联
+    obj_layers = {}  # {code: {concept:N, logical:N, physical:N}}
+    strength_list = []
+    for rel in relations:
+        code = rel.get('object_code', '')
+        layer = rel.get('entity_layer', '').lower()
+        if code and layer in ('concept', 'logical', 'physical'):
+            if code not in obj_layers:
+                obj_layers[code] = {'concept': 0, 'logical': 0, 'physical': 0}
+            obj_layers[code][layer] += 1
+        s = rel.get('relation_strength', 0)
+        if s:
+            strength_list.append(float(s))
+
+    total_obj = len(objects)
+    complete = sum(1 for c in obj_layers.values() if c['concept'] > 0 and c['logical'] > 0 and c['physical'] > 0)
+    partial = sum(1 for code, c in obj_layers.items() if (c['concept'] + c['logical'] + c['physical']) > 0 and not (c['concept'] > 0 and c['logical'] > 0 and c['physical'] > 0))
+    empty_obj = total_obj - len(obj_layers)
+
+    avg_strength = sum(strength_list) / len(strength_list) if strength_list else 0
+    strong_count = sum(1 for s in strength_list if s >= 0.8)
+
+    metrics = {
+        'total_objects': total_obj,
+        'complete_objects': complete,
+        'partial_objects': partial,
+        'empty_objects': empty_obj,
+        'completeness_rate': round(complete / total_obj * 100, 1) if total_obj else 0,
+        'total_relations': len(relations),
+        'avg_strength': round(avg_strength, 3),
+        'strong_relation_rate': round(strong_count / len(strength_list) * 100, 1) if strength_list else 0,
+        'weak_relations': sum(1 for s in strength_list if s < 0.5),
+        'attr_coverage_rate': 0,
+        'lifecycle_coverage_rate': 0,
+        'traceability_coverage_rate': 0,
+    }
+
+    # 完整性详情
+    completeness = []
+    for obj in objects:
+        code = obj.get('object_code', '')
+        layers = obj_layers.get(code, {'concept': 0, 'logical': 0, 'physical': 0})
+        status = 'COMPLETE' if (layers['concept'] > 0 and layers['logical'] > 0 and layers['physical'] > 0) else ('EMPTY' if sum(layers.values()) == 0 else 'PARTIAL')
+        completeness.append({
+            'object_code': code,
+            'object_name': obj.get('object_name', ''),
+            'object_type': obj.get('object_type', ''),
+            'concept_count': layers['concept'],
+            'logical_count': layers['logical'],
+            'physical_count': layers['physical'],
+            'completeness_status': status,
+            'attr_defined_count': 0,
+            'lifecycle_record_count': 0,
+            'traceability_chain_count': 0,
+        })
+
+    # 缺陷识别
+    defects = []
+    for obj in objects:
+        code = obj.get('object_code', '')
+        layers = obj_layers.get(code, {'concept': 0, 'logical': 0, 'physical': 0})
+        for layer_name, label in [('concept', '概念'), ('logical', '逻辑'), ('physical', '物理')]:
+            if layers[layer_name] == 0 and sum(layers.values()) > 0:
+                defects.append({
+                    'object_code': code, 'object_name': obj.get('object_name', ''),
+                    'defect_type': 'MISSING_LAYER', 'defect_detail': f'缺少{label}层关联',
+                    'severity': 'WARNING'
+                })
+
+    for rel in relations:
+        s = rel.get('relation_strength', 1)
+        if s and float(s) < 0.5:
+            defects.append({
+                'object_code': rel.get('object_code', ''),
+                'object_name': '',
+                'defect_type': 'WEAK_RELATION',
+                'defect_detail': f"弱关联: {rel.get('entity_name','')} (强度={round(float(s),2)})",
+                'severity': 'INFO'
+            })
+
+    return {'metrics': metrics, 'completeness': completeness, 'defects': defects[:100], 'source': 'json_file'}
+
+
+@olm_api.route('/api/olm/governance/metrics')
+def api_governance_metrics():
+    """治理看板汇总指标"""
+    domain = request.args.get('domain', '')
+
+    if is_db_available():
+        try:
+            # 对象总数
+            q_total = "SELECT COUNT(*) as cnt FROM extracted_objects"
+            p = []
+            if domain:
+                q_total += " WHERE data_domain = %s"
+                p.append(domain)
+            total_result = execute_query(q_total, tuple(p) if p else None)
+            total_obj = total_result[0]['cnt'] if isinstance(total_result, list) and total_result else 0
+
+            # 完整性统计
+            comp_result = execute_query("""
+                SELECT completeness_status, COUNT(*) as cnt
+                FROM v_governance_completeness
+                """ + ("WHERE data_domain = %s " if domain else "") + """
+                GROUP BY completeness_status
+            """, (domain,) if domain else None)
+
+            complete = partial = empty_obj = 0
+            if isinstance(comp_result, list):
+                for row in comp_result:
+                    if row['completeness_status'] == 'COMPLETE':
+                        complete = row['cnt']
+                    elif row['completeness_status'] == 'PARTIAL':
+                        partial = row['cnt']
+                    elif row['completeness_status'] == 'EMPTY':
+                        empty_obj = row['cnt']
+
+            # 关联强度
+            strength_q = "SELECT AVG(relation_strength) as avg_s, COUNT(*) as total, SUM(CASE WHEN relation_strength >= 0.8 THEN 1 ELSE 0 END) as strong, SUM(CASE WHEN relation_strength < 0.5 THEN 1 ELSE 0 END) as weak FROM object_entity_relations"
+            if domain:
+                strength_q += " WHERE data_domain = %s"
+            strength_result = execute_query(strength_q, (domain,) if domain else None)
+            sr = strength_result[0] if isinstance(strength_result, list) and strength_result else {}
+
+            # 属性覆盖
+            attr_q = "SELECT COUNT(DISTINCT object_id) as cnt FROM object_attribute_definitions"
+            attr_result = execute_query(attr_q)
+            attr_covered = attr_result[0]['cnt'] if isinstance(attr_result, list) and attr_result else 0
+
+            # 生命周期覆盖
+            life_q = "SELECT COUNT(DISTINCT object_id) as cnt FROM object_lifecycle_history"
+            life_result = execute_query(life_q)
+            life_covered = life_result[0]['cnt'] if isinstance(life_result, list) and life_result else 0
+
+            # 溯源覆盖
+            trace_q = "SELECT COUNT(DISTINCT cn.object_id) as cnt FROM traceability_chain_nodes cn WHERE cn.object_id IS NOT NULL"
+            trace_result = execute_query(trace_q)
+            trace_covered = trace_result[0]['cnt'] if isinstance(trace_result, list) and trace_result else 0
+
+            total_rels = int(sr.get('total', 0) or 0)
+            metrics = {
+                'total_objects': total_obj,
+                'complete_objects': complete,
+                'partial_objects': partial,
+                'empty_objects': empty_obj,
+                'completeness_rate': round(complete / total_obj * 100, 1) if total_obj else 0,
+                'total_relations': total_rels,
+                'avg_strength': round(float(sr.get('avg_s', 0) or 0), 3),
+                'strong_relation_rate': round(int(sr.get('strong', 0) or 0) / total_rels * 100, 1) if total_rels else 0,
+                'weak_relations': int(sr.get('weak', 0) or 0),
+                'attr_coverage_rate': round(attr_covered / total_obj * 100, 1) if total_obj else 0,
+                'lifecycle_coverage_rate': round(life_covered / total_obj * 100, 1) if total_obj else 0,
+                'traceability_coverage_rate': round(trace_covered / total_obj * 100, 1) if total_obj else 0,
+            }
+            return jsonify({'metrics': metrics, 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 治理指标数据库查询失败: {e}")
+
+    result = _compute_governance_from_json(domain)
+    return jsonify({'metrics': result['metrics'], 'source': result['source']})
+
+
+@olm_api.route('/api/olm/governance/completeness')
+def api_governance_completeness():
+    """治理看板：对象完整性详情"""
+    domain = request.args.get('domain', '')
+
+    if is_db_available():
+        try:
+            query = "SELECT * FROM v_governance_completeness"
+            params = []
+            if domain:
+                query += " WHERE data_domain = %s"
+                params.append(domain)
+            query += " ORDER BY completeness_status ASC, object_code"
+
+            result = execute_query(query, tuple(params) if params else None)
+            if isinstance(result, list):
+                return jsonify({'completeness': result, 'total': len(result), 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 治理完整性查询失败: {e}")
+
+    result = _compute_governance_from_json(domain)
+    return jsonify({'completeness': result['completeness'], 'total': len(result['completeness']), 'source': result['source']})
+
+
+@olm_api.route('/api/olm/governance/defects')
+def api_governance_defects():
+    """治理看板：缺陷识别列表"""
+    domain = request.args.get('domain', '')
+    severity = request.args.get('severity', '')
+
+    if is_db_available():
+        try:
+            query = "SELECT * FROM v_governance_defects WHERE 1=1"
+            params = []
+            if domain:
+                query += " AND data_domain = %s"
+                params.append(domain)
+            if severity:
+                query += " AND severity = %s"
+                params.append(severity)
+            query += " ORDER BY severity DESC, object_code LIMIT 200"
+
+            result = execute_query(query, tuple(params) if params else None)
+            if isinstance(result, list):
+                return jsonify({'defects': result, 'total': len(result), 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 治理缺陷查询失败: {e}")
+
+    result = _compute_governance_from_json(domain)
+    defects = result['defects']
+    if severity:
+        defects = [d for d in defects if d.get('severity') == severity]
+    return jsonify({'defects': defects, 'total': len(defects), 'source': result['source']})
+
+
+@olm_api.route('/api/olm/governance/domain-comparison')
+def api_governance_domain_comparison():
+    """治理看板：跨域对象一致性对比"""
+    all_domains = set()
+    domain_objects = {}  # {domain: set(object_codes)}
+
+    if is_db_available():
+        try:
+            result = execute_query("SELECT DISTINCT data_domain, object_code FROM extracted_objects WHERE data_domain != 'default'")
+            if isinstance(result, list):
+                for row in result:
+                    d = row['data_domain']
+                    all_domains.add(d)
+                    domain_objects.setdefault(d, set()).add(row['object_code'])
+        except Exception:
+            pass
+
+    # JSON 后备
+    if not all_domains:
+        for json_file in OUTPUTS_DIR.glob('extraction_*.json'):
+            domain_name = json_file.stem.replace('extraction_', '')
+            data = load_json_data(domain_name)
+            if data.get('objects'):
+                all_domains.add(domain_name)
+                domain_objects[domain_name] = set(o.get('object_code', '') for o in data['objects'])
+
+    if len(all_domains) < 2:
+        return jsonify({'comparison': [], 'message': '需要至少两个数据域才能进行对比', 'source': 'json_file'})
+
+    # 计算交集和差集
+    all_codes = set()
+    for codes in domain_objects.values():
+        all_codes.update(codes)
+
+    comparison = []
+    for code in sorted(all_codes):
+        present_in = [d for d in sorted(all_domains) if code in domain_objects.get(d, set())]
+        missing_in = [d for d in sorted(all_domains) if code not in domain_objects.get(d, set())]
+        comparison.append({
+            'object_code': code,
+            'present_in': present_in,
+            'missing_in': missing_in,
+            'coverage': f"{len(present_in)}/{len(all_domains)}",
+            'is_consistent': len(missing_in) == 0
+        })
+
+    consistent_count = sum(1 for c in comparison if c['is_consistent'])
+    return jsonify({
+        'comparison': comparison,
+        'domains': sorted(all_domains),
+        'total_objects': len(all_codes),
+        'consistent_count': consistent_count,
+        'consistency_rate': round(consistent_count / len(all_codes) * 100, 1) if all_codes else 0,
+        'source': 'database' if is_db_available() else 'json_file'
+    })

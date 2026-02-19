@@ -613,6 +613,9 @@
             <div class="nav-item" data-section="section-alerts" onclick="scrollToSection('section-alerts');loadAlerts();">
                 <i class="bi bi-bell"></i><span>风险预警</span>
             </div>
+            <div class="nav-item" data-section="section-governance" onclick="scrollToSection('section-governance');loadGovernance();">
+                <i class="bi bi-clipboard-data"></i><span>治理看板</span>
+            </div>
         </nav>
 
         <div class="sidebar-section">数据域</div>
@@ -936,6 +939,77 @@
                 <!-- 预警列表 -->
                 <div id="alertList" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
                     <div class="empty-state"><i class="bi bi-bell"></i><p>暂无预警记录</p></div>
+                </div>
+            </section>
+
+            <!-- Section: Governance (Phase 6) -->
+            <section class="section" id="section-governance" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-clipboard-data"></i>财务数据一致性治理看板
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn-sm" onclick="loadGovernance()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                    </div>
+                </div>
+                <!-- 治理核心指标 -->
+                <div class="stats-grid" style="margin-bottom:16px;">
+                    <div class="stat-card" style="border-left:3px solid #10b981;">
+                        <div class="stat-value" id="govCompleteness">0%</div>
+                        <div class="stat-label">三层完整率</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #6366f1;">
+                        <div class="stat-value" id="govAvgStrength">0</div>
+                        <div class="stat-label">平均关联强度</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #f59e0b;">
+                        <div class="stat-value" id="govWeakCount">0</div>
+                        <div class="stat-label">弱关联数</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #ef4444;">
+                        <div class="stat-value" id="govDefectCount">0</div>
+                        <div class="stat-label">待治理缺陷</div>
+                    </div>
+                </div>
+                <!-- 覆盖率指标 -->
+                <div class="stats-grid" style="margin-bottom:16px;">
+                    <div class="stat-card" style="border-left:3px solid #8b5cf6;">
+                        <div class="stat-value" id="govAttrCoverage">0%</div>
+                        <div class="stat-label">属性覆盖率</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #06b6d4;">
+                        <div class="stat-value" id="govLifecycleCoverage">0%</div>
+                        <div class="stat-label">生命周期覆盖</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #ec4899;">
+                        <div class="stat-value" id="govTraceCoverage">0%</div>
+                        <div class="stat-label">溯源链路覆盖</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #14b8a6;">
+                        <div class="stat-value" id="govDomainConsistency">0%</div>
+                        <div class="stat-label">跨域一致性</div>
+                    </div>
+                </div>
+                <!-- 对象完整性表格 -->
+                <div style="margin-bottom:16px;">
+                    <h3 style="font-size:.9rem;font-weight:600;margin-bottom:8px;color:var(--text-pri);">对象三层关联完整性</h3>
+                    <div id="govCompletenessTable" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
+                        <div class="empty-state"><i class="bi bi-clipboard-data"></i><p>加载中...</p></div>
+                    </div>
+                </div>
+                <!-- 缺陷列表 -->
+                <div style="margin-bottom:16px;">
+                    <h3 style="font-size:.9rem;font-weight:600;margin-bottom:8px;color:var(--text-pri);">治理缺陷识别</h3>
+                    <div id="govDefectList" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
+                        <div class="empty-state"><i class="bi bi-check-circle"></i><p>暂无缺陷</p></div>
+                    </div>
+                </div>
+                <!-- 跨域对比 -->
+                <div>
+                    <h3 style="font-size:.9rem;font-weight:600;margin-bottom:8px;color:var(--text-pri);">跨域对象一致性对比</h3>
+                    <div id="govDomainComparison" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
+                        <div class="empty-state"><i class="bi bi-diagram-2"></i><p>加载中...</p></div>
+                    </div>
                 </div>
             </section>
 
@@ -2550,6 +2624,144 @@
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-shield-check"></i>执行检查';
         }
+    }
+
+    // ========== Phase 6: Governance Dashboard ==========
+    async function loadGovernance() {
+        document.getElementById('section-governance').style.display = 'block';
+        const domainParam = selectedDomain ? `?domain=${selectedDomain}` : '';
+
+        // 并行加载所有治理数据
+        Promise.all([
+            fetch('/api/olm/governance/metrics' + domainParam).then(r => r.json()).catch(() => ({})),
+            fetch('/api/olm/governance/completeness' + domainParam).then(r => r.json()).catch(() => ({})),
+            fetch('/api/olm/governance/defects' + domainParam).then(r => r.json()).catch(() => ({})),
+            fetch('/api/olm/governance/domain-comparison').then(r => r.json()).catch(() => ({}))
+        ]).then(([metricsData, completenessData, defectsData, comparisonData]) => {
+            // 更新指标卡片
+            const m = metricsData.metrics || {};
+            document.getElementById('govCompleteness').textContent = (m.completeness_rate || 0) + '%';
+            document.getElementById('govAvgStrength').textContent = (m.avg_strength || 0).toFixed(3);
+            document.getElementById('govWeakCount').textContent = m.weak_relations || 0;
+            document.getElementById('govDefectCount').textContent = (defectsData.total || 0);
+            document.getElementById('govAttrCoverage').textContent = (m.attr_coverage_rate || 0) + '%';
+            document.getElementById('govLifecycleCoverage').textContent = (m.lifecycle_coverage_rate || 0) + '%';
+            document.getElementById('govTraceCoverage').textContent = (m.traceability_coverage_rate || 0) + '%';
+            document.getElementById('govDomainConsistency').textContent = (comparisonData.consistency_rate || 0) + '%';
+
+            // 渲染完整性表格
+            renderGovernanceCompleteness(completenessData.completeness || []);
+            // 渲染缺陷列表
+            renderGovernanceDefects(defectsData.defects || []);
+            // 渲染跨域对比
+            renderDomainComparison(comparisonData);
+        });
+    }
+
+    function renderGovernanceCompleteness(items) {
+        const container = document.getElementById('govCompletenessTable');
+        if (!items.length) {
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-clipboard-data"></i><p>暂无对象数据</p></div>';
+            return;
+        }
+
+        const statusColors = {'COMPLETE':'#10b981','PARTIAL':'#f59e0b','EMPTY':'#ef4444'};
+        const statusLabels = {'COMPLETE':'完整','PARTIAL':'部分缺失','EMPTY':'无关联'};
+
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;">';
+        html += '<thead><tr style="background:var(--bg-main);border-bottom:2px solid var(--border);">';
+        html += '<th style="padding:10px 12px;text-align:left;">对象</th>';
+        html += '<th style="padding:10px 8px;text-align:center;">概念层</th>';
+        html += '<th style="padding:10px 8px;text-align:center;">逻辑层</th>';
+        html += '<th style="padding:10px 8px;text-align:center;">物理层</th>';
+        html += '<th style="padding:10px 8px;text-align:center;">状态</th>';
+        html += '<th style="padding:10px 8px;text-align:center;">属性</th>';
+        html += '<th style="padding:10px 8px;text-align:center;">生命周期</th>';
+        html += '<th style="padding:10px 8px;text-align:center;">溯源链</th>';
+        html += '</tr></thead><tbody>';
+
+        items.forEach(item => {
+            const color = statusColors[item.completeness_status] || '#94a3b8';
+            const label = statusLabels[item.completeness_status] || item.completeness_status;
+            html += `<tr style="border-bottom:1px solid var(--border);">`;
+            html += `<td style="padding:8px 12px;"><strong>${esc(item.object_name||'')}</strong> <span style="color:var(--text-muted);font-size:.72rem;">${esc(item.object_code||'')}</span></td>`;
+            html += `<td style="padding:8px;text-align:center;"><span style="color:var(--concept);">${item.concept_count||0}</span></td>`;
+            html += `<td style="padding:8px;text-align:center;"><span style="color:var(--logical);">${item.logical_count||0}</span></td>`;
+            html += `<td style="padding:8px;text-align:center;"><span style="color:var(--physical);">${item.physical_count||0}</span></td>`;
+            html += `<td style="padding:8px;text-align:center;"><span style="padding:2px 8px;border-radius:4px;background:${color}15;color:${color};font-size:.72rem;">${label}</span></td>`;
+            html += `<td style="padding:8px;text-align:center;">${item.attr_defined_count||0}</td>`;
+            html += `<td style="padding:8px;text-align:center;">${item.lifecycle_record_count||0}</td>`;
+            html += `<td style="padding:8px;text-align:center;">${item.traceability_chain_count||0}</td>`;
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function renderGovernanceDefects(defects) {
+        const container = document.getElementById('govDefectList');
+        if (!defects.length) {
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-check-circle" style="color:#10b981;"></i><p>未发现治理缺陷</p></div>';
+            return;
+        }
+
+        const typeLabels = {'MISSING_LAYER':'层级缺失','WEAK_RELATION':'弱关联','NO_ATTRIBUTES':'属性缺失'};
+        const sevColors = {'WARNING':'#f59e0b','INFO':'#6366f1','CRITICAL':'#ef4444'};
+        const sevIcons = {'WARNING':'bi-exclamation-triangle-fill','INFO':'bi-info-circle-fill','CRITICAL':'bi-exclamation-octagon-fill'};
+
+        let html = '';
+        defects.forEach(d => {
+            const color = sevColors[d.severity] || '#6366f1';
+            const icon = sevIcons[d.severity] || 'bi-info-circle';
+            const typeLabel = typeLabels[d.defect_type] || d.defect_type;
+            html += `<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">`;
+            html += `<i class="bi ${icon}" style="color:${color};font-size:1rem;flex-shrink:0;"></i>`;
+            html += `<div style="flex:1;">`;
+            html += `<span style="font-weight:500;font-size:.82rem;">${esc(d.object_name||'')} <span style="color:var(--text-muted);font-size:.72rem;">${esc(d.object_code||'')}</span></span>`;
+            html += `<div style="font-size:.76rem;color:var(--text-sec);margin-top:2px;">${esc(d.defect_detail||'')}</div>`;
+            html += '</div>';
+            html += `<span style="font-size:.68rem;padding:2px 8px;border-radius:4px;background:${color}15;color:${color};flex-shrink:0;">${typeLabel}</span>`;
+            html += '</div>';
+        });
+        container.innerHTML = html;
+    }
+
+    function renderDomainComparison(data) {
+        const container = document.getElementById('govDomainComparison');
+        const items = data.comparison || [];
+        const domains = data.domains || [];
+
+        if (!items.length || domains.length < 2) {
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-diagram-2"></i><p>需要至少两个数据域才能进行对比</p></div>';
+            return;
+        }
+
+        let html = `<div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;">`;
+        html += `<span style="font-size:.82rem;color:var(--text-sec);">跨域一致性: <strong style="color:${data.consistency_rate>=60?'#10b981':'#f59e0b'};">${data.consistency_rate}%</strong></span>`;
+        html += `<span style="font-size:.72rem;color:var(--text-muted);">一致对象 ${data.consistent_count}/${data.total_objects}</span>`;
+        html += '</div>';
+
+        html += '<table style="width:100%;border-collapse:collapse;font-size:.82rem;">';
+        html += '<thead><tr style="background:var(--bg-main);border-bottom:2px solid var(--border);">';
+        html += '<th style="padding:8px 12px;text-align:left;">对象编码</th>';
+        domains.forEach(d => { html += `<th style="padding:8px;text-align:center;">${esc(d)}</th>`; });
+        html += '<th style="padding:8px;text-align:center;">状态</th>';
+        html += '</tr></thead><tbody>';
+
+        items.forEach(item => {
+            html += `<tr style="border-bottom:1px solid var(--border);">`;
+            html += `<td style="padding:6px 12px;font-weight:500;">${esc(item.object_code)}</td>`;
+            domains.forEach(d => {
+                const present = item.present_in.includes(d);
+                html += `<td style="padding:6px 8px;text-align:center;"><i class="bi ${present?'bi-check-circle-fill':'bi-x-circle'}" style="color:${present?'#10b981':'#ef4444'};"></i></td>`;
+            });
+            html += `<td style="padding:6px 8px;text-align:center;"><span style="font-size:.72rem;padding:2px 6px;border-radius:4px;background:${item.is_consistent?'#10b98115':'#f59e0b15'};color:${item.is_consistent?'#10b981':'#f59e0b'};">${item.is_consistent?'一致':'不一致'}</span></td>`;
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
     }
     </script>
 </body>
