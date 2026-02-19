@@ -601,6 +601,18 @@
             <div class="nav-item" data-section="section-datasets" onclick="scrollToSection('section-datasets')">
                 <i class="bi bi-database"></i><span>数据集</span>
             </div>
+            <div class="nav-item" data-section="section-lifecycle" onclick="scrollToSection('section-lifecycle');loadLifecycle();">
+                <i class="bi bi-clock-history"></i><span>生命周期</span>
+            </div>
+            <div class="nav-item" data-section="section-traceability" onclick="scrollToSection('section-traceability');loadTraceability();">
+                <i class="bi bi-signpost-split"></i><span>溯源链路</span>
+            </div>
+            <div class="nav-item" data-section="section-mechanism" onclick="scrollToSection('section-mechanism');loadMechanismFunctions();">
+                <i class="bi bi-gear-wide-connected"></i><span>机理函数</span>
+            </div>
+            <div class="nav-item" data-section="section-alerts" onclick="scrollToSection('section-alerts');loadAlerts();">
+                <i class="bi bi-bell"></i><span>风险预警</span>
+            </div>
         </nav>
 
         <div class="sidebar-section">数据域</div>
@@ -811,6 +823,119 @@
                         {% endif %}
                         </tbody>
                     </table>
+                </div>
+            </section>
+
+            <!-- Section: Lifecycle (Phase 2) -->
+            <section class="section" id="section-lifecycle" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-clock-history"></i>全生命周期管理
+                    </div>
+                    <button class="btn-sm" onclick="loadLifecycle()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                </div>
+                <!-- 生命周期阶段统计 -->
+                <div class="stats-grid" id="lifecycleStats" style="margin-bottom:16px;">
+                    <div class="stat-card" style="border-left:3px solid #6366f1;">
+                        <div class="stat-value" id="lcPlanning">0</div>
+                        <div class="stat-label">规划 Planning</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #3b82f6;">
+                        <div class="stat-value" id="lcDesign">0</div>
+                        <div class="stat-label">设计 Design</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #10b981;">
+                        <div class="stat-value" id="lcConstruction">0</div>
+                        <div class="stat-label">建设 Construction</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #f59e0b;">
+                        <div class="stat-value" id="lcOperation">0</div>
+                        <div class="stat-label">运行 Operation</div>
+                    </div>
+                </div>
+                <!-- 时间线 -->
+                <div id="lifecycleTimeline" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;min-height:120px;">
+                    <div class="empty-state"><i class="bi bi-clock-history"></i><p>选择一个对象查看其生命周期历史</p></div>
+                </div>
+            </section>
+
+            <!-- Section: Traceability (Phase 3) -->
+            <section class="section" id="section-traceability" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-signpost-split"></i>穿透式溯源链路
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn-sm" onclick="showCreateChainForm()"><i class="bi bi-plus-lg"></i> 新建链路</button>
+                        <button class="btn-sm" onclick="loadTraceability()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                    </div>
+                </div>
+                <div id="chainList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:16px;">
+                    <div class="empty-state"><i class="bi bi-signpost-split"></i><p>暂无溯源链路</p></div>
+                </div>
+                <div id="chainDetail" style="display:none;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;"></div>
+                <div id="createChainForm" style="display:none;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;margin-top:12px;"></div>
+            </section>
+
+            <!-- Section: Mechanism Functions (Phase 4) -->
+            <section class="section" id="section-mechanism" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-gear-wide-connected"></i>机理函数
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn-sm" onclick="showCreateFuncForm()"><i class="bi bi-plus-lg"></i> 新建函数</button>
+                        <button class="btn-sm" onclick="loadMechanismFunctions()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                    </div>
+                </div>
+                <div class="filter-tabs" id="funcFilterTabs">
+                    <div class="filter-tab active" onclick="filterFunctions('ALL')">全部</div>
+                    <div class="filter-tab" onclick="filterFunctions('THRESHOLD')">阈值检查</div>
+                    <div class="filter-tab" onclick="filterFunctions('FORMULA')">计算公式</div>
+                    <div class="filter-tab" onclick="filterFunctions('RULE')">条件规则</div>
+                </div>
+                <div id="funcList" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
+                    <div class="empty-state"><i class="bi bi-gear-wide-connected"></i><p>加载中...</p></div>
+                </div>
+                <div id="funcTestPanel" style="display:none;margin-top:12px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;"></div>
+                <div id="createFuncForm" style="display:none;margin-top:12px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;"></div>
+            </section>
+
+            <!-- Section: Alerts (Phase 5) -->
+            <section class="section" id="section-alerts" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-bell"></i>风险预警
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-outline" onclick="runAlertCheck()" id="btnAlertCheck">
+                            <i class="bi bi-shield-check"></i>执行检查
+                        </button>
+                        <button class="btn-sm" onclick="loadAlerts()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                    </div>
+                </div>
+                <!-- 预警统计卡片 -->
+                <div class="stats-grid" style="margin-bottom:16px;">
+                    <div class="stat-card" style="border-left:3px solid #ef4444;">
+                        <div class="stat-value" id="alertUnresolved">0</div>
+                        <div class="stat-label">待处理预警</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #dc2626;">
+                        <div class="stat-value" id="alertCritical">0</div>
+                        <div class="stat-label">严重</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #f59e0b;">
+                        <div class="stat-value" id="alertWarning">0</div>
+                        <div class="stat-label">警告</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #6366f1;">
+                        <div class="stat-value" id="alertInfo">0</div>
+                        <div class="stat-label">信息</div>
+                    </div>
+                </div>
+                <!-- 预警列表 -->
+                <div id="alertList" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
+                    <div class="empty-state"><i class="bi bi-bell"></i><p>暂无预警记录</p></div>
                 </div>
             </section>
 
@@ -1787,6 +1912,643 @@
             }
         } catch(e) {
             showToast('删除失败: ' + e.message, 'error');
+        }
+    }
+
+    // ========== Phase 2: Lifecycle Management ==========
+    async function loadLifecycle() {
+        document.getElementById('section-lifecycle').style.display = 'block';
+        // 加载阶段统计
+        try {
+            const resp = await fetch('/api/olm/lifecycle-stats' + (selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : ''));
+            if (resp.ok) {
+                const data = await resp.json();
+                const statsMap = {};
+                (data.stats || []).forEach(s => { statsMap[s.lifecycle_stage] = s.object_count; });
+                animateNumber('lcPlanning', statsMap['Planning'] || 0);
+                animateNumber('lcDesign', statsMap['Design'] || 0);
+                animateNumber('lcConstruction', statsMap['Construction'] || 0);
+                animateNumber('lcOperation', statsMap['Operation'] || 0);
+            }
+        } catch(e) { /* ignore */ }
+
+        // 如果选中了对象，加载该对象的生命周期
+        if (selectedObjectCode) {
+            loadObjectLifecycle(selectedObjectCode);
+        }
+    }
+
+    async function loadObjectLifecycle(objectCode) {
+        const container = document.getElementById('lifecycleTimeline');
+        container.innerHTML = '<div style="text-align:center;padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
+
+        try {
+            const resp = await fetch(`/api/olm/object-lifecycle/${encodeURIComponent(objectCode)}` + (selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : ''));
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            renderLifecycleTimeline(data.lifecycle || [], objectCode);
+        } catch(e) {
+            container.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ${esc(e.message)}</p></div>`;
+        }
+    }
+
+    function renderLifecycleTimeline(lifecycle, objectCode) {
+        const container = document.getElementById('lifecycleTimeline');
+        const stages = ['Planning', 'Design', 'Construction', 'Operation', 'Finance'];
+        const stageLabels = {'Planning':'规划','Design':'设计','Construction':'建设','Operation':'运行','Finance':'财务'};
+        const stageColors = {'Planning':'#6366f1','Design':'#3b82f6','Construction':'#10b981','Operation':'#f59e0b','Finance':'#ef4444'};
+
+        const obj = extractedObjects.find(o => o.object_code === objectCode);
+        const objName = obj ? obj.object_name : objectCode;
+
+        // 构建已有阶段的集合
+        const activeStages = new Set(lifecycle.map(l => l.lifecycle_stage));
+
+        let html = `<div style="margin-bottom:16px;font-weight:600;font-size:1rem;"><i class="bi bi-clock-history" style="color:var(--primary);"></i> ${esc(objName)} 的生命周期</div>`;
+        html += '<div style="display:flex;align-items:center;gap:0;position:relative;padding:0 20px;">';
+
+        stages.forEach((stage, idx) => {
+            const active = activeStages.has(stage);
+            const record = lifecycle.find(l => l.lifecycle_stage === stage);
+            const color = active ? stageColors[stage] : '#cbd5e1';
+
+            html += `<div style="flex:1;text-align:center;position:relative;">`;
+            html += `<div style="width:36px;height:36px;border-radius:50%;background:${color};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;position:relative;z-index:1;box-shadow:${active ? '0 0 0 4px '+color+'33' : 'none'};">`;
+            html += `${idx + 1}</div>`;
+            html += `<div style="font-size:.78rem;font-weight:${active?'600':'400'};color:${active?'var(--text-main)':'var(--text-muted)'};margin-top:8px;">${esc(stageLabels[stage])}</div>`;
+            if (record && record.stage_entered_at) {
+                html += `<div style="font-size:.68rem;color:var(--text-muted);margin-top:2px;">${esc(record.stage_entered_at.split('T')[0])}</div>`;
+            }
+            html += '</div>';
+
+            if (idx < stages.length - 1) {
+                const nextActive = activeStages.has(stages[idx + 1]);
+                html += `<div style="flex:1;height:3px;background:${active && nextActive ? 'linear-gradient(90deg,'+stageColors[stage]+','+stageColors[stages[idx+1]]+')' : '#e2e8f0'};margin-top:-18px;"></div>`;
+            }
+        });
+
+        html += '</div>';
+
+        if (!lifecycle.length) {
+            html += '<div style="text-align:center;color:var(--text-muted);margin-top:20px;font-size:.85rem;">暂无生命周期记录，可通过API添加</div>';
+        } else {
+            // 展示属性快照
+            html += '<div style="margin-top:20px;">';
+            lifecycle.forEach(l => {
+                const color = stageColors[l.lifecycle_stage] || '#6366f1';
+                html += `<div style="padding:10px 14px;margin-bottom:8px;border-left:3px solid ${color};background:var(--bg-body);border-radius:0 var(--radius-sm) var(--radius-sm) 0;">`;
+                html += `<div style="font-weight:600;font-size:.85rem;">${esc(stageLabels[l.lifecycle_stage] || l.lifecycle_stage)}</div>`;
+                if (l.stage_entered_at) html += `<div style="font-size:.75rem;color:var(--text-muted);">进入: ${esc(l.stage_entered_at)}</div>`;
+                if (l.notes) html += `<div style="font-size:.78rem;color:var(--text-sec);margin-top:4px;">${esc(l.notes)}</div>`;
+                if (l.attributes_snapshot && typeof l.attributes_snapshot === 'object') {
+                    const attrs = l.attributes_snapshot;
+                    const keys = Object.keys(attrs).slice(0, 5);
+                    if (keys.length) {
+                        html += '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">';
+                        keys.forEach(k => {
+                            html += `<span style="font-size:.72rem;padding:2px 8px;background:${color}15;color:${color};border-radius:4px;">${esc(k)}: ${esc(String(attrs[k]))}</span>`;
+                        });
+                        html += '</div>';
+                    }
+                }
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+
+        container.innerHTML = html;
+    }
+
+    // ========== Phase 3: Traceability ==========
+    async function loadTraceability() {
+        document.getElementById('section-traceability').style.display = 'block';
+        const container = document.getElementById('chainList');
+        container.innerHTML = '<div style="text-align:center;padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
+
+        try {
+            const resp = await fetch('/api/olm/traceability-chains' + (selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : ''));
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            renderChainList(data.chains || []);
+        } catch(e) {
+            container.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ${esc(e.message)}</p></div>`;
+        }
+    }
+
+    function renderChainList(chains) {
+        const container = document.getElementById('chainList');
+        if (!chains.length) {
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-signpost-split"></i><p>暂无溯源链路，点击"新建链路"创建</p></div>';
+            return;
+        }
+
+        const typeColors = {'FINANCIAL':'#ef4444','PROCUREMENT':'#3b82f6','CONSTRUCTION':'#10b981','CUSTOM':'#6366f1'};
+        const typeLabels = {'FINANCIAL':'财务','PROCUREMENT':'采购','CONSTRUCTION':'建设','CUSTOM':'自定义'};
+
+        container.innerHTML = chains.map(c => {
+            const color = typeColors[c.chain_type] || '#6366f1';
+            return `<div style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;cursor:pointer;transition:var(--transition);border-left:3px solid ${color};"
+                         onmouseover="this.style.boxShadow='var(--shadow)'" onmouseout="this.style.boxShadow='none'"
+                         onclick="loadChainDetail(${c.chain_id})">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <span style="font-weight:600;font-size:.9rem;">${esc(c.chain_name)}</span>
+                    <span style="font-size:.68rem;padding:2px 8px;border-radius:4px;background:${color}15;color:${color};font-weight:500;">${esc(typeLabels[c.chain_type] || c.chain_type)}</span>
+                </div>
+                <div style="font-size:.78rem;color:var(--text-muted);">${esc(c.chain_code)}</div>
+                ${c.description ? `<div style="font-size:.78rem;color:var(--text-sec);margin-top:4px;">${esc(c.description)}</div>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    async function loadChainDetail(chainId) {
+        const container = document.getElementById('chainDetail');
+        container.style.display = 'block';
+        container.innerHTML = '<div style="text-align:center;padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
+
+        try {
+            const resp = await fetch(`/api/olm/traceability-chain/${chainId}`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            renderChainDetail(data.chain);
+        } catch(e) {
+            container.innerHTML = `<div style="color:#ef4444;">加载失败: ${esc(e.message)}</div>`;
+        }
+    }
+
+    function renderChainDetail(chain) {
+        const container = document.getElementById('chainDetail');
+        const nodes = chain.nodes || [];
+        const typeColors = {'SOURCE':'#10b981','INTERMEDIATE':'#3b82f6','TARGET':'#ef4444'};
+        const layerColors = {'CONCEPT':'var(--concept)','LOGICAL':'var(--logical)','PHYSICAL':'var(--physical)'};
+
+        let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">`;
+        html += `<div style="font-weight:600;font-size:1.05rem;"><i class="bi bi-signpost-split" style="color:var(--primary);"></i> ${esc(chain.chain_name)}</div>`;
+        html += `<button class="btn-sm" onclick="document.getElementById('chainDetail').style.display='none'"><i class="bi bi-x-lg"></i></button>`;
+        html += '</div>';
+
+        if (chain.description) {
+            html += `<div style="font-size:.82rem;color:var(--text-sec);margin-bottom:16px;">${esc(chain.description)}</div>`;
+        }
+
+        // 节点流程图
+        html += '<div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:16px 0;">';
+        nodes.forEach((node, idx) => {
+            const color = typeColors[node.node_type] || '#6366f1';
+            const layerColor = layerColors[node.entity_layer] || '#94a3b8';
+
+            html += `<div style="text-align:center;min-width:120px;flex-shrink:0;">`;
+            html += `<div style="width:48px;height:48px;border-radius:50%;background:${color};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 0 0 4px ${color}22;">`;
+            html += `<i class="bi bi-${node.node_type==='SOURCE'?'play-circle':''}${node.node_type==='TARGET'?'flag':''}${node.node_type==='INTERMEDIATE'?'circle':''}"></i>`;
+            html += '</div>';
+            html += `<div style="font-size:.82rem;font-weight:600;margin-top:8px;">${esc(node.node_label || node.entity_name || '')}</div>`;
+            if (node.entity_layer) {
+                html += `<div style="font-size:.68rem;color:${layerColor};margin-top:2px;">${esc(node.entity_layer)}</div>`;
+            }
+            if (node.object_name) {
+                html += `<div style="font-size:.68rem;color:var(--text-muted);margin-top:2px;">对象: ${esc(node.object_name)}</div>`;
+            }
+            html += '</div>';
+
+            if (idx < nodes.length - 1) {
+                html += '<div style="flex:0 0 40px;display:flex;align-items:center;justify-content:center;margin-top:-30px;"><i class="bi bi-arrow-right" style="font-size:1.2rem;color:var(--text-muted);"></i></div>';
+            }
+        });
+        html += '</div>';
+
+        if (!nodes.length) {
+            html += '<div style="text-align:center;color:var(--text-muted);padding:20px;">该链路暂无节点</div>';
+        }
+
+        container.innerHTML = html;
+    }
+
+    function showCreateChainForm() {
+        const container = document.getElementById('createChainForm');
+        container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        if (container.style.display === 'block') {
+            container.innerHTML = `
+                <div style="font-weight:600;margin-bottom:12px;"><i class="bi bi-plus-lg" style="color:var(--primary);"></i> 新建溯源链路</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div>
+                        <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">链路编码</label>
+                        <input type="text" id="newChainCode" placeholder="如: CHAIN_SETTLE" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                    </div>
+                    <div>
+                        <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">链路名称</label>
+                        <input type="text" id="newChainName" placeholder="如: 项目结算溯源链" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                    </div>
+                    <div>
+                        <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">类型</label>
+                        <select id="newChainType" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                            <option value="FINANCIAL">财务</option>
+                            <option value="PROCUREMENT">采购</option>
+                            <option value="CONSTRUCTION">建设</option>
+                            <option value="CUSTOM" selected>自定义</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">描述</label>
+                        <input type="text" id="newChainDesc" placeholder="链路描述" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                    </div>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+                    <button class="btn btn-outline" onclick="document.getElementById('createChainForm').style.display='none'">取消</button>
+                    <button class="btn btn-primary" onclick="createChain()">创建</button>
+                </div>`;
+        }
+    }
+
+    async function createChain() {
+        const code = document.getElementById('newChainCode').value.trim();
+        const name = document.getElementById('newChainName').value.trim();
+        if (!code || !name) { showToast('请填写链路编码和名称', 'error'); return; }
+
+        try {
+            const resp = await fetch('/api/olm/traceability-chains', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    chain_code: code, chain_name: name,
+                    chain_type: document.getElementById('newChainType').value,
+                    description: document.getElementById('newChainDesc').value,
+                    data_domain: selectedDomain
+                })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                showToast('链路创建成功', 'success');
+                document.getElementById('createChainForm').style.display = 'none';
+                loadTraceability();
+            } else {
+                showToast('创建失败: ' + (data.error || ''), 'error');
+            }
+        } catch(e) {
+            showToast('创建失败: ' + e.message, 'error');
+        }
+    }
+
+    // ========== Phase 4: Mechanism Functions ==========
+    let allFunctions = [];
+    let currentFuncFilter = 'ALL';
+
+    async function loadMechanismFunctions() {
+        document.getElementById('section-mechanism').style.display = 'block';
+        const container = document.getElementById('funcList');
+        container.innerHTML = '<div style="text-align:center;padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
+
+        try {
+            const resp = await fetch('/api/olm/mechanism-functions');
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            allFunctions = data.functions || [];
+            renderFunctions();
+        } catch(e) {
+            container.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ${esc(e.message)}</p></div>`;
+        }
+    }
+
+    function filterFunctions(type) {
+        currentFuncFilter = type;
+        document.querySelectorAll('#funcFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+        renderFunctions();
+    }
+
+    function renderFunctions() {
+        const container = document.getElementById('funcList');
+        let funcs = allFunctions;
+        if (currentFuncFilter !== 'ALL') {
+            funcs = funcs.filter(f => f.func_type === currentFuncFilter);
+        }
+
+        if (!funcs.length) {
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-gear-wide-connected"></i><p>暂无机理函数</p></div>';
+            return;
+        }
+
+        const typeColors = {'THRESHOLD':'#ef4444','FORMULA':'#3b82f6','RULE':'#f59e0b','VALIDATION':'#10b981'};
+        const typeLabels = {'THRESHOLD':'阈值检查','FORMULA':'计算公式','RULE':'条件规则','VALIDATION':'数据校验'};
+        const sevColors = {'CRITICAL':'#dc2626','WARNING':'#f59e0b','INFO':'#6366f1'};
+
+        let html = '<table style="width:100%;font-size:.82rem;border-collapse:collapse;">';
+        html += '<thead><tr style="border-bottom:2px solid var(--border);background:var(--bg-body);">';
+        html += '<th style="text-align:left;padding:10px 14px;">函数名称</th>';
+        html += '<th style="padding:10px;text-align:center;">类型</th>';
+        html += '<th style="padding:10px;text-align:center;">级别</th>';
+        html += '<th style="padding:10px;text-align:center;">状态</th>';
+        html += '<th style="text-align:left;padding:10px;">关联对象</th>';
+        html += '<th style="padding:10px;text-align:center;">操作</th>';
+        html += '</tr></thead><tbody>';
+
+        funcs.forEach(f => {
+            const typeColor = typeColors[f.func_type] || '#6366f1';
+            const sevColor = sevColors[f.severity] || '#6366f1';
+            html += `<tr style="border-bottom:1px solid var(--border);">`;
+            html += `<td style="padding:10px 14px;"><div style="font-weight:600;">${esc(f.func_name)}</div><div style="font-size:.72rem;color:var(--text-muted);">${esc(f.func_code)}</div></td>`;
+            html += `<td style="text-align:center;padding:10px;"><span style="font-size:.72rem;padding:2px 8px;border-radius:4px;background:${typeColor}15;color:${typeColor};font-weight:500;">${esc(typeLabels[f.func_type] || f.func_type)}</span></td>`;
+            html += `<td style="text-align:center;padding:10px;"><span style="font-size:.72rem;padding:2px 8px;border-radius:4px;background:${sevColor}15;color:${sevColor};">${esc(f.severity)}</span></td>`;
+            html += `<td style="text-align:center;padding:10px;"><span style="font-size:.72rem;padding:2px 8px;border-radius:4px;background:${f.is_active?'#10b98115':'#94a3b815'};color:${f.is_active?'#10b981':'#94a3b8'};">${f.is_active?'启用':'禁用'}</span></td>`;
+            html += `<td style="padding:10px;">${esc(f.source_object_code || '-')}</td>`;
+            html += `<td style="text-align:center;padding:10px;">`;
+            html += `<button style="padding:2px 8px;border-radius:4px;border:1px solid var(--primary);background:transparent;color:var(--primary);cursor:pointer;font-size:.72rem;margin-right:4px;" onclick="testFunction(${f.func_id})">测试</button>`;
+            html += `<button style="padding:2px 8px;border-radius:4px;border:1px solid #ef4444;background:transparent;color:#ef4444;cursor:pointer;font-size:.72rem;" onclick="deleteFunction(${f.func_id})">删除</button>`;
+            html += `</td></tr>`;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function testFunction(funcId) {
+        const func = allFunctions.find(f => f.func_id === funcId);
+        if (!func) return;
+
+        const panel = document.getElementById('funcTestPanel');
+        panel.style.display = 'block';
+
+        const expr = func.expression || {};
+        let inputFields = '';
+
+        if (expr.type === 'THRESHOLD') {
+            inputFields = `<div><label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">${esc(expr.field || '值')}</label>
+                <input type="number" id="testInput_0" placeholder="输入值" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;"></div>`;
+        } else if (expr.type === 'FORMULA' && expr.variables) {
+            inputFields = expr.variables.map((v, i) => `<div><label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">${esc(v)}</label>
+                <input type="number" id="testInput_${i}" data-field="${esc(v)}" placeholder="${esc(v)}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;"></div>`).join('');
+        } else if (expr.type === 'RULE') {
+            const match = (expr.condition || '').match(/(\S+)/);
+            const field = match ? match[1] : '值';
+            inputFields = `<div><label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">${esc(field)}</label>
+                <input type="number" id="testInput_0" data-field="${esc(field)}" placeholder="输入值" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;"></div>`;
+        }
+
+        panel.innerHTML = `
+            <div style="font-weight:600;margin-bottom:12px;"><i class="bi bi-play-circle" style="color:var(--primary);"></i> 测试: ${esc(func.func_name)}</div>
+            <div style="font-size:.78rem;color:var(--text-sec);margin-bottom:12px;">${esc(func.description || '')}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:12px;">${inputFields}</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-primary" onclick="executeTest(${funcId})"><i class="bi bi-play"></i> 执行</button>
+                <button class="btn btn-outline" onclick="document.getElementById('funcTestPanel').style.display='none'">关闭</button>
+                <div id="testResult" style="flex:1;"></div>
+            </div>`;
+    }
+
+    async function executeTest(funcId) {
+        const func = allFunctions.find(f => f.func_id === funcId);
+        if (!func) return;
+        const expr = func.expression || {};
+
+        const inputValues = {};
+        if (expr.type === 'THRESHOLD') {
+            inputValues[expr.field || '值'] = document.getElementById('testInput_0')?.value || 0;
+        } else if (expr.type === 'FORMULA' && expr.variables) {
+            expr.variables.forEach((v, i) => {
+                inputValues[v] = document.getElementById(`testInput_${i}`)?.value || 0;
+            });
+        } else if (expr.type === 'RULE') {
+            const el = document.getElementById('testInput_0');
+            inputValues[el?.dataset.field || '值'] = el?.value || 0;
+        }
+
+        const resultDiv = document.getElementById('testResult');
+        try {
+            const resp = await fetch('/api/olm/mechanism-functions/evaluate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ func_id: funcId, input_values: inputValues })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                const r = data.result;
+                if (r.triggered !== undefined) {
+                    resultDiv.innerHTML = `<span style="padding:4px 12px;border-radius:4px;font-size:.82rem;font-weight:500;background:${r.triggered?'#ef444415':'#10b98115'};color:${r.triggered?'#ef4444':'#10b981'};">${r.triggered ? '触发: ' + esc(r.message || r.action || '') : '未触发'}</span>`;
+                } else if (r.computed_value !== undefined && r.computed_value !== null) {
+                    resultDiv.innerHTML = `<span style="padding:4px 12px;border-radius:4px;font-size:.82rem;font-weight:500;background:#3b82f615;color:#3b82f6;">${esc(r.result_name)}: ${r.computed_value} ${esc(r.unit || '')}</span>`;
+                } else {
+                    resultDiv.innerHTML = `<span style="font-size:.82rem;color:var(--text-sec);">${esc(JSON.stringify(r))}</span>`;
+                }
+            } else {
+                resultDiv.innerHTML = `<span style="color:#ef4444;font-size:.82rem;">${esc(data.error)}</span>`;
+            }
+        } catch(e) {
+            resultDiv.innerHTML = `<span style="color:#ef4444;font-size:.82rem;">执行失败: ${esc(e.message)}</span>`;
+        }
+    }
+
+    async function deleteFunction(funcId) {
+        if (!confirm('确认删除此机理函数？')) return;
+        try {
+            const resp = await fetch(`/api/olm/mechanism-functions/${funcId}`, { method: 'DELETE' });
+            const data = await resp.json();
+            if (data.success) {
+                showToast('已删除', 'success');
+                loadMechanismFunctions();
+            } else {
+                showToast('删除失败: ' + (data.error || ''), 'error');
+            }
+        } catch(e) {
+            showToast('删除失败: ' + e.message, 'error');
+        }
+    }
+
+    function showCreateFuncForm() {
+        const container = document.getElementById('createFuncForm');
+        container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        if (container.style.display === 'block') {
+            container.innerHTML = `
+                <div style="font-weight:600;margin-bottom:12px;"><i class="bi bi-plus-lg" style="color:var(--primary);"></i> 新建机理函数</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div><label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">函数编码</label>
+                        <input type="text" id="newFuncCode" placeholder="MF_XXX" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;"></div>
+                    <div><label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">函数名称</label>
+                        <input type="text" id="newFuncName" placeholder="函数名称" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;"></div>
+                    <div><label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">类型</label>
+                        <select id="newFuncType" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;" onchange="updateExprTemplate()">
+                            <option value="THRESHOLD">阈值检查</option>
+                            <option value="FORMULA">计算公式</option>
+                            <option value="RULE">条件规则</option>
+                        </select></div>
+                    <div><label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">严重级别</label>
+                        <select id="newFuncSeverity" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                            <option value="INFO">信息</option>
+                            <option value="WARNING" selected>警告</option>
+                            <option value="CRITICAL">严重</option>
+                        </select></div>
+                    <div><label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">关联对象</label>
+                        <input type="text" id="newFuncSource" placeholder="OBJ_CONTRACT" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;"></div>
+                    <div><label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">描述</label>
+                        <input type="text" id="newFuncDesc" placeholder="函数描述" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;"></div>
+                </div>
+                <div style="margin-top:12px;">
+                    <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">表达式 (JSON)</label>
+                    <textarea id="newFuncExpr" rows="4" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem;font-family:monospace;resize:vertical;">{
+  "type": "THRESHOLD",
+  "field": "字段名",
+  "operator": ">",
+  "value": 0,
+  "message": "提示信息"
+}</textarea>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+                    <button class="btn btn-outline" onclick="document.getElementById('createFuncForm').style.display='none'">取消</button>
+                    <button class="btn btn-primary" onclick="createFunction()">创建</button>
+                </div>`;
+        }
+    }
+
+    function updateExprTemplate() {
+        const type = document.getElementById('newFuncType').value;
+        const templates = {
+            'THRESHOLD': '{\n  "type": "THRESHOLD",\n  "field": "字段名",\n  "operator": ">",\n  "value": 0,\n  "message": "提示信息"\n}',
+            'FORMULA': '{\n  "type": "FORMULA",\n  "expression": "结果 = 变量A * 变量B",\n  "variables": ["变量A", "变量B"],\n  "result": "结果",\n  "unit": ""\n}',
+            'RULE': '{\n  "type": "RULE",\n  "condition": "字段名 > 阈值",\n  "then": "满足时执行",\n  "else": "不满足时执行"\n}'
+        };
+        document.getElementById('newFuncExpr').value = templates[type] || '';
+    }
+
+    async function createFunction() {
+        const code = document.getElementById('newFuncCode').value.trim();
+        const name = document.getElementById('newFuncName').value.trim();
+        if (!code || !name) { showToast('请填写函数编码和名称', 'error'); return; }
+
+        let expression;
+        try {
+            expression = JSON.parse(document.getElementById('newFuncExpr').value);
+        } catch(e) {
+            showToast('表达式JSON格式错误', 'error');
+            return;
+        }
+
+        try {
+            const resp = await fetch('/api/olm/mechanism-functions', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    func_code: code, func_name: name,
+                    func_type: document.getElementById('newFuncType').value,
+                    severity: document.getElementById('newFuncSeverity').value,
+                    expression: expression,
+                    source_object_code: document.getElementById('newFuncSource').value.trim(),
+                    description: document.getElementById('newFuncDesc').value.trim(),
+                    data_domain: selectedDomain
+                })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                showToast('函数创建成功', 'success');
+                document.getElementById('createFuncForm').style.display = 'none';
+                loadMechanismFunctions();
+            } else {
+                showToast('创建失败: ' + (data.error || ''), 'error');
+            }
+        } catch(e) {
+            showToast('创建失败: ' + e.message, 'error');
+        }
+    }
+
+    // ========== Phase 5: Alerts ==========
+    async function loadAlerts() {
+        document.getElementById('section-alerts').style.display = 'block';
+
+        // 加载统计
+        try {
+            const summaryResp = await fetch('/api/olm/alerts/summary');
+            if (summaryResp.ok) {
+                const summary = await summaryResp.json();
+                animateNumber('alertUnresolved', summary.unresolved || 0);
+                animateNumber('alertCritical', summary.by_level?.CRITICAL || 0);
+                animateNumber('alertWarning', summary.by_level?.WARNING || 0);
+                animateNumber('alertInfo', summary.by_level?.INFO || 0);
+            }
+        } catch(e) { /* ignore */ }
+
+        // 加载列表
+        const container = document.getElementById('alertList');
+        container.innerHTML = '<div style="text-align:center;padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
+
+        try {
+            const resp = await fetch('/api/olm/alerts');
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            renderAlerts(data.alerts || []);
+        } catch(e) {
+            container.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ${esc(e.message)}</p></div>`;
+        }
+    }
+
+    function renderAlerts(alerts) {
+        const container = document.getElementById('alertList');
+        if (!alerts.length) {
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-bell"></i><p>暂无预警记录，点击"执行检查"触发规则检查</p></div>';
+            return;
+        }
+
+        const levelColors = {'CRITICAL':'#dc2626','WARNING':'#f59e0b','INFO':'#6366f1'};
+        const levelIcons = {'CRITICAL':'bi-exclamation-octagon-fill','WARNING':'bi-exclamation-triangle-fill','INFO':'bi-info-circle-fill'};
+
+        let html = '';
+        alerts.forEach(a => {
+            const color = levelColors[a.alert_level] || '#6366f1';
+            const icon = levelIcons[a.alert_level] || 'bi-bell';
+            html += `<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;${a.is_resolved?'opacity:.6;':''}">`;
+            html += `<i class="bi ${icon}" style="color:${color};font-size:1.2rem;margin-top:2px;flex-shrink:0;"></i>`;
+            html += '<div style="flex:1;">';
+            html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">`;
+            html += `<span style="font-weight:600;font-size:.88rem;">${esc(a.alert_title || '')}</span>`;
+            html += `<span style="font-size:.68rem;padding:2px 8px;border-radius:4px;background:${color}15;color:${color};">${esc(a.alert_level)}</span>`;
+            if (a.is_resolved) html += `<span style="font-size:.68rem;padding:2px 8px;border-radius:4px;background:#10b98115;color:#10b981;">已处理</span>`;
+            html += '</div>';
+            if (a.alert_detail) html += `<div style="font-size:.78rem;color:var(--text-sec);">${esc(a.alert_detail)}</div>`;
+            if (a.trigger_value) html += `<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">实际值: ${esc(a.trigger_value)} | 阈值: ${esc(a.threshold_value || '-')}</div>`;
+            if (a.created_at) html += `<div style="font-size:.68rem;color:var(--text-muted);margin-top:2px;">${esc(a.created_at)}</div>`;
+            html += '</div>';
+            if (!a.is_resolved) {
+                html += `<button style="padding:4px 12px;border-radius:4px;border:1px solid #10b981;background:transparent;color:#10b981;cursor:pointer;font-size:.72rem;flex-shrink:0;" onclick="resolveAlert(${a.alert_id})">处理</button>`;
+            }
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    async function resolveAlert(alertId) {
+        try {
+            const resp = await fetch(`/api/olm/alerts/${alertId}/resolve`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ resolved_by: 'admin' })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                showToast('已标记为已处理', 'success');
+                loadAlerts();
+            } else {
+                showToast('操作失败: ' + (data.error || ''), 'error');
+            }
+        } catch(e) {
+            showToast('操作失败: ' + e.message, 'error');
+        }
+    }
+
+    async function runAlertCheck() {
+        const btn = document.getElementById('btnAlertCheck');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;"></div> 检查中...';
+
+        try {
+            const resp = await fetch('/api/olm/alerts/run-check', { method: 'POST' });
+            const data = await resp.json();
+            if (data.success) {
+                showToast(`规则检查完成: 检查${data.functions_checked}个函数，生成${data.alerts_created}条预警`, 'success');
+                loadAlerts();
+            } else {
+                showToast('检查失败: ' + (data.error || ''), 'error');
+            }
+        } catch(e) {
+            showToast('检查失败: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-shield-check"></i>执行检查';
         }
     }
     </script>

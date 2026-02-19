@@ -1575,3 +1575,680 @@ def api_summary():
     result = get_summary_from_json(domain)
     result['source'] = 'json_file'
     return jsonify(result)
+
+
+# ============================================================================
+# Phase 2: 全生命周期管理 API
+# ============================================================================
+
+@olm_api.route('/api/olm/object-lifecycle/<object_code>')
+def api_object_lifecycle(object_code):
+    """查询对象的生命周期历史"""
+    domain = request.args.get('domain', '')
+
+    if is_db_available():
+        try:
+            query = """
+                SELECT h.*, o.object_name
+                FROM object_lifecycle_history h
+                JOIN extracted_objects o ON o.object_id = h.object_id
+                WHERE o.object_code = %s
+            """
+            params = [object_code]
+            if domain:
+                query += " AND h.data_domain = %s"
+                params.append(domain)
+            query += " ORDER BY h.stage_entered_at ASC"
+
+            result = execute_query(query, tuple(params))
+            if isinstance(result, list):
+                for row in result:
+                    for key in ['stage_entered_at', 'stage_exited_at', 'created_at']:
+                        if row.get(key):
+                            row[key] = row[key].isoformat() if hasattr(row[key], 'isoformat') else str(row[key])
+                    if row.get('attributes_snapshot') and isinstance(row['attributes_snapshot'], str):
+                        try:
+                            row['attributes_snapshot'] = json.loads(row['attributes_snapshot'])
+                        except Exception:
+                            pass
+                return jsonify({'lifecycle': result, 'object_code': object_code, 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 生命周期查询失败: {e}")
+
+    return jsonify({'lifecycle': [], 'object_code': object_code, 'source': 'json_file'})
+
+
+@olm_api.route('/api/olm/object-lifecycle/<object_code>', methods=['POST'])
+def api_create_lifecycle(object_code):
+    """新增生命周期阶段记录"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        data = request.get_json(force=True)
+        obj = execute_query("SELECT object_id FROM extracted_objects WHERE object_code = %s", (object_code,))
+        if not obj or isinstance(obj, dict):
+            return jsonify({'success': False, 'error': '对象不存在'}), 404
+
+        object_id = obj[0]['object_id']
+        attrs_json = json.dumps(data.get('attributes_snapshot', {}), ensure_ascii=False) if data.get('attributes_snapshot') else None
+
+        result = execute_query("""
+            INSERT INTO object_lifecycle_history
+            (object_id, lifecycle_stage, stage_entered_at, attributes_snapshot, data_domain, source_system, notes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            object_id,
+            data.get('lifecycle_stage', 'Planning'),
+            data.get('stage_entered_at', datetime.now().isoformat()),
+            attrs_json,
+            data.get('data_domain', ''),
+            data.get('source_system', ''),
+            data.get('notes', '')
+        ), fetch=False)
+
+        return jsonify({'success': True, 'history_id': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/lifecycle-stats')
+def api_lifecycle_stats():
+    """各生命周期阶段对象分布统计"""
+    domain = request.args.get('domain', '')
+
+    if is_db_available():
+        try:
+            query = """
+                SELECT h.lifecycle_stage, COUNT(DISTINCT h.object_id) as object_count
+                FROM object_lifecycle_history h
+            """
+            params = []
+            if domain:
+                query += " WHERE h.data_domain = %s"
+                params.append(domain)
+            query += " GROUP BY h.lifecycle_stage ORDER BY FIELD(h.lifecycle_stage, 'Planning','Design','Construction','Operation','Finance')"
+
+            result = execute_query(query, tuple(params) if params else None)
+            if isinstance(result, list):
+                return jsonify({'stats': result, 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 生命周期统计失败: {e}")
+
+    return jsonify({'stats': [], 'source': 'json_file'})
+
+
+# ============================================================================
+# Phase 3: 穿透式业务溯源 API
+# ============================================================================
+
+@olm_api.route('/api/olm/traceability-chains')
+def api_traceability_chains():
+    """列出所有溯源链路"""
+    domain = request.args.get('domain', '')
+
+    if is_db_available():
+        try:
+            query = "SELECT * FROM traceability_chains"
+            params = []
+            if domain:
+                query += " WHERE data_domain = %s"
+                params.append(domain)
+            query += " ORDER BY created_at DESC"
+
+            result = execute_query(query, tuple(params) if params else None)
+            if isinstance(result, list):
+                for row in result:
+                    for key in ['created_at', 'updated_at']:
+                        if row.get(key):
+                            row[key] = row[key].isoformat() if hasattr(row[key], 'isoformat') else str(row[key])
+                return jsonify({'chains': result, 'total': len(result), 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 溯源链路查询失败: {e}")
+
+    return jsonify({'chains': [], 'total': 0, 'source': 'json_file'})
+
+
+@olm_api.route('/api/olm/traceability-chains', methods=['POST'])
+def api_create_chain():
+    """创建溯源链路"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        data = request.get_json(force=True)
+        chain_code = data.get('chain_code')
+        chain_name = data.get('chain_name')
+        if not chain_code or not chain_name:
+            return jsonify({'success': False, 'error': '缺少 chain_code 或 chain_name'}), 400
+
+        chain_id = execute_query("""
+            INSERT INTO traceability_chains (chain_code, chain_name, chain_type, data_domain, description)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            chain_code, chain_name,
+            data.get('chain_type', 'CUSTOM'),
+            data.get('data_domain', ''),
+            data.get('description', '')
+        ), fetch=False)
+
+        # 插入节点
+        nodes = data.get('nodes', [])
+        for node in nodes:
+            obj_id = None
+            if node.get('object_code'):
+                obj_result = execute_query(
+                    "SELECT object_id FROM extracted_objects WHERE object_code = %s LIMIT 1",
+                    (node['object_code'],)
+                )
+                if isinstance(obj_result, list) and obj_result:
+                    obj_id = obj_result[0]['object_id']
+
+            execute_query("""
+                INSERT INTO traceability_chain_nodes
+                (chain_id, node_order, object_id, entity_layer, entity_name, node_label, node_type, source_file, source_sheet, metadata)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                chain_id, node.get('node_order', 0), obj_id,
+                node.get('entity_layer'), node.get('entity_name', ''),
+                node.get('node_label', node.get('entity_name', '')),
+                node.get('node_type', 'INTERMEDIATE'),
+                node.get('source_file', ''), node.get('source_sheet', ''),
+                json.dumps(node.get('metadata', {}), ensure_ascii=False) if node.get('metadata') else None
+            ), fetch=False)
+
+        return jsonify({'success': True, 'chain_id': chain_id})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/traceability-chain/<int:chain_id>')
+def api_chain_detail(chain_id):
+    """查询链路详情（含全部节点）"""
+    if is_db_available():
+        try:
+            chain = execute_query("SELECT * FROM traceability_chains WHERE chain_id = %s", (chain_id,))
+            if not isinstance(chain, list) or not chain:
+                return jsonify({'error': '链路不存在'}), 404
+
+            chain_info = chain[0]
+            for key in ['created_at', 'updated_at']:
+                if chain_info.get(key):
+                    chain_info[key] = chain_info[key].isoformat() if hasattr(chain_info[key], 'isoformat') else str(chain_info[key])
+
+            nodes = execute_query("""
+                SELECT n.*, o.object_code, o.object_name
+                FROM traceability_chain_nodes n
+                LEFT JOIN extracted_objects o ON o.object_id = n.object_id
+                WHERE n.chain_id = %s
+                ORDER BY n.node_order
+            """, (chain_id,))
+
+            if isinstance(nodes, list):
+                for node in nodes:
+                    if node.get('metadata') and isinstance(node['metadata'], str):
+                        try:
+                            node['metadata'] = json.loads(node['metadata'])
+                        except Exception:
+                            pass
+
+            chain_info['nodes'] = nodes if isinstance(nodes, list) else []
+            return jsonify({'chain': chain_info, 'source': 'database'})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    return jsonify({'error': '数据库不可用'}), 503
+
+
+@olm_api.route('/api/olm/trace-object/<object_code>')
+def api_trace_object(object_code):
+    """从对象出发追溯所有关联链路"""
+    if is_db_available():
+        try:
+            result = execute_query("""
+                SELECT DISTINCT c.*
+                FROM traceability_chains c
+                JOIN traceability_chain_nodes n ON n.chain_id = c.chain_id
+                JOIN extracted_objects o ON o.object_id = n.object_id
+                WHERE o.object_code = %s
+                ORDER BY c.created_at DESC
+            """, (object_code,))
+
+            if isinstance(result, list):
+                for row in result:
+                    for key in ['created_at', 'updated_at']:
+                        if row.get(key):
+                            row[key] = row[key].isoformat() if hasattr(row[key], 'isoformat') else str(row[key])
+                return jsonify({'chains': result, 'object_code': object_code, 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 对象溯源查询失败: {e}")
+
+    return jsonify({'chains': [], 'object_code': object_code, 'source': 'json_file'})
+
+
+# ============================================================================
+# Phase 4: 机理函数框架 API
+# ============================================================================
+
+@olm_api.route('/api/olm/mechanism-functions')
+def api_mechanism_functions():
+    """列出所有机理函数"""
+    func_type = request.args.get('type', '')
+    is_active = request.args.get('active', '')
+
+    if is_db_available():
+        try:
+            query = "SELECT * FROM mechanism_functions WHERE 1=1"
+            params = []
+            if func_type:
+                query += " AND func_type = %s"
+                params.append(func_type)
+            if is_active != '':
+                query += " AND is_active = %s"
+                params.append(is_active == 'true')
+            query += " ORDER BY created_at DESC"
+
+            result = execute_query(query, tuple(params) if params else None)
+            if isinstance(result, list):
+                for row in result:
+                    for key in ['created_at', 'updated_at']:
+                        if row.get(key):
+                            row[key] = row[key].isoformat() if hasattr(row[key], 'isoformat') else str(row[key])
+                    if row.get('expression') and isinstance(row['expression'], str):
+                        try:
+                            row['expression'] = json.loads(row['expression'])
+                        except Exception:
+                            pass
+                return jsonify({'functions': result, 'total': len(result), 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 机理函数查询失败: {e}")
+
+    return jsonify({'functions': [], 'total': 0, 'source': 'json_file'})
+
+
+@olm_api.route('/api/olm/mechanism-functions', methods=['POST'])
+def api_create_mechanism_function():
+    """创建机理函数"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        data = request.get_json(force=True)
+        func_code = data.get('func_code')
+        func_name = data.get('func_name')
+        func_type = data.get('func_type')
+        expression = data.get('expression')
+
+        if not all([func_code, func_name, func_type, expression]):
+            return jsonify({'success': False, 'error': '缺少必填字段: func_code, func_name, func_type, expression'}), 400
+
+        expr_json = json.dumps(expression, ensure_ascii=False) if isinstance(expression, dict) else expression
+
+        result = execute_query("""
+            INSERT INTO mechanism_functions
+            (func_code, func_name, func_type, category, expression, description,
+             source_object_code, target_object_code, severity, is_active, data_domain)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            func_code, func_name, func_type,
+            data.get('category', 'BUSINESS'), expr_json,
+            data.get('description', ''),
+            data.get('source_object_code', ''),
+            data.get('target_object_code', ''),
+            data.get('severity', 'WARNING'),
+            data.get('is_active', True),
+            data.get('data_domain', '')
+        ), fetch=False)
+
+        return jsonify({'success': True, 'func_id': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/mechanism-functions/<int:func_id>', methods=['PUT'])
+def api_update_mechanism_function(func_id):
+    """更新机理函数"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        data = request.get_json(force=True)
+        updates = []
+        params = []
+
+        for field in ['func_name', 'func_type', 'category', 'description',
+                       'source_object_code', 'target_object_code', 'severity', 'data_domain']:
+            if field in data:
+                updates.append(f'{field} = %s')
+                params.append(data[field])
+
+        if 'expression' in data:
+            updates.append('expression = %s')
+            expr = data['expression']
+            params.append(json.dumps(expr, ensure_ascii=False) if isinstance(expr, dict) else expr)
+
+        if 'is_active' in data:
+            updates.append('is_active = %s')
+            params.append(data['is_active'])
+
+        if not updates:
+            return jsonify({'success': False, 'error': '无更新字段'}), 400
+
+        params.append(func_id)
+        execute_query(f"UPDATE mechanism_functions SET {', '.join(updates)} WHERE func_id = %s",
+                      tuple(params), fetch=False)
+
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/mechanism-functions/<int:func_id>', methods=['DELETE'])
+def api_delete_mechanism_function(func_id):
+    """删除机理函数"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        execute_query("DELETE FROM mechanism_functions WHERE func_id = %s", (func_id,), fetch=False)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/mechanism-functions/evaluate', methods=['POST'])
+def api_evaluate_function():
+    """执行函数评估（给定输入值）"""
+    try:
+        data = request.get_json(force=True)
+        func_id = data.get('func_id')
+        input_values = data.get('input_values', {})
+
+        # 从数据库或请求体获取函数定义
+        expression = data.get('expression')
+        if func_id and is_db_available():
+            func = execute_query("SELECT * FROM mechanism_functions WHERE func_id = %s", (func_id,))
+            if isinstance(func, list) and func:
+                expr_raw = func[0].get('expression', '{}')
+                expression = json.loads(expr_raw) if isinstance(expr_raw, str) else expr_raw
+
+        if not expression:
+            return jsonify({'success': False, 'error': '未找到函数定义'}), 400
+
+        # 评估表达式
+        result = _evaluate_expression(expression, input_values)
+        return jsonify({'success': True, 'result': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def _evaluate_expression(expression: dict, input_values: dict) -> dict:
+    """评估机理函数表达式"""
+    expr_type = expression.get('type', '')
+
+    if expr_type == 'THRESHOLD':
+        field = expression.get('field', '')
+        operator = expression.get('operator', '>')
+        threshold = float(expression.get('value', 0))
+        actual = float(input_values.get(field, 0))
+
+        ops = {'>': actual > threshold, '<': actual < threshold,
+               '>=': actual >= threshold, '<=': actual <= threshold,
+               '==': actual == threshold, '!=': actual != threshold}
+        triggered = ops.get(operator, False)
+
+        return {
+            'triggered': triggered,
+            'field': field,
+            'actual_value': actual,
+            'threshold': threshold,
+            'operator': operator,
+            'message': expression.get('message', '') if triggered else '未触发'
+        }
+
+    elif expr_type == 'FORMULA':
+        variables = expression.get('variables', [])
+        result_name = expression.get('result', '结果')
+        values = {v: float(input_values.get(v, 0)) for v in variables}
+
+        # 简单公式求值（乘法/加法/减法/除法）
+        expr_str = expression.get('expression', '')
+        computed = None
+        if '*' in expr_str and len(variables) == 2:
+            computed = values[variables[0]] * values[variables[1]]
+        elif '+' in expr_str and len(variables) == 2:
+            computed = values[variables[0]] + values[variables[1]]
+        elif '-' in expr_str and len(variables) == 2:
+            computed = values[variables[0]] - values[variables[1]]
+        elif '/' in expr_str and len(variables) == 2 and values[variables[1]] != 0:
+            computed = values[variables[0]] / values[variables[1]]
+
+        return {
+            'result_name': result_name,
+            'computed_value': computed,
+            'unit': expression.get('unit', ''),
+            'input_values': values
+        }
+
+    elif expr_type == 'RULE':
+        condition = expression.get('condition', '')
+        then_action = expression.get('then', '')
+        else_action = expression.get('else', '')
+
+        # 简单条件判断
+        triggered = False
+        for field, value in input_values.items():
+            if field in condition:
+                try:
+                    parts = condition.split()
+                    if len(parts) >= 3:
+                        op = parts[1]
+                        threshold = float(parts[2])
+                        actual = float(value)
+                        ops = {'>': actual > threshold, '<': actual < threshold,
+                               '>=': actual >= threshold, '<=': actual <= threshold}
+                        triggered = ops.get(op, False)
+                except (ValueError, IndexError):
+                    pass
+
+        return {
+            'triggered': triggered,
+            'action': then_action if triggered else else_action,
+            'condition': condition
+        }
+
+    return {'error': f'不支持的表达式类型: {expr_type}'}
+
+
+@olm_api.route('/api/olm/mechanism-functions/presets')
+def api_mechanism_presets():
+    """获取预置函数模板"""
+    presets = [
+        {
+            'name': '阈值检查',
+            'type': 'THRESHOLD',
+            'template': {
+                'type': 'THRESHOLD',
+                'field': '字段名',
+                'operator': '>',
+                'value': 0,
+                'unit': '',
+                'action': 'ALERT',
+                'message': '超出阈值时的提示信息'
+            }
+        },
+        {
+            'name': '计算公式',
+            'type': 'FORMULA',
+            'template': {
+                'type': 'FORMULA',
+                'expression': '结果 = 变量A * 变量B',
+                'variables': ['变量A', '变量B'],
+                'result': '结果',
+                'unit': ''
+            }
+        },
+        {
+            'name': '条件规则',
+            'type': 'RULE',
+            'template': {
+                'type': 'RULE',
+                'condition': '字段名 > 阈值',
+                'then': '满足时执行',
+                'else': '不满足时执行',
+                'description': '规则描述'
+            }
+        }
+    ]
+    return jsonify({'presets': presets})
+
+
+# ============================================================================
+# Phase 5: 穿透式预警与辅助决策 API
+# ============================================================================
+
+@olm_api.route('/api/olm/alerts')
+def api_alerts():
+    """查询预警记录"""
+    level = request.args.get('level', '')
+    resolved = request.args.get('resolved', '')
+    limit = min(int(request.args.get('limit', '50')), 200)
+
+    if is_db_available():
+        try:
+            query = """
+                SELECT a.*, f.func_name, f.func_type, f.severity as func_severity
+                FROM alert_records a
+                JOIN mechanism_functions f ON f.func_id = a.func_id
+                WHERE 1=1
+            """
+            params = []
+            if level:
+                query += " AND a.alert_level = %s"
+                params.append(level)
+            if resolved != '':
+                query += " AND a.is_resolved = %s"
+                params.append(resolved == 'true')
+            query += " ORDER BY a.is_resolved ASC, a.created_at DESC LIMIT %s"
+            params.append(limit)
+
+            result = execute_query(query, tuple(params))
+            if isinstance(result, list):
+                for row in result:
+                    for key in ['created_at', 'resolved_at']:
+                        if row.get(key):
+                            row[key] = row[key].isoformat() if hasattr(row[key], 'isoformat') else str(row[key])
+                return jsonify({'alerts': result, 'total': len(result), 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 预警查询失败: {e}")
+
+    return jsonify({'alerts': [], 'total': 0, 'source': 'json_file'})
+
+
+@olm_api.route('/api/olm/alerts/<int:alert_id>/resolve', methods=['POST'])
+def api_resolve_alert(alert_id):
+    """标记预警已处理"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        data = request.get_json(force=True) if request.is_json else {}
+        execute_query("""
+            UPDATE alert_records
+            SET is_resolved = TRUE, resolved_by = %s, resolved_at = CURRENT_TIMESTAMP(6)
+            WHERE alert_id = %s
+        """, (data.get('resolved_by', 'system'), alert_id), fetch=False)
+
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/alerts/summary')
+def api_alerts_summary():
+    """预警统计概览"""
+    if is_db_available():
+        try:
+            total = execute_query("SELECT COUNT(*) as cnt FROM alert_records")
+            unresolved = execute_query("SELECT COUNT(*) as cnt FROM alert_records WHERE is_resolved = FALSE")
+            by_level = execute_query("""
+                SELECT alert_level, COUNT(*) as cnt
+                FROM alert_records WHERE is_resolved = FALSE
+                GROUP BY alert_level
+            """)
+
+            return jsonify({
+                'total': total[0]['cnt'] if isinstance(total, list) and total else 0,
+                'unresolved': unresolved[0]['cnt'] if isinstance(unresolved, list) and unresolved else 0,
+                'by_level': {r['alert_level']: r['cnt'] for r in by_level} if isinstance(by_level, list) else {},
+                'source': 'database'
+            })
+        except Exception as e:
+            print(f"[WARN] 预警统计失败: {e}")
+
+    return jsonify({'total': 0, 'unresolved': 0, 'by_level': {}, 'source': 'json_file'})
+
+
+@olm_api.route('/api/olm/alerts/run-check', methods=['POST'])
+def api_run_alert_check():
+    """手动触发全量规则检查"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        # 获取所有活跃的机理函数
+        functions = execute_query("SELECT * FROM mechanism_functions WHERE is_active = TRUE")
+        if not isinstance(functions, list):
+            return jsonify({'success': True, 'alerts_created': 0, 'message': '无活跃机理函数'})
+
+        alerts_created = 0
+        for func in functions:
+            expr_raw = func.get('expression', '{}')
+            expression = json.loads(expr_raw) if isinstance(expr_raw, str) else expr_raw
+            func_type = expression.get('type', '')
+
+            # 对于 THRESHOLD 类型，从 EAV 数据中检查
+            if func_type == 'THRESHOLD':
+                field = expression.get('field', '')
+                threshold = float(expression.get('value', 0))
+                operator = expression.get('operator', '>')
+
+                # 从 EAV 值表中查找匹配的属性值
+                eav_values = execute_query("""
+                    SELECT v.value_number, a.name as attr_name, e.entity_label
+                    FROM eav_values v
+                    JOIN eav_attributes a ON a.id = v.attribute_id
+                    JOIN eav_entities e ON e.id = v.entity_id
+                    WHERE a.name LIKE %s AND v.value_number IS NOT NULL
+                    LIMIT 100
+                """, (f'%{field}%',))
+
+                if isinstance(eav_values, list):
+                    for val in eav_values:
+                        actual = float(val.get('value_number', 0))
+                        ops = {'>': actual > threshold, '<': actual < threshold,
+                               '>=': actual >= threshold, '<=': actual <= threshold}
+                        if ops.get(operator, False):
+                            execute_query("""
+                                INSERT INTO alert_records
+                                (func_id, alert_level, alert_title, alert_detail,
+                                 related_entity_name, trigger_value, threshold_value)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """, (
+                                func['func_id'],
+                                func.get('severity', 'WARNING'),
+                                f"{func['func_name']} - {val.get('entity_label', '')}",
+                                expression.get('message', '规则触发'),
+                                val.get('entity_label', ''),
+                                str(actual),
+                                str(threshold)
+                            ), fetch=False)
+                            alerts_created += 1
+
+        return jsonify({
+            'success': True,
+            'alerts_created': alerts_created,
+            'functions_checked': len(functions)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500

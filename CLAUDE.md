@@ -21,12 +21,27 @@ YIMO extracts abstract "objects" from these entities and builds association rela
 
 ### Client Requirements (Key)
 
-1. **Object extraction from three-tier architecture**: Automatically extract high-level "objects" (项目, 设备, 资产, etc.) from DA-01/02/03 Excel sheets
-2. **Three-tier association visualization**: Frontend must show object-to-entity associations across concept/logical/physical layers
-3. **Required object "项目" (Project)**: Must always be extracted; likely compared with enterprise data center
-4. **Multi-domain support**: Currently 输配电 (power distribution) and 集采 (procurement) domains; more to be added (计划财务域, etc.)
-5. **Penetrating traceability**: From financial settlement → project initiation → procurement contracts → field construction records
-6. **Dynamic extensibility**: EAV model allows flexible attribute/entity additions without schema changes
+需求来源两个文件：`doc/requirement/0.md`（核心需求愿景）和 `doc/requirement/1.md`（甲方澄清，当前执行标准）。
+
+**当前阶段核心需求（1.md 甲方澄清，优先级最高）：**
+
+1. **对象抽取 Object extraction from three-tier architecture**: Automatically extract high-level "objects" (项目, 设备, 资产, etc.) from DA-01/02/03 Excel sheets
+2. **三层关联可视化 Three-tier association visualization**: Frontend must show object-to-entity associations across concept/logical/physical layers
+3. **必须包含"项目" Required object "项目" (Project)**: Must always be extracted; likely compared with enterprise data center
+4. **多域支持 Multi-domain support**: Currently 输配电 (power distribution) and 集采 (procurement) domains; more to be added (计划财务域, etc.)
+5. **EAV动态扩展 Dynamic extensibility**: EAV model allows flexible attribute/entity additions without schema changes
+6. **保留SBERT+EAV**: SBERT语义相似度匹配和EAV建库功能需要保留
+7. **删除旧统一本体功能**: 按甲方要求删除，仅保留对象抽取+三层关联
+8. **保留v10.0界面风格**: 界面美观风格保留，功能按新需求来
+
+**0.md 中长期愿景需求（优先级较低，待甲方进一步确认）：**
+
+9. **穿透式业务溯源 Penetrating traceability**: From financial settlement → project initiation → procurement contracts → field construction records（当前缺少财务域数据）
+10. **全生命周期与时态建模 Lifecycle & temporal modeling**: Objects have lifecycle stages with different attributes per stage（概念已提出，具体规格未定义）
+11. **机理函数 Mechanism functions**: Business rules and physical formulas between objects, e.g., "合同额度>300万走路径A"（0.md多次提及，1.md未要求，具体定义缺失）
+12. **穿透式预警 Risk alerting**: Auto-trigger risk warnings based on mechanism functions（依赖机理函数实现）
+13. **HTAP非结构化数据融合**: Combine structured form data with video/image data（需求模糊，无具体方案）
+14. **与企业数据中台对比**: Compare extracted objects with data center（1.md用"很可能"，不确定是否硬性需求）
 
 ### Core Components
 
@@ -281,6 +296,21 @@ TABLE_PREFIX=eav
 | `object_entity_relations` | **Object to Three-Tier Entity Relations (Core)** |
 | `object_extraction_batches` | Extraction batch records |
 
+### Lifecycle & Traceability Tables
+
+| Table | Purpose |
+|-------|---------|
+| `object_lifecycle_history` | Object lifecycle stage history (Planning→Finance) |
+| `traceability_chains` | Traceability chain definitions |
+| `traceability_chain_nodes` | Chain node details (linked to objects & entities) |
+
+### Mechanism Function & Alert Tables
+
+| Table | Purpose |
+|-------|---------|
+| `mechanism_functions` | Business rule/formula definitions (THRESHOLD/FORMULA/RULE) |
+| `alert_records` | Alert records triggered by mechanism functions |
+
 ### Object-Entity Relation Table Structure
 
 ```sql
@@ -392,6 +422,39 @@ CREATE TABLE object_entity_relations (
 | `/api/olm/summary` | GET | Dashboard summary (all metrics combined) |
 | `/api/olm/small-objects` | GET | Low-cardinality objects with merge suggestions |
 | `/api/olm/merge-objects` | POST | Merge two objects together |
+
+#### Lifecycle Management (Phase 2)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/olm/object-lifecycle/<code>` | GET | Query object lifecycle history |
+| `/api/olm/object-lifecycle/<code>` | POST | Create lifecycle stage record |
+| `/api/olm/lifecycle-stats` | GET | Lifecycle stage distribution stats |
+
+#### Traceability (Phase 3)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/olm/traceability-chains` | GET | List all traceability chains |
+| `/api/olm/traceability-chains` | POST | Create traceability chain (with nodes) |
+| `/api/olm/traceability-chain/<id>` | GET | Chain detail with all nodes |
+| `/api/olm/trace-object/<code>` | GET | Trace chains related to an object |
+
+#### Mechanism Functions (Phase 4)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/olm/mechanism-functions` | GET | List all mechanism functions |
+| `/api/olm/mechanism-functions` | POST | Create mechanism function |
+| `/api/olm/mechanism-functions/<id>` | PUT | Update mechanism function |
+| `/api/olm/mechanism-functions/<id>` | DELETE | Delete mechanism function |
+| `/api/olm/mechanism-functions/evaluate` | POST | Evaluate function with input values |
+| `/api/olm/mechanism-functions/presets` | GET | Get preset function templates |
+
+#### Alerts (Phase 5)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/olm/alerts` | GET | Query alert records (filter by level/status) |
+| `/api/olm/alerts/<id>/resolve` | POST | Mark alert as resolved |
+| `/api/olm/alerts/summary` | GET | Alert statistics overview |
+| `/api/olm/alerts/run-check` | POST | Run all active rules against EAV data |
 
 #### Data Source Strategy
 
@@ -549,6 +612,59 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 ---
 
+## Requirements Fulfillment Status (需求满足度)
+
+> 最近审查日期: 2026-02-19
+
+### 已满足需求（当前阶段核心需求 from 1.md）
+
+| 需求 | 状态 | 实现位置 |
+|------|------|----------|
+| 对象抽取（SBERT+层次聚类+LLM命名） | ✅ 已实现 | `scripts/object_extractor.py` (2164行, DataArchitectureReader + SemanticClusterer + LLMObjectNamer) |
+| 三层架构关联（CONCEPT/LOGICAL/PHYSICAL） | ✅ 已实现 | `object_entity_relations` 表 + `HierarchicalRelationBuilder` (含 via_concept_entity 层级穿透) |
+| 前端展示对象与三层关联 | ✅ 已实现 | `templates/10.0.html` 知识图谱(ECharts) + 桑基图 + 对象卡片 + 关联面板 |
+| "项目"必须被抽取 | ✅ 已实现 | `REQUIRED_OBJECTS = ["项目"]` + `_ensure_required_objects()` 保障机制 |
+| 多域支持 | ✅ 已实现 | `DATA/` 目录自动发现 + `/api/domains` 端点，当前含 shupeidian + jicai |
+| EAV动态扩展模型 | ✅ 已实现 | 4张EAV核心表 (datasets/entities/attributes/values) |
+| SBERT语义匹配 | ✅ 已实现 | 768维 text2vec-base-chinese + FAISS向量检索 |
+| v10.0界面风格保留 | ✅ 已实现 | `templates/10.0.html` (~81KB, 三色层级设计) |
+| 统一本体功能已删除 | ✅ 已完成 | 按甲方要求清除旧功能 |
+| 算法流程图 | ✅ 已实现 | `figures/architecture/object_extraction_algorithm.mmd` |
+| 关键字规则回退抽取器 | ✅ 已实现 | `scripts/simple_extractor.py` (20+关键词, 12个核心对象) |
+| 数据库优先+JSON回退策略 | ✅ 已实现 | `olm_api.py` 所有端点均实现 MySQL → JSON fallback |
+| 20+ REST API端点 | ✅ 已实现 | `olm_api.py` (1577行, CRUD + 可视化 + 分析) |
+| BA-04业务对象映射 | ✅ 已实现 | `object_business_object_mapping` 表 + API端点 |
+
+### 已实现需求（0.md 愿景需求，Phase 2-5 新增）
+
+| 需求 | 状态 | 实现位置 |
+|------|------|----------|
+| 全生命周期管理 | ✅ 已实现 | `object_lifecycle_history` 表 + 3个API端点 + 前端时间线面板 (Planning→Design→Construction→Operation→Finance) |
+| 穿透式业务溯源 | ✅ 已实现 | `traceability_chains` + `traceability_chain_nodes` 表 + 4个API端点 + 前端溯源链路面板（创建/查看/节点流程图） |
+| 机理函数（业务规则+物理公式） | ✅ 已实现 | `mechanism_functions` 表 + 6个API端点 + 表达式求值引擎 + 3个预置函数（合同审计红线/功率公式/审批路径规则） + 前端管理面板（CRUD+测试） |
+| 穿透式预警与辅助决策 | ✅ 已实现 | `alert_records` 表 + 4个API端点 + 规则检查引擎（遍历EAV数据触发阈值检查） + 前端预警看板（统计卡片+列表+处理） |
+
+### 未实现需求（依赖甲方输入，待确认优先级）
+
+| 需求 | 状态 | 阻塞原因 |
+|------|------|----------|
+| 财务域落地场景演示 | ❌ 缺数据 | DATA中无财务域Excel数据，无法演示"数字化项目结算"穿透场景 |
+| HTAP非结构化数据融合 | ❌ 未实现 | 视频/图像数据源未定义，技术方案未给出 |
+| 与企业数据中台对比 | ❌ 未实现 | 中台数据格式和对比规则均未定义 |
+| 财务数据一致性治理看板 | ❌ 未实现 | 比对规则和阈值未定义，依赖财务域数据 |
+
+### 需求文档本身的问题
+
+1. **0.md与1.md范围差异**: 0.md描述宏大系统愿景（穿透式监管、HTAP、机理函数、风险预警），1.md将执行范围收窄到"对象抽取+三层关联+前端可视化"。**建议以1.md为当前执行标准**
+2. **非功能性需求完全缺失**: 无性能指标（并发、响应时间）、无安全要求（认证授权、数据加密）、无可用性要求（SLA、灾备）
+3. **验收标准缺失**: 0.md提到"项目验收"但无量化验收指标（抽取准确率、系统可用率等）
+4. **集成需求未定义**: 与南方电网现有系统（ERP、财务、物资）的接口规格、数据交换格式均未约定
+5. **用户角色未定义**: 未说明使用者是谁（财务人员？数据管理员？管理层？），无权限模型
+6. **部署环境未确认**: 南方电网测试环境规格未知，是否可访问外网调用DeepSeek API未确认
+7. **数据质量要求缺失**: Excel输入数据的质量标准未定义（空值处理、编码要求等）
+
+---
+
 ## Troubleshooting
 
 ### Common Issues
@@ -571,7 +687,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 ---
 
-*Last updated: 2026-02-19*
+*Last updated: 2026-02-19 (Phase 1-5 实施完成: 生命周期管理+溯源链路+机理函数+穿透式预警)*
 
 ---
 
