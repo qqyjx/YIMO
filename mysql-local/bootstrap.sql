@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS `extracted_objects` (
     `object_name_en` VARCHAR(256) COMMENT '对象英文名称',
     `parent_object_id` INT DEFAULT NULL COMMENT '父对象ID，支持对象层次结构',
     `object_type` ENUM('CORE', 'DERIVED', 'AUXILIARY') DEFAULT 'CORE' COMMENT '对象类型：核心/派生/辅助',
-    `data_domain` VARCHAR(128) DEFAULT 'default' COMMENT '数据域编码，如 shupeidian, jicai',
+    `data_domain` VARCHAR(128) DEFAULT 'default' COMMENT '数据域编码，如 shupeidian（输配电）, jicai（计划财务）',
     `description` TEXT COMMENT '对象描述',
     `extraction_source` VARCHAR(64) COMMENT '抽取来源：SEMANTIC_CLUSTER_LLM/SEMANTIC_CLUSTER_RULE/MANUAL',
     `extraction_confidence` DECIMAL(5,4) DEFAULT 0.0 COMMENT '抽取置信度 0-1',

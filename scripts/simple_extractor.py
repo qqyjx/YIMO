@@ -294,7 +294,7 @@ def main():
     # 4. 构建输出结构
     result = {
         "data_domain": args.data_domain,
-        "data_domain_name": {"shupeidian": "输配电", "jicai": "集采"}.get(args.data_domain, args.data_domain),
+        "data_domain_name": {"shupeidian": "输配电", "jicai": "计划财务"}.get(args.data_domain, args.data_domain),
         "extraction_time": datetime.now().isoformat(),
         "entity_stats": {
             "concept": concept_count,

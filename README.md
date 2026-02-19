@@ -31,7 +31,7 @@ DATA/
 │   ├── 1.xlsx
 │   ├── 2.xlsx
 │   └── 3.xlsx
-└── jicai/               # 集采域
+└── jicai/               # 计划财务域（计财）
     ├── 1.xlsx
     ├── 2.xlsx
     └── 3.xlsx
@@ -103,7 +103,7 @@ cd webapp && python3 app.py
 ## Web 界面操作
 
 1. 打开 http://localhost:5000/extraction
-2. 使用顶部下拉框选择数据域（输配电/集采），支持多域切换
+2. 使用顶部下拉框选择数据域（输配电/计划财务），支持多域切换
 3. 点击对象卡片，查看其关联的三层实体
 4. 关联实体按强度排序，高强度用绿色标记
 
@@ -162,7 +162,7 @@ YIMO/
 │       └── object_extraction.html
 ├── DATA/                      # 数据域目录
 │   ├── shupeidian/            # 输配电
-│   └── jicai/                 # 集采
+│   └── jicai/                 # 计划财务（计财）
 └── outputs/                   # 抽取结果 JSON
 ```
 
