@@ -714,11 +714,11 @@
                         <span class="relation-subtitle">的三层架构关联</span>
                     </div>
                     <div style="display:flex;gap:4px;">
-                        <button class="view-tab active" data-view="table" onclick="switchRelView('table')"><i class="bi bi-table"></i> 列表</button>
-                        <button class="view-tab" data-view="graph" onclick="switchRelView('graph')"><i class="bi bi-share"></i> 图谱</button>
+                        <button class="view-tab" data-view="table" onclick="switchRelView('table')"><i class="bi bi-table"></i> 列表</button>
+                        <button class="view-tab active" data-view="graph" onclick="switchRelView('graph')"><i class="bi bi-share"></i> 知识图谱</button>
                     </div>
                 </div>
-                <div class="relation-columns">
+                <div class="relation-columns" style="display:none;">
                     <!-- Concept Column -->
                     <div class="rel-col col-concept">
                         <div class="rel-col-header">
@@ -750,9 +750,9 @@
                         <div class="rel-col-body" id="relPhysicalBody"></div>
                     </div>
                 </div>
-                <!-- Knowledge Graph View (hidden by default) -->
-                <div id="graphViewContainer" style="display:none;">
-                    <div id="graph-chart" style="width:100%;height:520px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);"></div>
+                <!-- Knowledge Graph View (default view) -->
+                <div id="graphViewContainer" style="display:block;">
+                    <div id="graph-chart" style="width:100%;height:620px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);"></div>
                 </div>
             </section>
 
@@ -1503,21 +1503,61 @@
             window.addEventListener('resize', () => graphChart && graphChart.resize());
         }
 
-        const categoryColors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b'];
-        data.categories.forEach((c, i) => { c.itemStyle = { color: categoryColors[i] }; });
+        // 层级颜色配置
+        const categoryColors = ['#6366f1', '#818cf8', '#10b981', '#f59e0b'];
+        const categoryLabels = ['抽取对象', '概念实体', '逻辑实体', '物理实体'];
+        data.categories.forEach((c, i) => {
+            c.itemStyle = { color: categoryColors[i], borderColor: '#fff', borderWidth: 1 };
+        });
+
+        // 增强节点样式：按层级设置大小和形状
+        data.nodes.forEach(n => {
+            const cat = n.category || 0;
+            if (cat === 0) {
+                // 抽取对象 - 最大，显眼
+                n.symbolSize = Math.max(40, Math.min(60, (n.value || 10) * 2));
+                n.label = { show: true, fontSize: 13, fontWeight: 'bold', color: '#1e293b' };
+                n.itemStyle = { color: categoryColors[0], borderColor: '#fff', borderWidth: 3,
+                                shadowColor: 'rgba(99,102,241,0.4)', shadowBlur: 12 };
+            } else if (cat === 1) {
+                // 概念实体 - 中等
+                n.symbolSize = Math.max(18, Math.min(32, (n.value || 5) * 1.5));
+                n.label = { show: true, fontSize: 10, color: '#475569' };
+            } else if (cat === 2) {
+                // 逻辑实体 - 较小
+                n.symbolSize = Math.max(10, Math.min(22, (n.value || 3)));
+                n.label = { show: data.nodes.length < 60, fontSize: 9, color: '#64748b' };
+            } else {
+                // 物理实体 - 最小
+                n.symbolSize = Math.max(8, Math.min(16, (n.value || 2)));
+                n.label = { show: data.nodes.length < 40, fontSize: 8, color: '#94a3b8' };
+            }
+        });
 
         graphChart.setOption({
             tooltip: {
                 trigger: 'item',
+                backgroundColor: 'rgba(15,23,42,0.9)',
+                borderColor: '#334155',
+                textStyle: { color: '#f8fafc', fontSize: 12 },
                 formatter: p => {
                     if (p.dataType === 'node') {
                         const cat = data.categories[p.data.category]?.name || '';
-                        return `<b>${esc(p.data.name)}</b><br/>${esc(cat)}`;
+                        const val = p.data.value ? `<br/>关联数: ${p.data.value}` : '';
+                        return `<b style="font-size:14px">${esc(p.data.name)}</b><br/>`
+                             + `<span style="color:${categoryColors[p.data.category]}">${esc(cat)}</span>${val}`;
                     }
-                    return `${esc(p.data.source)} -> ${esc(p.data.target)}`;
+                    return `${esc(p.data.source)} → ${esc(p.data.target)}`;
                 }
             },
-            legend: { data: data.categories.map(c => c.name), bottom: 10, textStyle: { color: '#94a3b8' } },
+            legend: {
+                data: data.categories.map(c => c.name),
+                bottom: 8,
+                textStyle: { color: '#64748b', fontSize: 12 },
+                icon: 'circle',
+                itemWidth: 12,
+                itemGap: 24
+            },
             series: [{
                 type: 'graph',
                 layout: 'force',
@@ -1527,23 +1567,32 @@
                 roam: true,
                 draggable: true,
                 label: {
-                    show: true,
                     position: 'right',
-                    fontSize: 10,
-                    color: '#cbd5e1',
-                    formatter: p => p.data.name.length > 10 ? p.data.name.slice(0, 10) + '...' : p.data.name
+                    formatter: p => {
+                        const name = p.data.name || '';
+                        return name.length > 12 ? name.slice(0, 12) + '…' : name;
+                    }
                 },
                 force: {
-                    repulsion: 200,
-                    gravity: 0.1,
-                    edgeLength: [60, 150],
-                    layoutAnimation: true
+                    repulsion: [300, 500],
+                    gravity: 0.08,
+                    edgeLength: [80, 200],
+                    layoutAnimation: true,
+                    friction: 0.6
                 },
-                lineStyle: { color: 'source', opacity: 0.4, curveness: 0.1 },
+                lineStyle: {
+                    color: 'source',
+                    opacity: 0.3,
+                    curveness: 0.15,
+                    width: 1.5
+                },
                 emphasis: {
                     focus: 'adjacency',
-                    lineStyle: { width: 3, opacity: 0.8 }
-                }
+                    lineStyle: { width: 3, opacity: 0.9 },
+                    itemStyle: { shadowBlur: 15, shadowColor: 'rgba(0,0,0,0.3)' }
+                },
+                animationDuration: 800,
+                animationEasingUpdate: 'quinticInOut'
             }]
         }, true);
     }
