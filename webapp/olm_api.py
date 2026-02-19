@@ -524,9 +524,15 @@ def api_merge_objects():
 
 @olm_api.route('/api/olm/graph-data/<object_code>')
 def api_graph_data(object_code):
-    """获取单对象的知识图谱数据（ECharts Graph 格式）"""
+    """获取单对象的知识图谱数据（ECharts Graph 格式）
+
+    展示层级关系：对象 → 概念实体 → 逻辑实体 → 物理实体
+    边表示层级归属关系，而非全部直连到对象节点。
+    """
     domain = request.args.get('domain', '')
-    max_nodes = int(request.args.get('max_nodes', '80'))
+    max_concept = int(request.args.get('max_concept', '15'))
+    max_logical = int(request.args.get('max_logical', '30'))
+    max_physical = int(request.args.get('max_physical', '20'))
 
     # 复用 object-relations 数据
     data = load_json_data(domain or 'shupeidian')
@@ -540,67 +546,89 @@ def api_graph_data(object_code):
     if not obj_info:
         return jsonify({'nodes': [], 'links': [], 'categories': []})
 
-    # 构建节点和边
-    nodes = []
-    links = []
     categories = [
-        {"name": "对象"},
+        {"name": "抽取对象"},
         {"name": "概念实体"},
         {"name": "逻辑实体"},
         {"name": "物理实体"}
     ]
-    category_map = {"CONCEPT": 1, "LOGICAL": 2, "PHYSICAL": 3}
 
     # 对象节点
     obj_stats = data.get('stats', {}).get(object_code, {})
-    nodes.append({
+    nodes = [{
         "id": object_code,
         "name": obj_info.get('object_name', object_code),
         "category": 0,
         "symbolSize": 50,
         "value": obj_stats.get('total', 0),
         "label": {"show": True}
-    })
+    }]
+    links = []
+    added_nodes = {object_code}
 
     # 筛选该对象的关联
     obj_rels = [r for r in relations if r.get('object_code') == object_code]
 
-    # 按层分组，每层取 top N（按 strength 排序）
-    layer_limits = {"CONCEPT": 20, "LOGICAL": min(40, max_nodes - 20), "PHYSICAL": 20}
-    added_nodes = {object_code}
+    # ---- 概念实体 ----
+    concept_rels = sorted(
+        [r for r in obj_rels if r.get('entity_layer') == 'CONCEPT'],
+        key=lambda r: -r.get('relation_strength', 0)
+    )[:max_concept]
+    concept_names = set()
+    for r in concept_rels:
+        name = r.get('entity_name', '')
+        nid = f"concept_{name}"
+        concept_names.add(name)
+        if nid not in added_nodes:
+            added_nodes.add(nid)
+            nodes.append({"id": nid, "name": name, "category": 1, "value": 5})
+        is_bridge = r.get('match_method') == 'BA04_BRIDGE'
+        links.append({
+            "source": object_code, "target": nid,
+            "value": r.get('relation_strength', 0.5),
+            "lineStyle": {"width": 2, "type": "dashed" if is_bridge else "solid"}
+        })
 
-    for layer in ["CONCEPT", "LOGICAL", "PHYSICAL"]:
-        layer_rels = sorted(
-            [r for r in obj_rels if r.get('entity_layer') == layer],
-            key=lambda r: -r.get('relation_strength', 0)
-        )[:layer_limits.get(layer, 20)]
+    # ---- 逻辑实体（连到对应的概念实体节点而非对象节点） ----
+    logical_rels = sorted(
+        [r for r in obj_rels if r.get('entity_layer') == 'LOGICAL'],
+        key=lambda r: -r.get('relation_strength', 0)
+    )[:max_logical]
+    logical_names = set()
+    for r in logical_rels:
+        name = r.get('entity_name', '')
+        nid = f"logical_{name}"
+        via = r.get('via_concept_entity', '')
+        logical_names.add(name)
+        if nid not in added_nodes:
+            added_nodes.add(nid)
+            nodes.append({"id": nid, "name": name, "category": 2, "value": 3})
+        # 连到via_concept_entity对应的概念实体节点（如果存在且在图中）
+        parent_id = f"concept_{via}" if via and via in concept_names else object_code
+        links.append({
+            "source": parent_id, "target": nid,
+            "value": r.get('relation_strength', 0.5),
+            "lineStyle": {"width": 1.5, "opacity": 0.5}
+        })
 
-        for r in layer_rels:
-            entity_name = r.get('entity_name', '')
-            node_id = f"{layer.lower()}_{entity_name}"
-            if node_id not in added_nodes:
-                added_nodes.add(node_id)
-                strength = r.get('relation_strength', 0.5)
-                size_map = {"CONCEPT": 30, "LOGICAL": 18, "PHYSICAL": 12}
-                nodes.append({
-                    "id": node_id,
-                    "name": entity_name,
-                    "category": category_map[layer],
-                    "symbolSize": size_map[layer],
-                    "value": strength
-                })
-
-            # 边
-            is_bridge = r.get('match_method') == 'BA04_BRIDGE'
-            links.append({
-                "source": object_code,
-                "target": node_id,
-                "value": r.get('relation_strength', 0.5),
-                "lineStyle": {
-                    "width": max(1, r.get('relation_strength', 0.5) * 3),
-                    "type": "dashed" if is_bridge else "solid"
-                }
-            })
+    # ---- 物理实体（连到对应的逻辑实体节点） ----
+    physical_rels = sorted(
+        [r for r in obj_rels if r.get('entity_layer') == 'PHYSICAL'],
+        key=lambda r: -r.get('relation_strength', 0)
+    )[:max_physical]
+    for r in physical_rels:
+        name = r.get('entity_name', '')
+        nid = f"physical_{name}"
+        via = r.get('via_concept_entity', '')  # 此处via存的是逻辑实体名
+        if nid not in added_nodes:
+            added_nodes.add(nid)
+            nodes.append({"id": nid, "name": name, "category": 3, "value": 2})
+        parent_id = f"logical_{via}" if via and via in logical_names else object_code
+        links.append({
+            "source": parent_id, "target": nid,
+            "value": r.get('relation_strength', 0.5),
+            "lineStyle": {"width": 1, "opacity": 0.4}
+        })
 
     return jsonify({
         "nodes": nodes,

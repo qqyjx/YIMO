@@ -515,11 +515,13 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 ## Important Notes for AI Assistants
 
-1. **Language**: The codebase primarily uses Chinese for:
-   - User-facing strings and documentation
-   - Data content and attribute names
-   - Comments in many files
-   - Client requirement documents (`doc/requirement/`)
+1. **Language**: The codebase primarily uses Chinese. **AI assistants must output in Chinese** when interacting with users. This includes:
+   - All conversation responses must be in Chinese
+   - Commit messages should include Chinese descriptions
+   - User-facing strings and documentation use Chinese
+   - Data content and attribute names are in Chinese
+   - Comments in many files are in Chinese
+   - Client requirement documents (`doc/requirement/`) are in Chinese
 
 2. **Database Port**: Default is 3307 (not 3306) to avoid WSL2 conflicts
 

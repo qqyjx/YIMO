@@ -138,78 +138,73 @@ class EntityRelation:
 # 数据域配置
 # ============================================================
 
-# 数据域定义（可通过配置扩展）
-# 所有域的Excel文件统一存放在DATA目录下
+# 统一的工作表配置（所有域共用同一套算法和sheet名称）
+DEFAULT_SHEET_CONFIG = {
+    "concept": "DA-01 数据实体清单-概念实体清单",
+    "logical": "DA-02 数据实体清单-逻辑实体清单",
+    "physical": "DA-03数据实体清单-物理实体清单",
+    "ba04": "BA-04 业务对象清单"
+}
+
+# 数据域定义（文件列表为空时自动从 DATA/<domain>/ 子目录发现）
 DOMAIN_CONFIG = {
     "shupeidian": {
         "name": "输配电",
-        "files": ["1.xlsx", "2.xlsx", "3.xlsx"],  # 输配电域的三份Excel
-        "sheet_config": {
-            "concept": "DA-01 数据实体清单-概念实体清单",
-            "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单",
-            "ba04": "BA-04 业务对象清单"
-        },
-        "ba04_file": "1.xlsx"  # BA-04 所在文件
+        "files": ["1.xlsx", "2.xlsx", "3.xlsx"],
+        "sheet_config": DEFAULT_SHEET_CONFIG,
+        "ba04_file": "1.xlsx"
     },
     "jicai": {
         "name": "计划财务",
-        "files": [],  # 待配置：集采域的Excel文件
-        "sheet_config": {
-            "concept": "DA-01 数据实体清单-概念实体清单",
-            "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单",
-            "ba04": "BA-04 业务对象清单"
-        },
+        "files": ["1.xlsx", "2.xlsx", "3.xlsx"],
+        "sheet_config": DEFAULT_SHEET_CONFIG,
         "ba04_file": "2.xlsx"
-    },
-    "yingxiao": {
-        "name": "营销",
-        "files": [],  # 待配置
-        "sheet_config": {
-            "concept": "DA-01 数据实体清单-概念实体清单",
-            "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单",
-            "ba04": "BA-04 业务对象清单"
-        }
-    },
-    "caiwu": {
-        "name": "财务",
-        "files": [],  # 待配置
-        "sheet_config": {
-            "concept": "DA-01 数据实体清单-概念实体清单",
-            "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单",
-            "ba04": "BA-04 业务对象清单"
-        }
-    },
-    "renliziyuan": {
-        "name": "人力资源",
-        "files": [],  # 待配置
-        "sheet_config": {
-            "concept": "DA-01 数据实体清单-概念实体清单",
-            "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单",
-            "ba04": "BA-04 业务对象清单"
-        }
     },
     "default": {
         "name": "默认",
-        "files": ["2.xlsx"],  # 默认使用2.xlsx
-        "sheet_config": {
-            "concept": "DA-01 数据实体清单-概念实体清单",
-            "logical": "DA-02 数据实体清单-逻辑实体清单",
-            "physical": "DA-03数据实体清单-物理实体清单",
-            "ba04": "BA-04 业务对象清单"
-        }
+        "files": [],  # 空列表 = 自动发现
+        "sheet_config": DEFAULT_SHEET_CONFIG,
     }
 }
+
+# 小对象合并阈值（聚类实体数低于此值的对象将自动合并到最近的大对象）
+SMALL_OBJECT_THRESHOLD = 3
 
 
 def get_domain_name(domain_code: str) -> str:
     """获取数据域的中文名称"""
     config = DOMAIN_CONFIG.get(domain_code, DOMAIN_CONFIG["default"])
     return config.get("name", domain_code)
+
+
+def auto_discover_domains(data_dir: str = "DATA") -> Dict[str, Dict]:
+    """自动发现 DATA/ 下的所有数据域子目录
+
+    任何包含 .xlsx 文件的子目录都视为一个数据域。
+    如果域未在 DOMAIN_CONFIG 中注册，则使用 default 配置。
+    """
+    data_path = Path(data_dir)
+    discovered = {}
+    if not data_path.exists():
+        return discovered
+
+    for subdir in sorted(data_path.iterdir()):
+        if not subdir.is_dir():
+            continue
+        xlsx_files = sorted(subdir.glob("*.xlsx"))
+        if not xlsx_files:
+            continue
+        domain_code = subdir.name
+        config = DOMAIN_CONFIG.get(domain_code, {
+            "name": domain_code,
+            "files": [f.name for f in xlsx_files],
+            "sheet_config": DEFAULT_SHEET_CONFIG,
+        })
+        # 如果域配置中 files 为空，自动填充
+        if not config.get("files"):
+            config["files"] = [f.name for f in xlsx_files]
+        discovered[domain_code] = config
+    return discovered
 
 
 # ============================================================
@@ -567,6 +562,7 @@ class DataArchitectureReader:
         try:
             df = pd.read_excel(file_path, sheet_name=sheet_name)
             seen: Set[Tuple[str, str]] = set()
+            count = 0
 
             for idx, row in df.iterrows():
                 logical_name = str(row.get("逻辑实体名称", "")).strip()
@@ -593,8 +589,40 @@ class DataArchitectureReader:
                     source_sheet=sheet_name,
                     source_row=idx + 2
                 ))
+                count += 1
+
+            if count > 0:
+                print(f"    逻辑→物理映射: {len(seen)} 对 ({file_path.name})")
         except Exception as e:
-            print(f"[WARN] 构建逻辑→物理映射失败 ({file_path.name}): {e}")
+            print(f"[WARN] pd.read_excel 构建逻辑→物理映射失败 ({file_path.name}): {e}")
+            try:
+                print(f"[INFO] 尝试 fallback 解析 DA-03 ({file_path.name})...")
+                df = self._read_excel_fallback(file_path, sheet_name)
+                seen_fb: Set[Tuple[str, str]] = set()
+                count = 0
+                for idx, row in df.iterrows():
+                    logical_name = str(row.get("逻辑实体名称", "")).strip()
+                    physical_name = str(row.get("物理实体名称", "")).strip()
+                    if (not logical_name or logical_name == "nan"
+                            or not physical_name or physical_name == "nan"):
+                        continue
+                    key = (logical_name, physical_name)
+                    if key in seen_fb:
+                        continue
+                    seen_fb.add(key)
+                    excel_domain = str(row.get("数据域", "")).strip()
+                    domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                    mapping[logical_name].append(EntityInfo(
+                        name=physical_name, layer="PHYSICAL",
+                        code=str(row.get("物理实体编码", "")).strip(),
+                        data_domain=domain,
+                        source_file=str(file_path.name),
+                        source_sheet=sheet_name, source_row=idx + 2
+                    ))
+                    count += 1
+                print(f"[INFO] fallback 成功，构建 {len(set(k for k,_ in seen_fb))} 个逻辑→{count} 个物理映射")
+            except Exception as e2:
+                print(f"[WARN] fallback 也失败 ({file_path.name}): {e2}")
 
     def _read_physical_entities(self, file_path: Path):
         """读取物理实体清单"""
@@ -999,20 +1027,29 @@ class LLMObjectNamer:
         return objects
 
     def _ensure_required_objects(self, objects: List[ExtractedObject], clusters: List[Dict]) -> List[ExtractedObject]:
-        """确保必须的对象存在"""
+        """确保必须的对象存在（不重复已有对象的聚类）"""
         object_names = {obj.object_name for obj in objects}
+        used_cluster_ids = {obj.cluster_id for obj in objects if obj.cluster_id >= 0}
 
         for required in REQUIRED_OBJECTS:
             if required not in object_names:
                 print(f"[INFO] 补充必须对象: {required}")
-                # 找到最可能对应的聚类
+                # 找到最可能对应且未被占用的聚类
                 best_cluster = None
                 best_score = 0
                 for cluster in clusters:
+                    if cluster["cluster_id"] in used_cluster_ids:
+                        continue
                     score = sum(1 for e in cluster["sample_entities"] if required in e)
                     if score > best_score:
                         best_score = score
                         best_cluster = cluster
+
+                # 如果所有聚类都被占用，不分配聚类ID（避免与其他对象重复）
+                cid = best_cluster["cluster_id"] if best_cluster else -1
+                csize = best_cluster["size"] if best_cluster else 0
+                if cid >= 0:
+                    used_cluster_ids.add(cid)
 
                 objects.append(ExtractedObject(
                     object_code=f"OBJ_{required.upper()}",
@@ -1022,8 +1059,8 @@ class LLMObjectNamer:
                     description=f"核心对象：{required}",
                     extraction_source="REQUIRED",
                     extraction_confidence=1.0,
-                    cluster_id=best_cluster["cluster_id"] if best_cluster else -1,
-                    cluster_size=best_cluster["size"] if best_cluster else 0
+                    cluster_id=cid,
+                    cluster_size=csize
                 ))
 
         return objects
@@ -1797,11 +1834,12 @@ class SemanticObjectExtractionPipeline:
 
         # 4.5 BA-04 业务对象桥接关联（补充聚类关联覆盖不到的实体）
         biz_obj_matches = {}
+        biz_obj_to_concept = {}
+        concept_info_map = {ce.name: ce for ce in concept_entities}
         try:
             business_objects = reader.read_business_objects_from_ba04()
             biz_obj_to_concept = reader.build_biz_object_to_concept_mapping()
             if business_objects and biz_obj_to_concept:
-                concept_info_map = {ce.name: ce for ce in concept_entities}
                 matcher = BusinessObjectMatcher(
                     biz_obj_to_concept, concept_to_logical, logical_to_physical, concept_info_map
                 )
@@ -1812,14 +1850,98 @@ class SemanticObjectExtractionPipeline:
         except Exception as e:
             print(f"[WARN] BA-04 桥接关联失败: {e}")
 
-        # 5. 统计
+        # 4.6 补充无关联的必需对象（通过概念实体名称匹配）
+        # 如果"项目"等必需对象没有任何关联，用对象名称在概念实体中搜索匹配
+        for obj in objects:
+            if obj.object_name not in REQUIRED_OBJECTS:
+                continue
+            obj_rels = [r for r in relations if r.object_code == obj.object_code]
+            if obj_rels:
+                continue  # 已有关联，跳过
+            print(f"[INFO] 为必需对象 {obj.object_name} 补充关联（通过概念实体名称匹配）...")
+            # 先尝试通过 biz_obj_to_concept 找
+            matched_concepts = biz_obj_to_concept.get(obj.object_name, [])
+            if not matched_concepts:
+                # 退化：在概念实体名称中模糊搜索
+                matched_concepts = [ce.name for ce in concept_entities if obj.object_name in ce.name]
+            if matched_concepts:
+                existing_keys = {(r.object_code, r.entity_layer, r.entity_name) for r in relations}
+                new_count = 0
+                for cname in matched_concepts[:30]:
+                    ci = concept_info_map.get(cname)
+                    if not ci:
+                        continue
+                    key_c = (obj.object_code, "CONCEPT", cname)
+                    if key_c not in existing_keys:
+                        existing_keys.add(key_c)
+                        relations.append(EntityRelation(
+                            object_code=obj.object_code, entity_layer="CONCEPT",
+                            entity_name=cname, entity_code=ci.code,
+                            relation_type="DIRECT", relation_strength=0.8,
+                            match_method="NAME_MATCH", data_domain=ci.data_domain,
+                            source_file=ci.source_file, source_sheet=ci.source_sheet
+                        ))
+                        new_count += 1
+                    for le in concept_to_logical.get(cname, []):
+                        key_l = (obj.object_code, "LOGICAL", le.name)
+                        if key_l not in existing_keys:
+                            existing_keys.add(key_l)
+                            relations.append(EntityRelation(
+                                object_code=obj.object_code, entity_layer="LOGICAL",
+                                entity_name=le.name, entity_code=le.code,
+                                relation_type="INDIRECT", relation_strength=0.65,
+                                match_method="NAME_MATCH", via_concept_entity=cname,
+                                data_domain=le.data_domain, source_file=le.source_file
+                            ))
+                        for pe in logical_to_physical.get(le.name, []):
+                            key_p = (obj.object_code, "PHYSICAL", pe.name)
+                            if key_p not in existing_keys:
+                                existing_keys.add(key_p)
+                                relations.append(EntityRelation(
+                                    object_code=obj.object_code, entity_layer="PHYSICAL",
+                                    entity_name=pe.name, entity_code=pe.code,
+                                    relation_type="INDIRECT", relation_strength=0.5,
+                                    match_method="NAME_MATCH", via_concept_entity=le.name,
+                                    data_domain=pe.data_domain, source_file=pe.source_file
+                                ))
+                print(f"  补充了 {new_count} 个概念实体关联及其下级逻辑/物理实体")
+            else:
+                print(f"[WARN] 未找到与 {obj.object_name} 匹配的概念实体")
+
+        # 5. 自动处理小对象（合并到最近的大对象，但保留必需对象）
+        # 必需对象（如"项目"）不会被合并，即使cluster_size很小
+        required_names = set(REQUIRED_OBJECTS)
+        handler = SmallObjectHandler(min_entity_count=SMALL_OBJECT_THRESHOLD)
+        small_objects = handler.identify_small_objects(objects)
+        # 从小对象列表中排除必需对象
+        mergeable_small = [o for o in small_objects if o.object_name not in required_names]
+        protected_small = [o for o in small_objects if o.object_name in required_names]
+        if protected_small:
+            print(f"[INFO] 保留 {len(protected_small)} 个必需小对象（不合并）: {[o.object_name for o in protected_small]}")
+        if mergeable_small:
+            print(f"\n[INFO] 开始自动合并 {len(mergeable_small)} 个小对象...")
+            embeddings = extractor.embeddings
+            entity_names = extractor.entity_names
+            merged_codes = set()
+            for small_obj in mergeable_small:
+                target = handler.find_merge_target(small_obj, objects, embeddings, entity_names)
+                if target:
+                    print(f"  合并: {small_obj.object_name}({small_obj.cluster_size}个实体) → {target.object_name}({target.cluster_size}个实体)")
+                    relations = handler.merge_objects(small_obj, target, relations)
+                    merged_codes.add(small_obj.object_code)
+                    target.cluster_size += small_obj.cluster_size
+                    target.sample_entities = list(set(target.sample_entities + small_obj.sample_entities))
+            objects = [o for o in objects if o.object_code not in merged_codes]
+            print(f"[INFO] 合并完成，剩余 {len(objects)} 个对象")
+
+        # 6. 统计
         stats = self._compute_stats(objects, relations)
         print("\n[INFO] 关联关系统计:")
         for obj_code, obj_stats in stats.items():
             print(f"  {obj_code}:")
             print(f"    概念实体: {obj_stats['concept']} | 逻辑实体: {obj_stats['logical']} | 物理实体: {obj_stats['physical']}")
 
-        # 6. 写入数据库（支持数据域）
+        # 7. 写入数据库（支持数据域）
         if self.db_config:
             try:
                 # 传递data_domain到DatabaseWriter
