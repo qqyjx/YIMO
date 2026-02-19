@@ -296,6 +296,21 @@ TABLE_PREFIX=eav
 | `object_entity_relations` | **Object to Three-Tier Entity Relations (Core)** |
 | `object_extraction_batches` | Extraction batch records |
 
+### Lifecycle & Traceability Tables
+
+| Table | Purpose |
+|-------|---------|
+| `object_lifecycle_history` | Object lifecycle stage history (Planning→Finance) |
+| `traceability_chains` | Traceability chain definitions |
+| `traceability_chain_nodes` | Chain node details (linked to objects & entities) |
+
+### Mechanism Function & Alert Tables
+
+| Table | Purpose |
+|-------|---------|
+| `mechanism_functions` | Business rule/formula definitions (THRESHOLD/FORMULA/RULE) |
+| `alert_records` | Alert records triggered by mechanism functions |
+
 ### Object-Entity Relation Table Structure
 
 ```sql
@@ -407,6 +422,39 @@ CREATE TABLE object_entity_relations (
 | `/api/olm/summary` | GET | Dashboard summary (all metrics combined) |
 | `/api/olm/small-objects` | GET | Low-cardinality objects with merge suggestions |
 | `/api/olm/merge-objects` | POST | Merge two objects together |
+
+#### Lifecycle Management (Phase 2)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/olm/object-lifecycle/<code>` | GET | Query object lifecycle history |
+| `/api/olm/object-lifecycle/<code>` | POST | Create lifecycle stage record |
+| `/api/olm/lifecycle-stats` | GET | Lifecycle stage distribution stats |
+
+#### Traceability (Phase 3)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/olm/traceability-chains` | GET | List all traceability chains |
+| `/api/olm/traceability-chains` | POST | Create traceability chain (with nodes) |
+| `/api/olm/traceability-chain/<id>` | GET | Chain detail with all nodes |
+| `/api/olm/trace-object/<code>` | GET | Trace chains related to an object |
+
+#### Mechanism Functions (Phase 4)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/olm/mechanism-functions` | GET | List all mechanism functions |
+| `/api/olm/mechanism-functions` | POST | Create mechanism function |
+| `/api/olm/mechanism-functions/<id>` | PUT | Update mechanism function |
+| `/api/olm/mechanism-functions/<id>` | DELETE | Delete mechanism function |
+| `/api/olm/mechanism-functions/evaluate` | POST | Evaluate function with input values |
+| `/api/olm/mechanism-functions/presets` | GET | Get preset function templates |
+
+#### Alerts (Phase 5)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/olm/alerts` | GET | Query alert records (filter by level/status) |
+| `/api/olm/alerts/<id>/resolve` | POST | Mark alert as resolved |
+| `/api/olm/alerts/summary` | GET | Alert statistics overview |
+| `/api/olm/alerts/run-check` | POST | Run all active rules against EAV data |
 
 #### Data Source Strategy
 
@@ -587,23 +635,23 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 | 20+ REST API端点 | ✅ 已实现 | `olm_api.py` (1577行, CRUD + 可视化 + 分析) |
 | BA-04业务对象映射 | ✅ 已实现 | `object_business_object_mapping` 表 + API端点 |
 
-### 部分实现需求（0.md 愿景需求）
+### 已实现需求（0.md 愿景需求，Phase 2-5 新增）
 
-| 需求 | 状态 | 说明 |
-|------|------|------|
-| 全生命周期管理 | ⚠️ 部分 | `eav_datasets` 有 `lifecycle_stage` 字段(5个阶段)，但缺少对象属性的时态历史追踪表 |
-| 穿透式业务溯源 | ⚠️ 部分 | `object_entity_relations` 有 `source_file/source_sheet/source_row` 追踪字段，但缺少完整的审计链路表和跨域溯源链 |
+| 需求 | 状态 | 实现位置 |
+|------|------|----------|
+| 全生命周期管理 | ✅ 已实现 | `object_lifecycle_history` 表 + 3个API端点 + 前端时间线面板 (Planning→Design→Construction→Operation→Finance) |
+| 穿透式业务溯源 | ✅ 已实现 | `traceability_chains` + `traceability_chain_nodes` 表 + 4个API端点 + 前端溯源链路面板（创建/查看/节点流程图） |
+| 机理函数（业务规则+物理公式） | ✅ 已实现 | `mechanism_functions` 表 + 6个API端点 + 表达式求值引擎 + 3个预置函数（合同审计红线/功率公式/审批路径规则） + 前端管理面板（CRUD+测试） |
+| 穿透式预警与辅助决策 | ✅ 已实现 | `alert_records` 表 + 4个API端点 + 规则检查引擎（遍历EAV数据触发阈值检查） + 前端预警看板（统计卡片+列表+处理） |
 
-### 未实现需求（0.md 愿景需求，待甲方确认优先级）
+### 未实现需求（依赖甲方输入，待确认优先级）
 
 | 需求 | 状态 | 阻塞原因 |
 |------|------|----------|
-| 机理函数（业务规则+物理公式） | ❌ 未实现 | 0.md多次提及但1.md未要求；具体函数定义、存储格式、执行规则均未给出 |
 | 财务域落地场景演示 | ❌ 缺数据 | DATA中无财务域Excel数据，无法演示"数字化项目结算"穿透场景 |
-| 穿透式预警与辅助决策 | ❌ 未实现 | 依赖机理函数实现（如合同金额>300万审计红线） |
 | HTAP非结构化数据融合 | ❌ 未实现 | 视频/图像数据源未定义，技术方案未给出 |
 | 与企业数据中台对比 | ❌ 未实现 | 中台数据格式和对比规则均未定义 |
-| 财务数据一致性治理看板 | ❌ 未实现 | 比对规则和阈值未定义 |
+| 财务数据一致性治理看板 | ❌ 未实现 | 比对规则和阈值未定义，依赖财务域数据 |
 
 ### 需求文档本身的问题
 
@@ -639,7 +687,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 ---
 
-*Last updated: 2026-02-19 (需求审查更新)*
+*Last updated: 2026-02-19 (Phase 1-5 实施完成: 生命周期管理+溯源链路+机理函数+穿透式预警)*
 
 ---
 

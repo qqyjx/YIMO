@@ -354,6 +354,120 @@ INSERT INTO `extracted_objects` (`object_code`, `object_name`, `object_name_en`,
 ON DUPLICATE KEY UPDATE `object_name` = VALUES(`object_name`);
 
 -- ============================================================================
+-- 对象生命周期历史表（全生命周期管理）
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `object_lifecycle_history` (
+    `history_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `object_id` INT NOT NULL COMMENT '对象ID',
+    `lifecycle_stage` ENUM('Planning','Design','Construction','Operation','Finance') NOT NULL COMMENT '生命周期阶段',
+    `stage_entered_at` DATETIME(6) COMMENT '进入该阶段时间',
+    `stage_exited_at` DATETIME(6) COMMENT '离开该阶段时间',
+    `attributes_snapshot` JSON COMMENT '该阶段的对象属性快照',
+    `data_domain` VARCHAR(128) COMMENT '数据域',
+    `source_system` VARCHAR(256) COMMENT '来源系统(SAP/ERP等)',
+    `notes` TEXT COMMENT '备注',
+    `created_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+    FOREIGN KEY (`object_id`) REFERENCES `extracted_objects`(`object_id`) ON DELETE CASCADE,
+    KEY `idx_object_stage` (`object_id`, `lifecycle_stage`),
+    KEY `idx_stage_time` (`lifecycle_stage`, `stage_entered_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='对象生命周期历史表';
+
+-- ============================================================================
+-- 穿透式溯源链路表
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `traceability_chains` (
+    `chain_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `chain_code` VARCHAR(128) NOT NULL UNIQUE COMMENT '链路编码',
+    `chain_name` VARCHAR(256) COMMENT '链路名称',
+    `chain_type` ENUM('FINANCIAL','PROCUREMENT','CONSTRUCTION','CUSTOM') DEFAULT 'CUSTOM' COMMENT '链路类型',
+    `data_domain` VARCHAR(128) COMMENT '数据域',
+    `description` TEXT COMMENT '描述',
+    `created_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='穿透式溯源链路表';
+
+CREATE TABLE IF NOT EXISTS `traceability_chain_nodes` (
+    `node_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `chain_id` BIGINT NOT NULL COMMENT '链路ID',
+    `node_order` INT NOT NULL COMMENT '节点顺序',
+    `object_id` INT COMMENT '关联对象ID',
+    `entity_layer` ENUM('CONCEPT','LOGICAL','PHYSICAL') COMMENT '实体层级',
+    `entity_name` VARCHAR(512) COMMENT '实体名称',
+    `node_label` VARCHAR(256) COMMENT '节点显示名称',
+    `node_type` ENUM('SOURCE','INTERMEDIATE','TARGET') DEFAULT 'INTERMEDIATE' COMMENT '节点类型',
+    `source_file` VARCHAR(256) COMMENT '来源文件',
+    `source_sheet` VARCHAR(256) COMMENT '来源工作表',
+    `metadata` JSON COMMENT '扩展元数据',
+    FOREIGN KEY (`chain_id`) REFERENCES `traceability_chains`(`chain_id`) ON DELETE CASCADE,
+    FOREIGN KEY (`object_id`) REFERENCES `extracted_objects`(`object_id`) ON DELETE SET NULL,
+    KEY `idx_chain_order` (`chain_id`, `node_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='溯源链路节点表';
+
+-- ============================================================================
+-- 机理函数表
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `mechanism_functions` (
+    `func_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `func_code` VARCHAR(128) NOT NULL UNIQUE COMMENT '函数编码',
+    `func_name` VARCHAR(256) NOT NULL COMMENT '函数名称',
+    `func_type` ENUM('FORMULA','RULE','THRESHOLD','VALIDATION') NOT NULL COMMENT '函数类型',
+    `category` ENUM('FINANCIAL','PHYSICAL','BUSINESS','QUALITY') DEFAULT 'BUSINESS' COMMENT '函数类别',
+    `expression` JSON NOT NULL COMMENT '函数表达式(JSON格式)',
+    `description` TEXT COMMENT '描述',
+    `source_object_code` VARCHAR(128) COMMENT '触发对象编码',
+    `target_object_code` VARCHAR(128) COMMENT '作用对象编码',
+    `severity` ENUM('INFO','WARNING','CRITICAL') DEFAULT 'WARNING' COMMENT '严重级别',
+    `is_active` BOOLEAN DEFAULT TRUE COMMENT '是否启用',
+    `data_domain` VARCHAR(128) COMMENT '数据域',
+    `created_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    KEY `idx_source_obj` (`source_object_code`),
+    KEY `idx_type_active` (`func_type`, `is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='机理函数定义表';
+
+-- ============================================================================
+-- 预警记录表
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `alert_records` (
+    `alert_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `func_id` BIGINT NOT NULL COMMENT '触发的机理函数',
+    `alert_level` ENUM('INFO','WARNING','CRITICAL') NOT NULL COMMENT '预警级别',
+    `alert_title` VARCHAR(256) COMMENT '预警标题',
+    `alert_detail` TEXT COMMENT '预警详情',
+    `related_object_id` INT COMMENT '关联对象ID',
+    `related_entity_name` VARCHAR(512) COMMENT '关联实体名称',
+    `trigger_value` TEXT COMMENT '触发时的实际值',
+    `threshold_value` TEXT COMMENT '阈值',
+    `is_resolved` BOOLEAN DEFAULT FALSE COMMENT '是否已处理',
+    `resolved_by` VARCHAR(128) COMMENT '处理人',
+    `resolved_at` TIMESTAMP(6) NULL COMMENT '处理时间',
+    `created_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+    FOREIGN KEY (`func_id`) REFERENCES `mechanism_functions`(`func_id`) ON DELETE CASCADE,
+    KEY `idx_level_resolved` (`alert_level`, `is_resolved`),
+    KEY `idx_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='预警记录表';
+
+-- ============================================================================
+-- 预置机理函数（来自0.md中的业务规则示例）
+-- ============================================================================
+INSERT INTO `mechanism_functions` (`func_code`, `func_name`, `func_type`, `category`, `expression`, `description`, `source_object_code`, `severity`, `is_active`) VALUES
+('MF_CONTRACT_AUDIT', '合同金额审计红线', 'THRESHOLD', 'FINANCIAL',
+ '{"field": "合同金额", "operator": ">", "value": 3000000, "unit": "元", "action": "ALERT", "message": "合同金额超过300万审计红线，需走A级审批路径"}',
+ '当合同金额超过300万元时触发审计预警，要求走A级审批路径', 'OBJ_CONTRACT', 'CRITICAL', TRUE),
+('MF_POWER_FORMULA', '功率计算公式', 'FORMULA', 'PHYSICAL',
+ '{"expression": "功率 = 电压 * 电流", "variables": ["电压", "电流"], "result": "功率", "unit": "W"}',
+ '基础物理公式：功率 = 电压 × 电流', 'OBJ_DEVICE', 'INFO', TRUE),
+('MF_APPROVAL_RULE', '付款审批路径规则', 'RULE', 'BUSINESS',
+ '{"condition": "合同金额 > 3000000", "then": "审批路径 = A级审批", "else": "审批路径 = B级审批", "description": "根据合同金额决定审批路径"}',
+ '根据合同金额自动判定审批路径', 'OBJ_CONTRACT', 'WARNING', TRUE)
+ON DUPLICATE KEY UPDATE `func_name` = VALUES(`func_name`);
+
+-- ============================================================================
 -- 完成提示
 -- ============================================================================
-SELECT '✅ YIMO 对象抽取与三层架构关联 Schema 初始化完成!' AS message;
+SELECT '✅ YIMO 对象抽取与三层架构关联 Schema 初始化完成（含生命周期、溯源链路、机理函数、预警表）!' AS message;
