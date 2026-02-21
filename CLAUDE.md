@@ -58,7 +58,7 @@ YIMO extracts abstract "objects" from these entities and builds association rela
 ```
 YIMO/
 ├── scripts/                        # Core Python processing modules
-│   ├── object_extractor.py        # Object extraction algorithm (SBERT + LLM, ~86KB)
+│   ├── object_extractor.py        # Object extraction algorithm (SBERT + LLM, ~96KB)
 │   ├── simple_extractor.py        # Keyword rule-based fallback extractor (no SBERT)
 │   ├── eav_full.py                # Excel → EAV import (multi-sheet, auto-type detection)
 │   ├── eav_csv.py                 # CSV → EAV import
@@ -74,18 +74,32 @@ YIMO/
 │
 ├── webapp/                         # Flask web application
 │   ├── app.py                     # Main Flask app (RAG, DeepSeek proxy, domain discovery)
-│   ├── olm_api.py                 # REST API Blueprint (~1550 lines, 20+ endpoints)
+│   ├── olm_api.py                 # REST API Blueprint (~2700 lines, 42 endpoints)
 │   ├── requirements.txt           # Python web dependencies (pinned versions)
 │   ├── .env.example               # Configuration template
 │   ├── start_web.sh               # Service start script (auto-detects Python env)
 │   ├── stop_web.sh                # Graceful service stop (SIGTERM → SIGKILL)
+│   ├── components/                # Frontend component prototypes (TSX)
+│   │   ├── ChatModule.tsx         # Chat interface component
+│   │   ├── Sidebar.tsx            # Sidebar navigation component
+│   │   ├── VisionModule.tsx       # Vision/image module component
+│   │   └── WriterModule.tsx       # Writer module component
+│   ├── services/                  # Frontend service modules
+│   │   └── geminiService.ts       # Gemini API service integration
 │   └── templates/                 # Jinja2 HTML templates
-│       ├── 10.0.html              # Main dashboard (v10.0, ~81KB, full-featured UI)
+│       ├── 10.0.html              # Main dashboard (v10.0, ~141KB, full-featured UI)
 │       ├── object_extraction.html # Object extraction interface (~32KB)
 │       └── home.html              # Homepage fallback
 │
+├── tests/                          # Test suite (pytest)
+│   ├── conftest.py                # Shared fixtures and test configuration
+│   ├── test_eav_full.py           # EAV import tests (51 tests)
+│   ├── test_object_extractor.py   # Object extraction algorithm tests (33 tests)
+│   ├── test_olm_api.py            # REST API endpoint tests (45 tests)
+│   └── test_simple_extractor.py   # Simple extractor tests (17 tests)
+│
 ├── mysql-local/                    # MySQL configuration
-│   ├── bootstrap.sql              # Database schema init (~400 lines, 10 tables)
+│   ├── bootstrap.sql              # Database schema init (598 lines, 19 tables + 4 views)
 │   ├── my.cnf                     # MySQL config (port 3307, utf8mb4)
 │   └── init_local_mysql.sh        # User-mode MySQL startup
 │
@@ -96,8 +110,8 @@ YIMO/
 │       ├── 1.xlsx, 2.xlsx, 3.xlsx
 │
 ├── outputs/                        # Extraction results (JSON fallback source)
-│   ├── extraction_shupeidian.json # Power distribution results (~3.6MB)
-│   ├── extraction_jicai.json      # Planning & Finance results (~720KB)
+│   ├── extraction_shupeidian.json # Power distribution results (~6.7MB)
+│   ├── extraction_jicai.json      # Planning & Finance results (~734KB)
 │   └── semantic_dedupe_gpu_full/  # Deduplication artifacts
 │
 ├── figures/                        # Architecture diagrams
@@ -106,10 +120,13 @@ YIMO/
 │   │   ├── data_flow.mmd/.svg
 │   │   ├── lifecycle_ontology.mmd/.svg
 │   │   └── tech_roadmap.mmd/.svg
+│   ├── multi_way_switch_circuit.svg # Multi-way switch circuit diagram
 │   └── plan/                      # Project roadmap
 │       └── roadmap.mmd/.pdf/.html/.tex
 │
 ├── doc/                            # Project documentation
+│   ├── implementation_plan.md     # Implementation plan for phases
+│   ├── test-coverage-analysis.md  # Test coverage analysis report
 │   ├── plan/plan.xlsx             # Project planning spreadsheet
 │   └── requirement/               # Client requirements
 │       ├── 0.md                   # Core requirements (穿透式监管, 对象管理器)
@@ -124,8 +141,8 @@ YIMO/
 │
 ├── docker-compose.yml              # Docker orchestration (MySQL + Flask)
 ├── Dockerfile                      # Multi-stage Python 3.11-slim build
-├── deploy.sh                       # Interactive deployment (~618 lines, multi-OS)
-├── demo.sh                         # One-click demo launcher
+├── deploy.sh                       # Interactive deployment (~483 lines, multi-OS)
+├── demo.sh                         # One-click demo launcher (~167 lines)
 ├── docker-start.sh                 # Docker Compose wrapper with health checks
 ├── init.sh                         # Agent session environment verification
 ├── task.json                       # Structured task list (agent harness)
@@ -155,6 +172,7 @@ Root `requirements.txt`:
 pandas>=2.0                # Data processing
 openpyxl>=3.1              # Excel I/O
 mysql-connector-python>=8.0 # MySQL driver (scripts)
+python-dateutil>=2.8       # Date parsing utilities
 tqdm>=4.66                 # Progress bars
 flask>=3.0                 # Web framework
 pymysql>=1.1               # MySQL driver (webapp)
@@ -294,7 +312,9 @@ TABLE_PREFIX=eav
 | `object_synonyms` | Object synonyms/aliases |
 | `object_attribute_definitions` | Object attribute definitions |
 | `object_entity_relations` | **Object to Three-Tier Entity Relations (Core)** |
+| `object_business_object_mapping` | BA-04 business object mappings |
 | `object_extraction_batches` | Extraction batch records |
+| `object_batch_mapping` | Object-to-batch association records |
 
 ### Lifecycle & Traceability Tables
 
@@ -532,6 +552,30 @@ Extraction outputs are stored in `outputs/extraction_<domain>.json`.
 
 ## Testing & Verification
 
+### Automated Test Suite
+
+The project has a pytest-based test suite under `tests/` with 146 test functions:
+
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run specific test module
+python -m pytest tests/test_olm_api.py -v
+python -m pytest tests/test_object_extractor.py -v
+python -m pytest tests/test_eav_full.py -v
+python -m pytest tests/test_simple_extractor.py -v
+```
+
+| Test Module | Test Count | Coverage |
+|-------------|-----------|----------|
+| `test_eav_full.py` | 51 | EAV Excel import, multi-sheet, type detection |
+| `test_object_extractor.py` | 33 | SBERT clustering, relation building, LLM naming |
+| `test_olm_api.py` | 45 | REST API endpoints, DB/JSON fallback |
+| `test_simple_extractor.py` | 17 | Keyword-based extraction rules |
+
+Shared test fixtures are defined in `tests/conftest.py`.
+
 ### Health Checks
 
 ```bash
@@ -581,6 +625,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 - Model files (`models/`, `*.bin`, `*.safetensors`)
 - Database data (`mysql-local/dbdata/`)
 - Log and PID files (`*.log`, `*.pid`)
+- Test artifacts (`.coverage`, `htmlcov/`, `.pytest_cache/`)
 
 ---
 
@@ -622,7 +667,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 ## Requirements Fulfillment Status (需求满足度)
 
-> 最近审查日期: 2026-02-19（含代码级逐行验证）
+> 最近审查日期: 2026-02-21（含代码级逐行验证）
 
 ### 代码量化指标总览
 
@@ -630,11 +675,12 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 |------|------|----------|----------|
 | 核心算法 | `scripts/object_extractor.py` | 2164行 | 12个类, 49个函数 |
 | 回退抽取器 | `scripts/simple_extractor.py` | 321行 | 20+关键词, 15个核心对象 |
-| REST API | `webapp/olm_api.py` | 2541行 | **42个端点**, DB优先+JSON回退 |
+| REST API | `webapp/olm_api.py` | 2701行 | **42个端点**, DB优先+JSON回退 |
 | 主应用 | `webapp/app.py` | 357行 | 路由+DeepSeek代理+RAG查询 |
-| 前端主页 | `webapp/templates/10.0.html` | 2768行 | 70+ JS函数, ECharts图表 |
+| 前端主页 | `webapp/templates/10.0.html` | 2768行 | 64个JS函数, 29个fetch()调用, ECharts图表 |
 | 抽取界面 | `webapp/templates/object_extraction.html` | 767行 | 轻量级演示页 |
-| 数据库Schema | `mysql-local/bootstrap.sql` | 598行 | **24张表+4个视图** |
+| 数据库Schema | `mysql-local/bootstrap.sql` | 598行 | **19张表+4个视图** |
+| 测试套件 | `tests/` | 1557行 | 146个测试函数, 4个测试模块 |
 | 输配电域结果 | `outputs/extraction_shupeidian.json` | 6.7MB | 6个对象, 11928条关联 |
 | 计财域结果 | `outputs/extraction_jicai.json` | 734KB | 7个对象, 1294条关联 |
 
@@ -644,12 +690,12 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 |---|------|------|----------|----------|
 | 1 | 对象抽取（SBERT+层次聚类+LLM命名） | ✅ 已实现 | `object_extractor.py`: DataArchitectureReader→SemanticClusterExtractor(SBERT 768维+AgglomerativeClustering)→LLMObjectNamer(DeepSeek)→HierarchicalRelationBuilder | 两域JSON结果文件存在且数据完整 |
 | 2 | 三层架构关联（CONCEPT/LOGICAL/PHYSICAL） | ✅ 已实现 | `object_entity_relations` 表 + `HierarchicalRelationBuilder` (含 via_concept_entity 层级穿透, 关联强度0.6-0.9分级) | JSON中relations数组含三层关联 |
-| 3 | 前端展示对象与三层关联 | ✅ 已实现 | `10.0.html`: ECharts力导向知识图谱 + 桑基图(4层流向) + 对象卡片网格 + 三列关联面板(概念→逻辑→物理) | 前端70+ fetch()调用对接后端API |
+| 3 | 前端展示对象与三层关联 | ✅ 已实现 | `10.0.html`: ECharts力导向知识图谱 + 桑基图(4层流向) + 对象卡片网格 + 三列关联面板(概念→逻辑→物理) | 前端29个fetch()调用对接后端42个API端点 |
 | 4 | "项目"必须被抽取 | ✅ 已实现 | `REQUIRED_OBJECTS = ["项目"]` + `_ensure_required_objects()` 保障机制 | 两个域JSON均含OBJ_PROJECT |
 | 5 | 多域支持 | ✅ 已实现 | `DATA/` 目录自动发现 + `/api/domains` 端点，当前含 shupeidian + jicai | 前端域选择器已实现 |
 | 6 | EAV动态扩展模型 | ✅ 已实现 | 4张EAV核心表 (datasets/entities/attributes/values) | bootstrap.sql DDL已定义 |
 | 7 | SBERT语义匹配 | ✅ 已实现 | 768维 text2vec-base-chinese + FAISS向量检索(RAG) + 语义去重 | app.py RAG端点已实现 |
-| 8 | v10.0界面风格保留 | ✅ 已实现 | `10.0.html` 2768行, 三色层级设计(概念紫#6366f1/逻辑绿#10b981/物理橙#f59e0b), 响应式Sidebar布局 | UI设计系统完整 |
+| 8 | v10.0界面风格保留 | ✅ 已实现 | `10.0.html` 2768行(~141KB), 三色层级设计(概念紫#6366f1/逻辑绿#10b981/物理橙#f59e0b), 响应式Sidebar布局 | UI设计系统完整 |
 | 9 | 统一本体功能已删除 | ✅ 已完成 | 按甲方要求清除旧功能，仅保留对象抽取+三层关联 | 代码中无旧功能残留 |
 
 **附加实现（超出1.md基本要求）：**
@@ -686,7 +732,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 |------|------|------|
 | 核心算法实现 | 10/10 | SBERT+聚类+LLM+层级穿透完整，含回退方案 |
 | API端点覆盖 | 10/10 | 42个端点，6大功能类别全覆盖 |
-| 数据库设计 | 10/10 | 24张表+4视图，索引/外键/预置数据完整 |
+| 数据库设计 | 10/10 | 19张表+4视图，索引/外键/预置数据完整 |
 | 前端功能 | 9/10 | 11个功能面板全部实现，缺权限管理UI |
 | 错误处理与容错 | 9/10 | DB→JSON回退、SBERT→规则回退、LLM→规则命名回退 |
 | 测试数据 | 10/10 | 两域真实提取结果(6.7MB+734KB)，数据完整 |
@@ -707,7 +753,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 | 风险/建议 | 优先级 | 说明 |
 |-----------|--------|------|
-| 缺少单元测试和集成测试 | 高 | 核心算法和API端点无自动化测试覆盖 |
+| 测试套件已添加但需扩展 | 中 | 146个测试覆盖核心模块，但集成测试和端到端测试仍缺失 |
 | API无分页机制 | 中 | 大数据量下可能存在性能问题 |
 | 无认证授权 | 中 | 所有API端点公开访问，生产部署需加鉴权 |
 | DeepSeek外网依赖 | 中 | 南方电网内网环境可能无法访问，需确认或提供离线方案 |
@@ -737,7 +783,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 ---
 
-*Last updated: 2026-02-19 (Phase 1-6 实施完成 + 代码级需求满足度审查: 1.md需求100%满足, 0.md愿景75%实现)*
+*Last updated: 2026-02-21 (Phase 1-6 实施完成 + 代码级需求满足度审查: 1.md需求100%满足, 0.md愿景75%实现 + 测试套件146测试 + 代码指标校准)*
 
 ---
 
