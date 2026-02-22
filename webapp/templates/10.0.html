@@ -568,6 +568,14 @@
             border-radius: 50%; animation: spin .6s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        /* 抽取域选择弹窗 */
+        .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000 }
+        .modal-box { background:#1e293b;border-radius:.75rem;padding:1.5rem;min-width:320px;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.4) }
+        .modal-box h3 { margin:0 0 .5rem;color:#f1f5f9;font-size:1rem }
+        .domain-check-item { display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.5rem;margin-bottom:.375rem;background:#0f172a;cursor:pointer }
+        .domain-check-item:hover { background:#1a2744 }
+        .domain-check-item input[type="checkbox"] { accent-color:#6366f1;width:16px;height:16px }
+        .domain-check-item span { color:#e2e8f0;font-size:.88rem }
     </style>
 </head>
 <body>
@@ -694,6 +702,7 @@
                         <span class="algo-tag">Agglomerative Clustering</span>
                         <span class="algo-tag">Cosine Distance</span>
                         <span class="algo-tag">BA-04 桥接关联</span>
+                        <span class="algo-tag">DeepSeek LLM 对象命名</span>
                     </div>
                 </div>
             </div>
@@ -1595,24 +1604,56 @@
     }
 
     // ========== Actions ==========
-    async function runExtraction() {
-        const btn = document.getElementById('btnExtract');
-        if (!selectedDomain) { showToast('请先选择一个数据域', 'error'); return; }
+    function runExtraction() {
+        const modal = document.getElementById('extractModal');
+        const list = document.getElementById('extractDomainList');
+        // 清空旧内容
+        list.replaceChildren();
+        // 从域选择器的 radio 按钮获取所有域信息
+        const radios = document.querySelectorAll('input[name="domain"]');
+        radios.forEach(function(r) {
+            const labelEl = r.closest('.domain-item');
+            const domainName = labelEl ? labelEl.querySelector('span').textContent : r.value;
+            const item = document.createElement('label');
+            item.className = 'domain-check-item';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = r.value;
+            if (r.value === selectedDomain) cb.checked = true;
+            const span = document.createElement('span');
+            span.textContent = domainName;
+            item.appendChild(cb);
+            item.appendChild(span);
+            list.appendChild(item);
+        });
+        modal.style.display = 'flex';
+    }
 
+    function closeExtractModal() {
+        document.getElementById('extractModal').style.display = 'none';
+    }
+
+    async function confirmExtraction() {
+        const checks = document.querySelectorAll('#extractDomainList input[type="checkbox"]:checked');
+        const domains = Array.from(checks).map(function(c) { return c.value; });
+        if (!domains.length) { showToast('请至少选择一个数据域', 'error'); return; }
+
+        closeExtractModal();
+        const btn = document.getElementById('btnExtract');
         btn.disabled = true;
-        btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;"></div>抽取中...';
+        btn.textContent = '抽取中...';
 
         try {
             const resp = await fetch('/api/olm/run-extraction', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ use_llm: false, target_clusters: 15, domains: [selectedDomain] })
+                body: JSON.stringify({ use_llm: true, target_clusters: 15, domains: domains })
             });
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
             const data = await resp.json();
 
             if (data.success) {
-                showToast(`抽取完成！对象数: ${data.objects_count}，关联数: ${data.relations_count}`, 'success');
+                showToast('抽取完成！对象数: ' + data.objects_count + '，关联数: ' + data.relations_count, 'success');
                 loadObjects();
             } else {
                 showToast('抽取失败: ' + (data.error || '未知错误'), 'error');
@@ -1621,7 +1662,7 @@
             showToast('抽取失败: ' + e.message, 'error');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-cpu"></i>执行抽取';
+            btn.textContent = '执行抽取';
         }
     }
 
@@ -2764,5 +2805,18 @@
         container.innerHTML = html;
     }
     </script>
+
+    <!-- 抽取域选择弹窗 -->
+    <div id="extractModal" class="modal-overlay" style="display:none">
+        <div class="modal-box">
+            <h3>选择抽取域</h3>
+            <p style="color:#94a3b8;font-size:.82rem;margin-bottom:.75rem">勾选要执行抽取的数据域，抽取将替换所选域的现有数据</p>
+            <div id="extractDomainList"></div>
+            <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+                <button class="btn btn-outline" onclick="closeExtractModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmExtraction()">确认抽取</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

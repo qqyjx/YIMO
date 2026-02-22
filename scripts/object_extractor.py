@@ -1971,6 +1971,21 @@ class SemanticObjectExtractionPipeline:
             if not matched_concepts:
                 # 退化：在概念实体名称中模糊搜索
                 matched_concepts = [ce.name for ce in concept_entities if obj.object_name in ce.name]
+            if not matched_concepts:
+                # 进一步退化：扩展关键词匹配（覆盖同义词和关联词）
+                REQUIRED_OBJECT_KEYWORDS = {
+                    "项目": ["工程", "建设", "立项", "竣工", "验收", "施工", "投资", "预算", "决算", "招标", "投标", "合同"],
+                    "设备": ["装置", "终端", "传感器", "开关", "变压器", "电缆", "母线"],
+                    "资产": ["固定资产", "在建工程", "折旧", "台账", "卡片"],
+                }
+                keywords = REQUIRED_OBJECT_KEYWORDS.get(obj.object_name, [])
+                if keywords:
+                    matched_concepts = [
+                        ce.name for ce in concept_entities
+                        if any(kw in ce.name for kw in keywords)
+                    ]
+                    if matched_concepts:
+                        print(f"  通过扩展关键词匹配到 {len(matched_concepts)} 个概念实体")
             if matched_concepts:
                 existing_keys = {(r.object_code, r.entity_layer, r.entity_name) for r in relations}
                 new_count = 0
