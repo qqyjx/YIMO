@@ -17,3 +17,13 @@
 - 技术指标：42个API端点、24张表+4视图、24个端点支持DB→JSON回退、100%参数化查询无SQL注入
 - 主要风险：无认证授权(高)、测试覆盖不足(高)、日志用print(中)、API无分页(中)
 - 结论：项目可进入部署验收阶段
+
+## 2026-02-27 — 健康检查与仓库清理
+- Git同步：本地 main 与 origin/main 完全一致，零差异
+- 测试：146 passed, 0 failed, 3 DeprecationWarning（faiss SwigPy 相关，无影响）
+- MySQL：端口3307连接正常，19张表，extracted_objects 18行，object_entity_relations 13898行，eav_entities 220883行
+- Webapp：Flask 重启后 HTTP 200，148KB 响应正常
+- 远程分支清理：删除33个已合并分支（26个 claude/* + 7个 feature/fix/cleanup），保留 main + feature/deploy-progress-bar（未合并）
+- 本地分支清理：删除3个 [gone] 本地分支
+- 冗余文件清理：删除9个 tracked 文件（4个 TSX 组件 + 1个 TS 服务 + 2个空 shell + 1个 JS + .gitkeep），清理 __pycache__/.pytest_cache/stale PID
+- 仓库状态：干净，分支精简，代码健康
