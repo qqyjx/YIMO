@@ -35,6 +35,7 @@ def main():
                     help='生命周期阶段: Planning/Design/Construction/Operation/Finance')
     ap.add_argument('--stage-date', default=None, help='阶段日期（如 2026-01-09）')
     ap.add_argument('--stage-source', default=None, help='数据来源系统')
+    ap.add_argument('--data-domain', default=None, help='数据域编码（如 jicai/shupeidian）')
     ap.add_argument('--incremental', action='store_true', help='启用增量导入')
     args = ap.parse_args()
 
@@ -66,6 +67,8 @@ def main():
             cmd.extend(['--stage-date', args.stage_date])
         if args.stage_source:
             cmd.extend(['--stage-source', args.stage_source])
+        if args.data_domain:
+            cmd.extend(['--data-domain', args.data_domain])
         if args.incremental:
             cmd.append('--incremental')
         subprocess.check_call(cmd)

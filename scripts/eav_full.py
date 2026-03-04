@@ -253,18 +253,19 @@ def ensure_schema(cursor, table_prefix="eav", charset="utf8mb4", collation="utf8
 # 有效的生命周期阶段
 VALID_LIFECYCLE_STAGES = ['Planning', 'Design', 'Construction', 'Operation', 'Finance']
 
-def upsert_dataset(cursor, table_prefix, name, source_file, lifecycle_stage='Finance', stage_metadata=None)->int:
-    """创建或更新数据集，支持生命周期阶段标记"""
+def upsert_dataset(cursor, table_prefix, name, source_file, lifecycle_stage='Finance', stage_metadata=None, data_domain=None)->int:
+    """创建或更新数据集，支持生命周期阶段标记和数据域"""
     import json
     stage_meta_json = json.dumps(stage_metadata) if stage_metadata else None
     cursor.execute(
         f"""
-        INSERT INTO `{table_prefix}_datasets` (`name`, `source_file`, `lifecycle_stage`, `stage_metadata`, `imported_at`)
-        VALUES (%s,%s,%s,%s,%s) AS new
-        ON DUPLICATE KEY UPDATE `source_file`=new.`source_file`, `lifecycle_stage`=new.`lifecycle_stage`, 
+        INSERT INTO `{table_prefix}_datasets` (`name`, `data_domain`, `source_file`, `lifecycle_stage`, `stage_metadata`, `imported_at`)
+        VALUES (%s,%s,%s,%s,%s,%s) AS new
+        ON DUPLICATE KEY UPDATE `source_file`=new.`source_file`, `data_domain`=new.`data_domain`,
+                                `lifecycle_stage`=new.`lifecycle_stage`, 
                                 `stage_metadata`=new.`stage_metadata`, `imported_at`=new.`imported_at`
         """,
-        (name, source_file, lifecycle_stage, stage_meta_json, datetime.utcnow())
+        (name, data_domain, source_file, lifecycle_stage, stage_meta_json, datetime.utcnow())
     )
     cursor.execute(f"SELECT `id` FROM `{table_prefix}_datasets` WHERE `name`=%s", (name,))
     return cursor.fetchone()[0]
@@ -433,6 +434,7 @@ def main():
                     help="生命周期阶段: Planning/Design/Construction/Operation/Finance（默认 Finance）")
     ap.add_argument("--stage-date", default=None, help="阶段日期（如 2026-01-09，用于时序校验）")
     ap.add_argument("--stage-source", default=None, help="阶段数据来源系统（如 SAP/ERP/MES）")
+    ap.add_argument("--data-domain", default=None, help="数据域编码（如 jicai/shupeidian）")
     args = ap.parse_args()
 
     excel_path = Path(args.excel)
@@ -441,6 +443,8 @@ def main():
         sys.exit(1)
 
     dataset_name = args.dataset_name or excel_path.stem
+    if args.data_domain:
+        dataset_name = f"{args.data_domain}_{dataset_name}"
     if args.table_name:
         dataset_name = f"{dataset_name} ({args.table_name})"
     
@@ -485,7 +489,8 @@ def main():
 
     # 数据集记录（带生命周期阶段）
     dataset_id = upsert_dataset(cur, args.table_prefix, dataset_name, str(excel_path.resolve()), 
-                                 lifecycle_stage=args.stage, stage_metadata=stage_metadata)
+                                 lifecycle_stage=args.stage, stage_metadata=stage_metadata,
+                                 data_domain=args.data_domain)
     conn.commit()
     print(f"[INFO] 数据集 ID: {dataset_id} (阶段: {args.stage})")
 
