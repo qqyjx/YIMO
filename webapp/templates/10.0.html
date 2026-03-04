@@ -1577,9 +1577,7 @@
             ...conArr.map(n => ({ name: n.name, depth: 1,
                 itemStyle: { color: '#818cf8', borderColor: '#6366f1', borderWidth: 0 } })),
             { name: '逻辑实体层', depth: 2,
-              itemStyle: { color: '#10b981', borderColor: '#059669', borderWidth: 2 } },
-            { name: '物理实体层', depth: 3,
-              itemStyle: { color: '#f59e0b', borderColor: '#d97706', borderWidth: 2 } }
+              itemStyle: { color: '#10b981', borderColor: '#059669', borderWidth: 2 } }
         ];
 
         // ── Links: keep obj→concept, aggregate concept→logical ──
@@ -1604,10 +1602,6 @@
         Object.entries(conLogSum).forEach(([s, v]) => {
             links.push({ source: s, target: '逻辑实体层', value: v });
         });
-        // 逻辑实体层 → 物理实体层
-        if (logicalTotal > 0) {
-            links.push({ source: '逻辑实体层', target: '物理实体层', value: logicalTotal });
-        }
 
         // ── Dynamic height ──
         const rows = Math.max(objArr.length, conArr.length);
@@ -1645,9 +1639,6 @@
                       label: { fontSize: 10.5, color: '#475569' } },
                     { depth: 2, itemStyle: { color: '#10b981', borderWidth: 2, borderColor: '#059669' },
                       lineStyle: { color: '#10b981', opacity: 0.15 },
-                      label: { fontSize: 14, fontWeight: 700, color: '#fff', position: 'inside' } },
-                    { depth: 3, itemStyle: { color: '#f59e0b', borderWidth: 2, borderColor: '#d97706' },
-                      lineStyle: { color: '#f59e0b', opacity: 0.15 },
                       label: { fontSize: 14, fontWeight: 700, color: '#fff', position: 'inside' } }
                 ]
             }]
@@ -1681,8 +1672,6 @@
 
         if (logicalTotal > 0) {
             nodes.push({ name: '逻辑实体层', depth: 2, itemStyle: { color: '#10b981' } });
-            nodes.push({ name: '物理实体层', depth: 3, itemStyle: { color: '#f59e0b' } });
-            links.push({ source: '逻辑实体层', target: '物理实体层', value: logicalTotal });
         }
 
         renderSankeyChart({ nodes: nodes.map(n => ({ ...n, type: n.depth === 0 ? 'object' : 'concept' })), links });
