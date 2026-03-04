@@ -1828,26 +1828,41 @@
             c.itemStyle = { color: categoryColors[i], borderColor: '#fff', borderWidth: 1 };
         });
 
+        // ── 修复：links 的 source/target 用的是 node.id，需映射到索引 ──
+        const idToIdx = {};
+        data.nodes.forEach((n, i) => { if (n.id) idToIdx[n.id] = i; });
+        // 同时统计每个节点的实际边数
+        const nodeEdgeCount = new Array(data.nodes.length).fill(0);
+        data.links.forEach(l => {
+            if (typeof l.source === 'string' && l.source in idToIdx) l.source = idToIdx[l.source];
+            if (typeof l.target === 'string' && l.target in idToIdx) l.target = idToIdx[l.target];
+            if (typeof l.source === 'number') nodeEdgeCount[l.source]++;
+            if (typeof l.target === 'number') nodeEdgeCount[l.target]++;
+        });
+        // 将 value 设为实际边数
+        data.nodes.forEach((n, i) => { n.value = nodeEdgeCount[i]; });
+
         // 增强节点样式：按层级设置大小和形状
         data.nodes.forEach(n => {
             const cat = n.category || 0;
+            const edges = n.value || 1;
             if (cat === 0) {
                 // 抽取对象 - 最大，显眼
-                n.symbolSize = Math.max(40, Math.min(60, (n.value || 10) * 2));
+                n.symbolSize = Math.max(40, Math.min(60, edges * 1.5));
                 n.label = { show: true, fontSize: 13, fontWeight: 'bold', color: '#1e293b' };
                 n.itemStyle = { color: categoryColors[0], borderColor: '#fff', borderWidth: 3,
                                 shadowColor: 'rgba(99,102,241,0.4)', shadowBlur: 12 };
             } else if (cat === 1) {
                 // 概念实体 - 中等
-                n.symbolSize = Math.max(18, Math.min(32, (n.value || 5) * 1.5));
+                n.symbolSize = Math.max(18, Math.min(32, edges * 3));
                 n.label = { show: true, fontSize: 10, color: '#475569' };
             } else if (cat === 2) {
                 // 逻辑实体 - 较小
-                n.symbolSize = Math.max(10, Math.min(22, (n.value || 3)));
+                n.symbolSize = Math.max(10, Math.min(22, edges * 3));
                 n.label = { show: data.nodes.length < 60, fontSize: 9, color: '#64748b' };
             } else {
                 // 物理实体 - 最小
-                n.symbolSize = Math.max(8, Math.min(16, (n.value || 2)));
+                n.symbolSize = Math.max(8, Math.min(16, edges * 2));
                 n.label = { show: data.nodes.length < 40, fontSize: 8, color: '#94a3b8' };
             }
         });
