@@ -215,16 +215,41 @@ requests==2.32.3
 
 ### Running the Web Application
 
-```bash
-# Start service (auto-detects venv/conda/system Python)
-cd webapp && ./start_web.sh
+**推荐方式：`start.sh` 一键管理**
 
-# Manual start with venv
+```bash
+# 启动（MySQL 检查+自启 → venv 激活 → Flask 后台启动 → 健康检查）
+bash start.sh
+
+# 停止
+bash start.sh --stop
+
+# 重启（改完代码后用这个）
+bash start.sh --restart
+
+# 查看状态（MySQL 连接 + Flask PID + /health）
+bash start.sh --status
+
+# 指定端口启动
+bash start.sh --port 8080
+
+# 启动前先运行对象抽取
+bash start.sh --extract
+```
+
+**启动流程（start.sh 内部）：**
+1. 检测 MySQL (127.0.0.1:3307)，未运行则 `sudo service mysql start`，等待最多 30s
+2. 显示数据库摘要（对象数 / 关联数 / EAV实体数 / EAV值数）
+3. 自动检测 Python（`venv/bin/python` → conda → system python3）
+4. 后台启动 `webapp/app.py`，PID 写入 `webapp/webapp.pid`，日志写入 `webapp/webapp.log`
+5. 健康检查 `curl http://127.0.0.1:5000/health`，最多等 15s
+6. 输出访问地址
+
+**手动启动（仅调试用）：**
+
+```bash
 source venv/bin/activate
 cd webapp && python app.py
-
-# Stop service
-cd webapp && ./stop_web.sh
 
 # Verify health
 curl http://localhost:5000/health

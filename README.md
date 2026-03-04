@@ -5,10 +5,10 @@
 ## 快速开始
 
 ```bash
-# 一键演示（推荐）
-chmod +x demo.sh && ./demo.sh
+# 一键启动（推荐）— 自动检查 MySQL、启动 Flask、健康检查
+bash start.sh
 
-# 访问 http://localhost:5000/extraction
+# 访问 http://localhost:5000
 ```
 
 ## 核心概念
@@ -56,15 +56,35 @@ DATA/
 3. 启动 Web 服务
 4. 打印访问地址
 
-### 启停服务
+### 系统启停（start.sh 一键管理）
 
 ```bash
-# 启动（推荐，自动检测环境、健康检查）
-cd webapp && ./start_web.sh
+# 启动（自动检查并启动 MySQL → 激活 venv → 启动 Flask → 健康检查）
+bash start.sh
 
 # 停止
-cd webapp && ./stop_web.sh
+bash start.sh --stop
+
+# 重启
+bash start.sh --restart
+
+# 查看状态（MySQL + Flask + 健康检查）
+bash start.sh --status
+
+# 指定端口
+bash start.sh --port 8080
+
+# 启动前先运行对象抽取
+bash start.sh --extract
 ```
+
+启动流程：
+1. 检测 MySQL (port 3307)，未运行则自动 `sudo service mysql start`
+2. 显示数据库摘要（对象数、关联数、EAV 实体数、EAV 值数）
+3. 自动检测 Python 环境（venv → conda → system python3）
+4. 后台启动 Flask，写入 PID 文件
+5. 等待健康检查通过（`/health` 端点）
+6. 输出访问地址 `http://localhost:5000`
 
 ### 手动运行
 
@@ -86,10 +106,11 @@ python3 scripts/object_extractor.py \
     --no-db \
     --output outputs/extraction_shupeidian.json
 
-# 3. 启动 Web 服务
-cd webapp && python3 app.py
+# 3. 手动启动 Flask（不推荐，建议用 start.sh）
+source venv/bin/activate
+cd webapp && python app.py
 
-# 4. 访问 http://localhost:5000/extraction
+# 4. 访问 http://localhost:5000
 ```
 
 ## 数据源机制
@@ -211,10 +232,10 @@ DEEPSEEK_API_BASE=https://api.deepseek.com/v1
 
 ```bash
 # 推荐方式
-cd webapp && ./stop_web.sh
+bash start.sh --stop
 
 # 备用
-pkill -f 'python3.*app.py'
+pkill -f 'python.*app.py'
 ```
 
 ## License
