@@ -392,8 +392,8 @@ class DataArchitectureReader:
                 if name and name != "nan" and name not in seen:
                     seen.add(name)
                     # 优先使用Excel中的数据域，如果为空则使用配置的数据域
-                    excel_domain = str(row.get("数据域", "")).strip()
-                    domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                    # data_domain 统一使用 CLI 传入的域编码，不读 Excel 中文名
+                    domain = self.data_domain
                     self.entities.append(EntityInfo(
                         name=name,
                         layer="CONCEPT",
@@ -414,8 +414,8 @@ class DataArchitectureReader:
                     name = str(row.get("概念实体", "")).strip()
                     if name and name != "nan" and name != "" and name not in seen_fb:
                         seen_fb.add(name)
-                        excel_domain = str(row.get("数据域", "")).strip()
-                        domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                        # data_domain 统一使用 CLI 传入的域编码，不读 Excel 中文名
+                        domain = self.data_domain
                         self.entities.append(EntityInfo(
                             name=name, layer="CONCEPT",
                             code=str(row.get("概念实体编号", "")).strip(),
@@ -438,8 +438,8 @@ class DataArchitectureReader:
                 name = str(row.get("逻辑实体名称", "")).strip()
                 if name and name != "nan" and name not in seen:
                     seen.add(name)
-                    excel_domain = str(row.get("数据域", "")).strip()
-                    domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                    # data_domain 统一使用 CLI 传入的域编码，不读 Excel 中文名
+                    domain = self.data_domain
                     self.entities.append(EntityInfo(
                         name=name,
                         layer="LOGICAL",
@@ -519,8 +519,8 @@ class DataArchitectureReader:
                     continue
                 seen.add(key)
 
-                excel_domain = str(row.get("数据域", "")).strip()
-                domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                # data_domain 统一使用 CLI 传入的域编码，不读 Excel 中文名
+                domain = self.data_domain
 
                 mapping[concept_name].append(EntityInfo(
                     name=logical_name,
@@ -548,8 +548,8 @@ class DataArchitectureReader:
                     if key in seen_fb:
                         continue
                     seen_fb.add(key)
-                    excel_domain = str(row.get("数据域", "")).strip()
-                    domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                    # data_domain 统一使用 CLI 传入的域编码，不读 Excel 中文名
+                    domain = self.data_domain
                     mapping[concept_name].append(EntityInfo(
                         name=logical_name, layer="LOGICAL",
                         code=str(row.get("逻辑实体编码", "")).strip(),
@@ -586,8 +586,8 @@ class DataArchitectureReader:
                     continue
                 seen.add(key)
 
-                excel_domain = str(row.get("数据域", "")).strip()
-                domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                # data_domain 统一使用 CLI 传入的域编码，不读 Excel 中文名
+                domain = self.data_domain
 
                 mapping[logical_name].append(EntityInfo(
                     name=physical_name,
@@ -619,8 +619,8 @@ class DataArchitectureReader:
                     if key in seen_fb:
                         continue
                     seen_fb.add(key)
-                    excel_domain = str(row.get("数据域", "")).strip()
-                    domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                    # data_domain 统一使用 CLI 传入的域编码，不读 Excel 中文名
+                    domain = self.data_domain
                     mapping[logical_name].append(EntityInfo(
                         name=physical_name, layer="PHYSICAL",
                         code=str(row.get("物理实体编码", "")).strip(),
@@ -678,8 +678,8 @@ class DataArchitectureReader:
                 name = str(row.get("物理实体名称", "")).strip()
                 if name and name != "nan" and name not in seen:
                     seen.add(name)
-                    excel_domain = str(row.get("数据域", "")).strip()
-                    domain = excel_domain if excel_domain and excel_domain != "nan" else self.data_domain
+                    # data_domain 统一使用 CLI 传入的域编码，不读 Excel 中文名
+                    domain = self.data_domain
                     self.entities.append(EntityInfo(
                         name=name,
                         layer="PHYSICAL",
@@ -1873,7 +1873,8 @@ class SemanticObjectExtractionPipeline:
 
     def __init__(self, data_dir: str = "DATA", db_config: Dict = None,
                  target_clusters: int = TARGET_CLUSTER_COUNT,
-                 data_domain: str = "default", excel_files: List[str] = None):
+                 data_domain: str = "default", excel_files: List[str] = None,
+                 min_cluster_size: int = SMALL_OBJECT_THRESHOLD):
         """
         初始化流水线
 
@@ -1883,6 +1884,7 @@ class SemanticObjectExtractionPipeline:
             target_clusters: 目标聚类数量
             data_domain: 数据域编码
             excel_files: 指定的Excel文件列表（覆盖域配置）
+            min_cluster_size: 小对象合并阈值
         """
         self.data_dir = data_dir
         self.db_config = db_config or {}
@@ -1890,6 +1892,7 @@ class SemanticObjectExtractionPipeline:
         self.data_domain = data_domain
         self.data_domain_name = get_domain_name(data_domain)
         self.excel_files = excel_files
+        self.min_cluster_size = min_cluster_size
 
     def run(self, use_llm: bool = True) -> Dict:
         """执行抽取流水线"""
@@ -2033,7 +2036,7 @@ class SemanticObjectExtractionPipeline:
         # 5. 自动处理小对象（合并到最近的大对象，但保留必需对象）
         # 必需对象（如"项目"）不会被合并，即使cluster_size很小
         required_names = set(REQUIRED_OBJECTS)
-        handler = SmallObjectHandler(min_entity_count=SMALL_OBJECT_THRESHOLD)
+        handler = SmallObjectHandler(min_entity_count=self.min_cluster_size)
         small_objects = handler.identify_small_objects(objects)
         # 从小对象列表中排除必需对象
         mergeable_small = [o for o in small_objects if o.object_name not in required_names]
@@ -2132,6 +2135,7 @@ if __name__ == "__main__":
     parser.add_argument("--use-llm", action="store_true", help="使用大模型命名")
     parser.add_argument("--no-db", action="store_true", help="不写入数据库")
     parser.add_argument("--output", "-o", default=None, help="输出JSON文件路径")
+    parser.add_argument("--min-cluster-size", type=int, default=SMALL_OBJECT_THRESHOLD, help="小对象合并阈值(低于此值的对象自动合并)")
     parser.add_argument("--list-domains", action="store_true", help="列出所有可用的数据域配置")
 
     args = parser.parse_args()
@@ -2161,7 +2165,8 @@ if __name__ == "__main__":
         db_config=db_config,
         target_clusters=args.target_clusters,
         data_domain=args.data_domain,
-        excel_files=args.excel_files
+        excel_files=args.excel_files,
+        min_cluster_size=args.min_cluster_size
     )
     result = pipeline.run(use_llm=args.use_llm)
 

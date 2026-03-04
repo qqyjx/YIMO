@@ -290,9 +290,7 @@ def api_extracted_objects():
                            (SELECT COUNT(*) FROM object_entity_relations r
                             WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
                            (SELECT COUNT(*) FROM object_entity_relations r
-                            WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
-                           (SELECT COUNT(*) FROM object_entity_relations r
-                            WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count
                     FROM extracted_objects o
                     WHERE o.data_domain = %s
                     ORDER BY o.object_type, o.object_name
@@ -304,9 +302,7 @@ def api_extracted_objects():
                            (SELECT COUNT(*) FROM object_entity_relations r
                             WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
                            (SELECT COUNT(*) FROM object_entity_relations r
-                            WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
-                           (SELECT COUNT(*) FROM object_entity_relations r
-                            WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count
                     FROM extracted_objects o
                     WHERE o.data_domain IN ({placeholders})
                     ORDER BY o.data_domain, o.object_type, o.object_name
@@ -317,9 +313,7 @@ def api_extracted_objects():
                            (SELECT COUNT(*) FROM object_entity_relations r
                             WHERE r.object_id = o.object_id AND r.entity_layer = 'CONCEPT') as concept_count,
                            (SELECT COUNT(*) FROM object_entity_relations r
-                            WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count,
-                           (SELECT COUNT(*) FROM object_entity_relations r
-                            WHERE r.object_id = o.object_id AND r.entity_layer = 'PHYSICAL') as physical_count
+                            WHERE r.object_id = o.object_id AND r.entity_layer = 'LOGICAL') as logical_count
                     FROM extracted_objects o
                     ORDER BY o.data_domain, o.object_type, o.object_name
                 """)
@@ -336,7 +330,7 @@ def api_extracted_objects():
                     row['stats'] = {
                         'concept': row.pop('concept_count', 0),
                         'logical': row.pop('logical_count', 0),
-                        'physical': row.pop('physical_count', 0),
+                        'physical': 0,  # 物理实体待接入生产系统
                         'biz_match_count': 0
                     }
                     objects.append(row)
@@ -1308,70 +1302,80 @@ def api_domain_stats():
 # ============================================================================
 
 def get_sankey_from_json(domain: str = '') -> dict:
-    """从 JSON 文件构建桑基图数据"""
+    """从 JSON 文件构建桑基图数据（三层：对象→概念→逻辑，物理层待接入）"""
     data = load_json_data(domain or 'shupeidian')
     objects = data.get('objects', [])
     relations = data.get('relations', [])
+
+    MAX_LOGICAL_PER_CONCEPT = 3
 
     nodes = []
     links = []
     node_set = set()
 
-    # 按 object_code 分组 relations
-    obj_concepts = {}  # {obj_code: [(entity_name, strength, logical_count)]}
-    layer_counts = {'LOGICAL': 0, 'PHYSICAL': 0}
+    # 预处理：按 object_code 分组 relations
+    from collections import defaultdict
+    obj_concept_rels = defaultdict(list)
+    concept_logical_rels = defaultdict(list)
 
     for rel in relations:
         layer = rel.get('entity_layer', '').upper()
-        if layer in ('LOGICAL', 'PHYSICAL'):
-            layer_counts[layer] += 1
-
-    # 构建 concept→logical 映射
-    concept_logical_count = {}
-    for rel in relations:
-        if rel.get('entity_layer', '').upper() == 'LOGICAL':
+        code = rel.get('object_code', '')
+        if layer == 'CONCEPT':
+            obj_concept_rels[code].append(rel)
+        elif layer == 'LOGICAL':
             via = rel.get('via_concept_entity', '')
-            obj_code = rel.get('object_code', '')
-            key = (obj_code, via)
-            concept_logical_count[key] = concept_logical_count.get(key, 0) + 1
+            concept_logical_rels[(code, via)].append(rel)
 
     for obj in objects:
         code = obj.get('object_code', '')
         name = obj.get('object_name', '')
-        if name and name not in node_set:
+        if not name:
+            continue
+        if name not in node_set:
             nodes.append({'name': name, 'depth': 0, 'type': 'object'})
             node_set.add(name)
 
-        # 该对象的 concept 实体
-        obj_concepts_list = []
-        for rel in relations:
-            if rel.get('object_code') == code and rel.get('entity_layer', '').upper() == 'CONCEPT':
-                e_name = rel.get('entity_name', '')
-                strength = rel.get('relation_strength', 0)
-                lc = concept_logical_count.get((code, e_name), 0)
-                obj_concepts_list.append((e_name, strength, lc))
+        # Top 5 concepts by strength
+        concepts = sorted(obj_concept_rels.get(code, []), key=lambda x: x.get('relation_strength', 0), reverse=True)[:5]
 
-        # Top 5 by strength
-        obj_concepts_list.sort(key=lambda x: x[1], reverse=True)
-        for e_name, strength, lc in obj_concepts_list[:5]:
-            concept_node = f"{e_name}({name})"
+        for crel in concepts:
+            concept_name = crel.get('entity_name', '')
+            concept_node = f"{concept_name}({name})"
+
+            logicals = concept_logical_rels.get((code, concept_name), [])
+            logicals.sort(key=lambda x: x.get('relation_strength', 0), reverse=True)
+            total_logical = len(logicals)
+
+            if total_logical == 0:
+                if concept_node not in node_set:
+                    nodes.append({'name': concept_node, 'depth': 1, 'type': 'concept'})
+                    node_set.add(concept_node)
+                links.append({'source': name, 'target': concept_node, 'value': 1})
+                continue
+
             if concept_node not in node_set:
                 nodes.append({'name': concept_node, 'depth': 1, 'type': 'concept'})
                 node_set.add(concept_node)
-            links.append({'source': name, 'target': concept_node, 'value': max(1, lc)})
-            if lc > 0:
-                links.append({'source': concept_node, 'target': '逻辑实体层', 'value': lc})
+            links.append({'source': name, 'target': concept_node, 'value': total_logical})
 
-    # 聚合节点
-    if layer_counts['LOGICAL'] > 0:
-        if '逻辑实体层' not in node_set:
-            nodes.append({'name': '逻辑实体层', 'depth': 2, 'type': 'logical_agg'})
-            node_set.add('逻辑实体层')
-    if layer_counts['PHYSICAL'] > 0:
-        if '物理实体层' not in node_set:
-            nodes.append({'name': '物理实体层', 'depth': 3, 'type': 'physical_agg'})
-            node_set.add('物理实体层')
-        links.append({'source': '逻辑实体层', 'target': '物理实体层', 'value': layer_counts['PHYSICAL']})
+            shown_logicals = logicals[:MAX_LOGICAL_PER_CONCEPT]
+            rest_logical_count = total_logical - len(shown_logicals)
+
+            for lg_rel in shown_logicals:
+                lg_name = lg_rel.get('entity_name', '')
+                lg_node = lg_name
+                if lg_node not in node_set:
+                    nodes.append({'name': lg_node, 'depth': 2, 'type': 'logical'})
+                    node_set.add(lg_node)
+                links.append({'source': concept_node, 'target': lg_node, 'value': 1})
+
+            if rest_logical_count > 0:
+                agg_lg = f"其他{rest_logical_count}个逻辑实体({concept_name})"
+                if agg_lg not in node_set:
+                    nodes.append({'name': agg_lg, 'depth': 2, 'type': 'logical_agg'})
+                    node_set.add(agg_lg)
+                links.append({'source': concept_node, 'target': agg_lg, 'value': rest_logical_count})
 
     return {'nodes': nodes, 'links': links, 'domain': domain or 'shupeidian'}
 
@@ -1380,20 +1384,30 @@ def get_sankey_from_json(domain: str = '') -> dict:
 def api_sankey_data():
     """获取桑基图可视化数据
 
-    返回对象→Top5概念实体→逻辑实体层→物理实体层的完整流向数据。
+    返回对象→概念实体→逻辑实体的三层流向数据。
+    概念层每个概念取Top-3逻辑实体，超出部分用"其他N个"聚合节点。
+    物理实体层待接入生产系统后再展示。
 
     Query参数:
-        domain (str): 数据域过滤
+        domain (str): 数据域过滤，支持逗号分隔多域
     """
     domain = request.args.get('domain', '')
+    domains = [d.strip() for d in domain.split(',') if d.strip()] if domain else []
+    MAX_LOGICAL_PER_CONCEPT = 3
 
     if is_db_available():
         try:
             # 1. 获取对象列表
-            if domain:
+            if len(domains) == 1:
                 objects = execute_query(
                     "SELECT object_id, object_code, object_name FROM extracted_objects WHERE data_domain = %s ORDER BY object_type, object_name",
-                    (domain,)
+                    (domains[0],)
+                )
+            elif len(domains) > 1:
+                placeholders = ','.join(['%s'] * len(domains))
+                objects = execute_query(
+                    f"SELECT object_id, object_code, object_name FROM extracted_objects WHERE data_domain IN ({placeholders}) ORDER BY object_type, object_name",
+                    tuple(domains)
                 )
             else:
                 objects = execute_query(
@@ -1407,7 +1421,7 @@ def api_sankey_data():
             links = []
             node_set = set()
 
-            # 2. 为每个对象查询 Top-5 概念实体
+            # 2. 为每个对象查询 Top-5 概念实体 + 其下逻辑实体
             for obj in objects:
                 obj_name = obj['object_name']
                 obj_id = obj['object_id']
@@ -1416,11 +1430,9 @@ def api_sankey_data():
                     nodes.append({'name': obj_name, 'depth': 0, 'type': 'object'})
                     node_set.add(obj_name)
 
+                # Top-5 概念实体
                 top_concepts = execute_query("""
-                    SELECT r.entity_name, r.relation_strength,
-                           (SELECT COUNT(DISTINCT r2.entity_name) FROM object_entity_relations r2
-                            WHERE r2.object_id = r.object_id AND r2.entity_layer = 'LOGICAL'
-                            AND r2.via_concept_entity = r.entity_name) as logical_count
+                    SELECT r.entity_name, r.relation_strength
                     FROM object_entity_relations r
                     WHERE r.object_id = %s AND r.entity_layer = 'CONCEPT'
                     ORDER BY r.relation_strength DESC
@@ -1431,47 +1443,62 @@ def api_sankey_data():
                     continue
 
                 for c in top_concepts:
-                    concept_node = f"{c['entity_name']}({obj_name})"
-                    lc = c.get('logical_count', 0)
+                    concept_name = c['entity_name']
+                    concept_node = f"{concept_name}({obj_name})"
+
+                    # 查询该概念下的逻辑实体
+                    logicals = execute_query("""
+                        SELECT r.entity_name, r.relation_strength
+                        FROM object_entity_relations r
+                        WHERE r.object_id = %s AND r.entity_layer = 'LOGICAL'
+                        AND r.via_concept_entity = %s
+                        ORDER BY r.relation_strength DESC
+                    """, (obj_id, concept_name))
+
+                    if isinstance(logicals, dict):
+                        logicals = []
+
+                    total_logical = len(logicals)
+
+                    if total_logical == 0:
+                        if concept_node not in node_set:
+                            nodes.append({'name': concept_node, 'depth': 1, 'type': 'concept'})
+                            node_set.add(concept_node)
+                        links.append({'source': obj_name, 'target': concept_node, 'value': 1})
+                        continue
+
                     if concept_node not in node_set:
                         nodes.append({'name': concept_node, 'depth': 1, 'type': 'concept'})
                         node_set.add(concept_node)
-                    links.append({'source': obj_name, 'target': concept_node, 'value': max(1, lc)})
-                    if lc > 0:
-                        links.append({'source': concept_node, 'target': '逻辑实体层', 'value': lc})
 
-            # 3. 汇总逻辑和物理层总数
-            domain_filter = " AND o.data_domain = %s" if domain else ""
-            params = (domain,) if domain else ()
-            layer_agg = execute_query(f"""
-                SELECT r.entity_layer, COUNT(*) as cnt
-                FROM object_entity_relations r
-                JOIN extracted_objects o ON o.object_id = r.object_id
-                WHERE r.entity_layer IN ('LOGICAL', 'PHYSICAL'){domain_filter}
-                GROUP BY r.entity_layer
-            """, params)
+                    links.append({'source': obj_name, 'target': concept_node, 'value': total_logical})
 
-            layer_map = {}
-            if not isinstance(layer_agg, dict):
-                layer_map = {r['entity_layer']: r['cnt'] for r in layer_agg}
+                    # 展示 Top-N 逻辑实体
+                    shown_logicals = logicals[:MAX_LOGICAL_PER_CONCEPT]
+                    rest_logical_count = total_logical - len(shown_logicals)
 
-            if layer_map.get('LOGICAL', 0) > 0:
-                if '逻辑实体层' not in node_set:
-                    nodes.append({'name': '逻辑实体层', 'depth': 2, 'type': 'logical_agg'})
-                    node_set.add('逻辑实体层')
+                    for lg in shown_logicals:
+                        lg_name = lg['entity_name']
+                        lg_node = lg_name
+                        if lg_node not in node_set:
+                            nodes.append({'name': lg_node, 'depth': 2, 'type': 'logical'})
+                            node_set.add(lg_node)
+                        links.append({'source': concept_node, 'target': lg_node, 'value': 1})
 
-            if layer_map.get('PHYSICAL', 0) > 0:
-                if '物理实体层' not in node_set:
-                    nodes.append({'name': '物理实体层', 'depth': 3, 'type': 'physical_agg'})
-                    node_set.add('物理实体层')
-                links.append({'source': '逻辑实体层', 'target': '物理实体层', 'value': layer_map['PHYSICAL']})
+                    # 剩余逻辑实体聚合
+                    if rest_logical_count > 0:
+                        agg_lg = f"其他{rest_logical_count}个逻辑实体({concept_name})"
+                        if agg_lg not in node_set:
+                            nodes.append({'name': agg_lg, 'depth': 2, 'type': 'logical_agg'})
+                            node_set.add(agg_lg)
+                        links.append({'source': concept_node, 'target': agg_lg, 'value': rest_logical_count})
 
             return jsonify({'nodes': nodes, 'links': links, 'domain': domain or 'all', 'source': 'database'})
 
         except Exception as e:
             print(f"[WARN] 桑基图数据库查询失败，使用 JSON 后备: {e}")
 
-    result = get_sankey_from_json(domain)
+    result = get_sankey_from_json(domains[0] if len(domains) == 1 else (domain or ''))
     result['source'] = 'json_file'
     return jsonify(result)
 
@@ -1662,17 +1689,29 @@ def api_summary():
     一次请求返回前端仪表板需要的所有统计数据。
 
     Query参数:
-        domain (str): 数据域过滤，默认返回全局统计
+        domain (str): 数据域过滤，支持逗号分隔多域，默认返回全局统计
     """
     domain = request.args.get('domain', '')
+    domains = [d.strip() for d in domain.split(',') if d.strip()] if domain else []
 
     if is_db_available():
         try:
             summary = {'domain': domain or 'all'}
 
-            domain_filter = " WHERE data_domain = %s" if domain else ""
-            rel_domain_filter = " AND o.data_domain = %s" if domain else ""
-            params = (domain,) if domain else ()
+            # 构建域过滤条件
+            if len(domains) == 1:
+                domain_filter = " WHERE data_domain = %s"
+                rel_domain_filter = " AND o.data_domain = %s"
+                params = (domains[0],)
+            elif len(domains) > 1:
+                placeholders = ','.join(['%s'] * len(domains))
+                domain_filter = f" WHERE data_domain IN ({placeholders})"
+                rel_domain_filter = f" AND o.data_domain IN ({placeholders})"
+                params = tuple(domains)
+            else:
+                domain_filter = ""
+                rel_domain_filter = ""
+                params = ()
 
             # 对象统计
             result = execute_query(
@@ -1701,8 +1740,8 @@ def api_summary():
 
             summary['concept_count'] = layer_map.get('CONCEPT', 0)
             summary['logical_count'] = layer_map.get('LOGICAL', 0)
-            summary['physical_count'] = layer_map.get('PHYSICAL', 0)
-            summary['relations_count'] = sum(layer_map.values())
+            summary['physical_count'] = 0  # 物理实体待接入生产系统
+            summary['relations_count'] = layer_map.get('CONCEPT', 0) + layer_map.get('LOGICAL', 0)
 
             # 按关联类型统计
             result = execute_query(f"""

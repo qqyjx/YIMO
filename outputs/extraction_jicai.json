@@ -13,20 +13,18 @@
       "synonyms": [],
       "key_attributes": [],
       "cluster_id": 0,
-      "cluster_size": 81,
+      "cluster_size": 79,
       "sample_entities": [
-        "合同台账信息",
-        "统计系统单位数据信息",
-        "填报帮助信息",
-        "挂账支付信息",
-        "收入监控分析信息",
-        "项目类收入信息",
-        "运营监控指标属性信息",
-        "日常差旅信息",
-        "税费核算信息",
-        "报账基础信息",
         "运营监控指标数据信息",
-        "资产成本台账信息"
+        "合同台账信息",
+        "运营监控指标属性信息",
+        "挂账支付信息",
+        "项目类收入信息",
+        "税费核算信息",
+        "收入监控分析信息",
+        "资产成本台账信息",
+        "报账基础信息",
+        "统计系统单位数据信息"
       ]
     },
     {
@@ -42,21 +40,18 @@
       "synonyms": [],
       "key_attributes": [],
       "cluster_id": 4,
-      "cluster_size": 19,
+      "cluster_size": 16,
       "sample_entities": [
         "土地不动产信息",
-        "可再生能源补贴资金信息",
-        "土地租赁信息",
-        "不动产业务管理信息",
         "土地资产调整信息",
         "不动产确权信息",
-        "不动产年度实施计划信息",
-        "资产调拨信息",
-        "房价信息",
         "房屋建筑物资不动产信息",
-        "地价信息",
+        "不动产业务管理信息",
+        "不动产更名信息",
         "房屋建筑物资产调整信息",
-        "不动产更名信息"
+        "资产调拨信息",
+        "土地租赁信息",
+        "不动产年度实施计划信息"
       ]
     },
     {
@@ -72,18 +67,17 @@
       "synonyms": [],
       "key_attributes": [],
       "cluster_id": 3,
-      "cluster_size": 10,
+      "cluster_size": 9,
       "sample_entities": [
-        "担保合同上报国资委信息",
-        "融资合同",
-        "授权信息",
-        "函证信息",
         "担保合同",
-        "担保解除信息",
-        "授信协议",
+        "融资合同",
+        "借款合同",
+        "担保合同上报国资委信息",
         "担保代偿与追索信息",
+        "授信协议",
+        "担保解除信息",
         "融资计划",
-        "借款合同"
+        "函证信息"
       ]
     },
     {
@@ -147,6 +141,97 @@
         "监督计划",
         "监督规则",
         "监督结果"
+      ]
+    },
+    {
+      "object_code": "OBJ_价信",
+      "object_name": "价信",
+      "object_name_en": "价信",
+      "parent_object_code": null,
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：地价信息",
+      "extraction_source": "SEMANTIC_CLUSTER_AUTO",
+      "extraction_confidence": 0.5,
+      "llm_reasoning": "",
+      "synonyms": [],
+      "key_attributes": [],
+      "cluster_id": 11,
+      "cluster_size": 2,
+      "sample_entities": [
+        "地价信息",
+        "房价信息"
+      ]
+    },
+    {
+      "object_code": "OBJ_填报",
+      "object_name": "填报",
+      "object_name_en": "填报",
+      "parent_object_code": null,
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：填报帮助信息",
+      "extraction_source": "SEMANTIC_CLUSTER_AUTO",
+      "extraction_confidence": 0.5,
+      "llm_reasoning": "",
+      "synonyms": [],
+      "key_attributes": [],
+      "cluster_id": 6,
+      "cluster_size": 1,
+      "sample_entities": [
+        "填报帮助信息"
+      ]
+    },
+    {
+      "object_code": "OBJ_授权",
+      "object_name": "授权",
+      "object_name_en": "授权",
+      "parent_object_code": null,
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：授权信息",
+      "extraction_source": "SEMANTIC_CLUSTER_AUTO",
+      "extraction_confidence": 0.5,
+      "llm_reasoning": "",
+      "synonyms": [],
+      "key_attributes": [],
+      "cluster_id": 7,
+      "cluster_size": 1,
+      "sample_entities": [
+        "授权信息"
+      ]
+    },
+    {
+      "object_code": "OBJ_日常",
+      "object_name": "日常",
+      "object_name_en": "日常",
+      "parent_object_code": null,
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：日常差旅信息",
+      "extraction_source": "SEMANTIC_CLUSTER_AUTO",
+      "extraction_confidence": 0.5,
+      "llm_reasoning": "",
+      "synonyms": [],
+      "key_attributes": [],
+      "cluster_id": 8,
+      "cluster_size": 1,
+      "sample_entities": [
+        "日常差旅信息"
+      ]
+    },
+    {
+      "object_code": "OBJ_可再",
+      "object_name": "可再",
+      "object_name_en": "可再",
+      "parent_object_code": null,
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：可再生能源补贴资金信息",
+      "extraction_source": "SEMANTIC_CLUSTER_AUTO",
+      "extraction_confidence": 0.5,
+      "llm_reasoning": "",
+      "synonyms": [],
+      "key_attributes": [],
+      "cluster_id": 9,
+      "cluster_size": 1,
+      "sample_entities": [
+        "可再生能源补贴资金信息"
       ]
     },
     {
@@ -19776,12 +19861,12 @@
       "source_row": 5551
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_价信",
       "entity_layer": "CONCEPT",
       "entity_name": "地价信息",
       "entity_code": "nan",
       "relation_type": "DIRECT",
-      "relation_strength": 0.81,
+      "relation_strength": 0.9,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "",
       "semantic_similarity": 0.0,
@@ -19792,12 +19877,12 @@
       "source_row": 16
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_价信",
       "entity_layer": "LOGICAL",
       "entity_name": "资产信息库表",
       "entity_code": "FI_DEVICE_INFO",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.63,
+      "relation_strength": 0.7,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "地价信息",
       "semantic_similarity": 0.0,
@@ -19808,12 +19893,12 @@
       "source_row": 636
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_价信",
       "entity_layer": "PHYSICAL",
       "entity_name": "资产信息库表",
       "entity_code": "FI_DEVICE_INFO",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.54,
+      "relation_strength": 0.6,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "资产信息库表",
       "semantic_similarity": 0.0,
@@ -19824,12 +19909,12 @@
       "source_row": 636
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_价信",
       "entity_layer": "CONCEPT",
       "entity_name": "房价信息",
       "entity_code": "nan",
       "relation_type": "DIRECT",
-      "relation_strength": 0.81,
+      "relation_strength": 0.9,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "",
       "semantic_similarity": 0.0,
@@ -19840,12 +19925,12 @@
       "source_row": 17
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_价信",
       "entity_layer": "LOGICAL",
       "entity_name": "资产信息库变更表",
       "entity_code": "FI_DEVICE_INFO_CHANGE",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.63,
+      "relation_strength": 0.7,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "房价信息",
       "semantic_similarity": 0.0,
@@ -19856,12 +19941,12 @@
       "source_row": 670
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_价信",
       "entity_layer": "PHYSICAL",
       "entity_name": "资产信息库变更表",
       "entity_code": "FI_DEVICE_INFO_CHANGE",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.54,
+      "relation_strength": 0.6,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "资产信息库变更表",
       "semantic_similarity": 0.0,
@@ -19872,12 +19957,12 @@
       "source_row": 670
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_填报",
       "entity_layer": "CONCEPT",
       "entity_name": "填报帮助信息",
       "entity_code": "nan",
       "relation_type": "DIRECT",
-      "relation_strength": 0.81,
+      "relation_strength": 0.9,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "",
       "semantic_similarity": 0.0,
@@ -19888,12 +19973,12 @@
       "source_row": 3
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_填报",
       "entity_layer": "LOGICAL",
       "entity_name": "填报帮助明细表",
       "entity_code": "FI_FILL_EXPLAIN_ITEM",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.63,
+      "relation_strength": 0.7,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "填报帮助信息",
       "semantic_similarity": 0.0,
@@ -19904,12 +19989,12 @@
       "source_row": 2
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_填报",
       "entity_layer": "PHYSICAL",
       "entity_name": "填报帮助明细表",
       "entity_code": "FI_FILL_EXPLAIN_ITEM",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.54,
+      "relation_strength": 0.6,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "填报帮助明细表",
       "semantic_similarity": 0.0,
@@ -19920,12 +20005,12 @@
       "source_row": 2
     },
     {
-      "object_code": "OBJ_CONTRACT",
+      "object_code": "OBJ_授权",
       "entity_layer": "CONCEPT",
       "entity_name": "授权信息",
       "entity_code": "nan",
       "relation_type": "DIRECT",
-      "relation_strength": 0.81,
+      "relation_strength": 0.9,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "",
       "semantic_similarity": 0.0,
@@ -19936,12 +20021,12 @@
       "source_row": 4
     },
     {
-      "object_code": "OBJ_CONTRACT",
+      "object_code": "OBJ_授权",
       "entity_layer": "LOGICAL",
       "entity_name": "授权信息表",
       "entity_code": "FI_AUTH_OBJECT",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.63,
+      "relation_strength": 0.7,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "授权信息",
       "semantic_similarity": 0.0,
@@ -19952,12 +20037,12 @@
       "source_row": 620
     },
     {
-      "object_code": "OBJ_CONTRACT",
+      "object_code": "OBJ_授权",
       "entity_layer": "PHYSICAL",
       "entity_name": "授权信息表",
       "entity_code": "FI_AUTH_OBJECT",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.54,
+      "relation_strength": 0.6,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "授权信息表",
       "semantic_similarity": 0.0,
@@ -19968,12 +20053,12 @@
       "source_row": 620
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_日常",
       "entity_layer": "CONCEPT",
       "entity_name": "日常差旅信息",
       "entity_code": "nan",
       "relation_type": "DIRECT",
-      "relation_strength": 0.81,
+      "relation_strength": 0.9,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "",
       "semantic_similarity": 0.0,
@@ -19984,12 +20069,12 @@
       "source_row": 95
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_日常",
       "entity_layer": "LOGICAL",
       "entity_name": "单据主表差旅费报销单",
       "entity_code": "FM_BL_EMP_TRAVEL_EMP",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.63,
+      "relation_strength": 0.7,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "日常差旅信息",
       "semantic_similarity": 0.0,
@@ -20000,12 +20085,12 @@
       "source_row": 3924
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_日常",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据主表差旅费报销单",
       "entity_code": "FM_BL_EMP_TRAVEL_EMP",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.54,
+      "relation_strength": 0.6,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "单据主表差旅费报销单",
       "semantic_similarity": 0.0,
@@ -20016,12 +20101,12 @@
       "source_row": 3752
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_日常",
       "entity_layer": "LOGICAL",
       "entity_name": "单据主表商旅结算支付单",
       "entity_code": "FM_BL_EMP_TRAVEL_SET",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.63,
+      "relation_strength": 0.7,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "日常差旅信息",
       "semantic_similarity": 0.0,
@@ -20032,12 +20117,12 @@
       "source_row": 4353
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_日常",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据主表商旅结算支付单",
       "entity_code": "FM_BL_EMP_TRAVEL_SET",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.54,
+      "relation_strength": 0.6,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "单据主表商旅结算支付单",
       "semantic_similarity": 0.0,
@@ -20048,12 +20133,12 @@
       "source_row": 3889
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_日常",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表差旅费报销单费用明细",
       "entity_code": "FM_BL_EMP_TRAVEL_EMP_COST_DTL",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.63,
+      "relation_strength": 0.7,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "日常差旅信息",
       "semantic_similarity": 0.0,
@@ -20064,12 +20149,12 @@
       "source_row": 4956
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_日常",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表差旅费报销单费用明细",
       "entity_code": "FM_BL_EMP_TRAVEL_EMP_COST_DTL",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.54,
+      "relation_strength": 0.6,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "单据子表差旅费报销单费用明细",
       "semantic_similarity": 0.0,
@@ -20080,12 +20165,12 @@
       "source_row": 3853
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_日常",
       "entity_layer": "LOGICAL",
       "entity_name": "单据子表商旅结算支付单费用明细",
       "entity_code": "FM_BL_EMP_TRAVEL_SET_COST_DTL",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.63,
+      "relation_strength": 0.7,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "日常差旅信息",
       "semantic_similarity": 0.0,
@@ -20096,12 +20181,12 @@
       "source_row": 4992
     },
     {
-      "object_code": "OBJ_METRIC",
+      "object_code": "OBJ_日常",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据子表商旅结算支付单费用明细",
       "entity_code": "FM_BL_EMP_TRAVEL_SET_COST_DTL",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.54,
+      "relation_strength": 0.6,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "单据子表商旅结算支付单费用明细",
       "semantic_similarity": 0.0,
@@ -20112,12 +20197,12 @@
       "source_row": 3944
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_可再",
       "entity_layer": "CONCEPT",
       "entity_name": "可再生能源补贴资金信息",
       "entity_code": "nan",
       "relation_type": "DIRECT",
-      "relation_strength": 0.81,
+      "relation_strength": 0.9,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "",
       "semantic_similarity": 0.0,
@@ -20128,12 +20213,12 @@
       "source_row": 108
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_可再",
       "entity_layer": "LOGICAL",
       "entity_name": "单据主表常规可再生补助成本结算单新",
       "entity_code": "FM_BL_PC_CONV_RENE_COST",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.63,
+      "relation_strength": 0.7,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "可再生能源补贴资金信息",
       "semantic_similarity": 0.0,
@@ -20144,12 +20229,12 @@
       "source_row": 11046
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_可再",
       "entity_layer": "PHYSICAL",
       "entity_name": "单据主表常规可再生补助成本结算单新",
       "entity_code": "FM_BL_PC_CONV_RENE_COST",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.54,
+      "relation_strength": 0.6,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "单据主表常规可再生补助成本结算单新",
       "semantic_similarity": 0.0,
@@ -20160,12 +20245,12 @@
       "source_row": 9259
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_可再",
       "entity_layer": "LOGICAL",
       "entity_name": "分布式补助资金支付申请信息主表",
       "entity_code": "FM_BL_PC_DIST_PAYM",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.63,
+      "relation_strength": 0.7,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "可再生能源补贴资金信息",
       "semantic_similarity": 0.0,
@@ -20176,12 +20261,12 @@
       "source_row": 11053
     },
     {
-      "object_code": "OBJ_ASSET",
+      "object_code": "OBJ_可再",
       "entity_layer": "PHYSICAL",
       "entity_name": "分布式补助资金支付申请信息主表",
       "entity_code": "FM_BL_PC_DIST_PAYM",
       "relation_type": "INDIRECT",
-      "relation_strength": 0.54,
+      "relation_strength": 0.6,
       "match_method": "SEMANTIC_CLUSTER",
       "via_concept_entity": "分布式补助资金支付申请信息主表",
       "semantic_similarity": 0.0,
@@ -21029,34 +21114,34 @@
     "OBJ_METRIC": {
       "object_name": "指标",
       "cluster_id": 0,
-      "cluster_size": 81,
-      "concept": 81,
-      "logical": 436,
-      "physical": 436,
-      "total": 953,
-      "cluster_relations": 953,
+      "cluster_size": 79,
+      "concept": 79,
+      "logical": 431,
+      "physical": 431,
+      "total": 941,
+      "cluster_relations": 941,
       "bridge_relations": 0
     },
     "OBJ_ASSET": {
       "object_name": "资产",
       "cluster_id": 4,
-      "cluster_size": 19,
-      "concept": 19,
-      "logical": 37,
-      "physical": 37,
-      "total": 93,
-      "cluster_relations": 93,
+      "cluster_size": 16,
+      "concept": 16,
+      "logical": 33,
+      "physical": 33,
+      "total": 82,
+      "cluster_relations": 82,
       "bridge_relations": 0
     },
     "OBJ_CONTRACT": {
       "object_name": "合同",
       "cluster_id": 3,
-      "cluster_size": 10,
-      "concept": 10,
-      "logical": 52,
-      "physical": 52,
-      "total": 114,
-      "cluster_relations": 114,
+      "cluster_size": 9,
+      "concept": 9,
+      "logical": 51,
+      "physical": 51,
+      "total": 111,
+      "cluster_relations": 111,
       "bridge_relations": 0
     },
     "OBJ_票据": {
@@ -21090,6 +21175,61 @@
       "physical": 4,
       "total": 11,
       "cluster_relations": 11,
+      "bridge_relations": 0
+    },
+    "OBJ_价信": {
+      "object_name": "价信",
+      "cluster_id": 11,
+      "cluster_size": 2,
+      "concept": 2,
+      "logical": 2,
+      "physical": 2,
+      "total": 6,
+      "cluster_relations": 6,
+      "bridge_relations": 0
+    },
+    "OBJ_填报": {
+      "object_name": "填报",
+      "cluster_id": 6,
+      "cluster_size": 1,
+      "concept": 1,
+      "logical": 1,
+      "physical": 1,
+      "total": 3,
+      "cluster_relations": 3,
+      "bridge_relations": 0
+    },
+    "OBJ_授权": {
+      "object_name": "授权",
+      "cluster_id": 7,
+      "cluster_size": 1,
+      "concept": 1,
+      "logical": 1,
+      "physical": 1,
+      "total": 3,
+      "cluster_relations": 3,
+      "bridge_relations": 0
+    },
+    "OBJ_日常": {
+      "object_name": "日常",
+      "cluster_id": 8,
+      "cluster_size": 1,
+      "concept": 1,
+      "logical": 4,
+      "physical": 4,
+      "total": 9,
+      "cluster_relations": 9,
+      "bridge_relations": 0
+    },
+    "OBJ_可再": {
+      "object_name": "可再",
+      "cluster_id": 9,
+      "cluster_size": 1,
+      "concept": 1,
+      "logical": 2,
+      "physical": 2,
+      "total": 5,
+      "cluster_relations": 5,
       "bridge_relations": 0
     },
     "OBJ_PROJECT": {

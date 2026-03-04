@@ -99,7 +99,7 @@
             transition: var(--transition);
         }
         .domain-item:hover { background: rgba(255,255,255,.05); color: #e2e8f0; }
-        .domain-item input[type="radio"] {
+        .domain-item input[type="checkbox"] {
             accent-color: var(--primary-light); width: 14px; height: 14px; cursor: pointer;
         }
         .domain-item .domain-badge {
@@ -481,7 +481,7 @@
             background: var(--bg-card); border-radius: var(--radius);
             border: 1px solid var(--border); padding: 1.25rem;
         }
-        #sankey-chart { width: 100%; height: 450px; }
+        #sankey-chart { width: 100%; height: 700px; }
 
         /* ========== Datasets Table ========== */
         .datasets-table {
@@ -648,7 +648,7 @@
             <div class="layer-legend">
                 <span class="legend-chip"><span class="legend-dot concept"></span>概念实体</span>
                 <span class="legend-chip"><span class="legend-dot logical"></span>逻辑实体</span>
-                <span class="legend-chip"><span class="legend-dot physical"></span>物理实体</span>
+                <span class="legend-chip"><span class="legend-dot physical"></span>物理实体 <span style="font-size:.7rem;color:#94a3b8">(待接入)</span></span>
             </div>
             <div class="topbar-actions">
                 <button class="btn btn-outline" onclick="refreshAll()" title="刷新数据">
@@ -686,7 +686,7 @@
                     </div>
                     <div class="stat-card card-physical">
                         <div class="stat-icon"><i class="bi bi-hdd-stack"></i></div>
-                        <div class="stat-value" id="statPhysical">-</div>
+                        <div class="stat-value" id="statPhysical" style="font-size:1rem;color:#94a3b8">待接入</div>
                         <div class="stat-label">物理实体</div>
                     </div>
                 </div>
@@ -765,13 +765,15 @@
                         </div>
                         <div class="rel-col-body" id="relLogicalBody"></div>
                     </div>
-                    <!-- Physical Column -->
+                    <!-- Physical Column (待接入生产系统) -->
                     <div class="rel-col col-physical">
                         <div class="rel-col-header">
                             <span><i class="bi bi-hdd-stack"></i> 物理实体</span>
-                            <span class="rel-col-count" id="relPhysicalCount">0</span>
+                            <span class="rel-col-count" style="color:#94a3b8">待接入</span>
                         </div>
-                        <div class="rel-col-body" id="relPhysicalBody"></div>
+                        <div class="rel-col-body" id="relPhysicalBody">
+                            <div class="empty-col"><i class="bi bi-hdd-stack"></i><p>待接入生产系统</p><p style="font-size:.72rem; margin-top:.25rem;">物理实体将从生产系统数据表自动映射</p></div>
+                        </div>
                     </div>
                 </div>
                 <!-- Knowledge Graph View (default view) -->
@@ -1041,7 +1043,8 @@
     let extractedObjects = [];
     let currentFilter = 'ALL';
     let searchQuery = '';
-    let selectedDomain = '';
+    let selectedDomains = [];  // 多域选择，初始为全部域
+    let allDomainCodes = [];   // 所有可用域代码
     let selectedObjectCode = null;
     let currentRelations = null;
     let sankeyChart = null;
@@ -1108,15 +1111,22 @@
                 return;
             }
 
-            container.innerHTML = domains.map((d, i) => `
+            allDomainCodes = domains.map(d => d.code);
+            selectedDomains = [...allDomainCodes]; // 初始选全部
+
+            let html = `<label class="domain-item" style="border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:.35rem;padding-bottom:.55rem">
+                <input type="checkbox" id="domainAll" checked onchange="toggleAllDomains(this.checked)">
+                <span style="font-weight:600;color:#e2e8f0">全部域</span>
+            </label>`;
+            html += domains.map(d => `
                 <label class="domain-item">
-                    <input type="radio" name="domain" value="${esc(d.code)}" ${i === 0 ? 'checked' : ''} onchange="switchDomain('${esc(d.code)}')">
+                    <input type="checkbox" class="domain-cb" value="${esc(d.code)}" checked onchange="toggleDomain()">
                     <span>${esc(d.name)}</span>
                     <span class="domain-badge">${d.files?.length || 0}</span>
                 </label>
             `).join('');
+            container.innerHTML = html;
 
-            selectedDomain = domains[0].code;
             loadObjects();
         } catch(e) {
             container.innerHTML = '<div style="padding:.5rem; color:#ef4444; font-size:.78rem;">加载失败</div>';
@@ -1124,11 +1134,29 @@
         }
     }
 
-    function switchDomain(code) {
-        selectedDomain = code;
+    function toggleAllDomains(checked) {
+        document.querySelectorAll('.domain-cb').forEach(cb => cb.checked = checked);
+        selectedDomains = checked ? [...allDomainCodes] : [];
         selectedObjectCode = null;
-        document.getElementById('section-relations').classList.remove('active');
+        document.getElementById('section-relations')?.classList.remove('active');
         loadObjects();
+    }
+
+    function toggleDomain() {
+        const cbs = document.querySelectorAll('.domain-cb');
+        selectedDomains = Array.from(cbs).filter(cb => cb.checked).map(cb => cb.value);
+        // 同步"全部"复选框状态
+        const allCb = document.getElementById('domainAll');
+        if (allCb) allCb.checked = selectedDomains.length === allDomainCodes.length;
+        selectedObjectCode = null;
+        document.getElementById('section-relations')?.classList.remove('active');
+        loadObjects();
+    }
+
+    function getDomainParam() {
+        // 全选或空选不传domain参数（返回所有）
+        if (!selectedDomains.length || selectedDomains.length === allDomainCodes.length) return '';
+        return '?domain=' + encodeURIComponent(selectedDomains.join(','));
     }
 
     // ========== Object Loading ==========
@@ -1137,7 +1165,7 @@
         grid.innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto .75rem;"></div><p>加载中...</p></div>';
 
         try {
-            const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+            const domainParam = getDomainParam();
             const [objResp, summaryResp] = await Promise.all([
                 fetch('/api/olm/extracted-objects' + domainParam),
                 fetch('/api/olm/summary' + domainParam)
@@ -1159,7 +1187,10 @@
                 animateNumber('statObjects', summary.objects_count || extractedObjects.length);
                 animateNumber('statConcept', summary.concept_count || 0);
                 animateNumber('statLogical', summary.logical_count || 0);
-                animateNumber('statPhysical', summary.physical_count || 0);
+                // 物理实体待接入生产系统，暂不统计
+                document.getElementById('statPhysical').textContent = '待接入';
+                document.getElementById('statPhysical').style.fontSize = '1rem';
+                document.getElementById('statPhysical').style.color = '#94a3b8';
             } else {
                 updateStatsFromObjects();
             }
@@ -1174,16 +1205,17 @@
 
     // ========== Stats ==========
     function updateStatsFromObjects() {
-        let tc = 0, tl = 0, tp = 0;
+        let tc = 0, tl = 0;
         extractedObjects.forEach(o => {
             tc += o.stats?.concept || 0;
             tl += o.stats?.logical || 0;
-            tp += o.stats?.physical || 0;
         });
         animateNumber('statObjects', extractedObjects.length);
         animateNumber('statConcept', tc);
         animateNumber('statLogical', tl);
-        animateNumber('statPhysical', tp);
+        document.getElementById('statPhysical').textContent = '待接入';
+        document.getElementById('statPhysical').style.fontSize = '1rem';
+        document.getElementById('statPhysical').style.color = '#94a3b8';
     }
 
     function animateNumber(id, target) {
@@ -1250,7 +1282,7 @@
         const dropdown = document.getElementById('searchDropdown');
         try {
             const params = new URLSearchParams({ q: query, limit: '15' });
-            if (selectedDomain) params.set('domain', selectedDomain);
+            if (selectedDomains.length && selectedDomains.length < allDomainCodes.length) params.set('domain', selectedDomains.join(','));
             const resp = await fetch('/api/olm/search-entities?' + params);
             if (!resp.ok) return;
             const data = await resp.json();
@@ -1315,7 +1347,7 @@
                 <div class="obj-badges">
                     <span class="badge badge-concept">${obj.stats?.concept || 0} 概念</span>
                     <span class="badge badge-logical">${obj.stats?.logical || 0} 逻辑</span>
-                    <span class="badge badge-physical">${obj.stats?.physical || 0} 物理</span>
+                    <span class="badge badge-physical" style="opacity:.5">物理待接入</span>
                     ${(obj.stats?.biz_match_count || 0) > 0 ? `<span class="bridge-badge">${obj.stats.biz_match_count} 业务对象</span>` : ''}
                     <span class="badge badge-type badge-${esc(type)}">${esc(type)}</span>
                 </div>
@@ -1341,12 +1373,12 @@
         const section = document.getElementById('section-relations');
         section.classList.add('active');
 
-        ['relConceptBody', 'relLogicalBody', 'relPhysicalBody'].forEach(id => {
+        ['relConceptBody', 'relLogicalBody'].forEach(id => {
             document.getElementById(id).innerHTML = '<div style="text-align:center; padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
         });
 
         try {
-            const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+            const domainParam = getDomainParam();
             const resp = await fetch(`/api/olm/object-relations/${encodeURIComponent(code)}${domainParam}`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             currentRelations = await resp.json();
@@ -1367,11 +1399,9 @@
     function renderRelations(data) {
         const concepts = data.concept || [];
         const logicals = data.logical || [];
-        const physicals = data.physical || [];
 
         document.getElementById('relConceptCount').textContent = concepts.length;
         document.getElementById('relLogicalCount').textContent = logicals.length;
-        document.getElementById('relPhysicalCount').textContent = physicals.length;
 
         // Concept column
         const conceptBody = document.getElementById('relConceptBody');
@@ -1430,21 +1460,7 @@
             logicalBody.innerHTML = html;
         }
 
-        // Physical column
-        const physicalBody = document.getElementById('relPhysicalBody');
-        if (!physicals.length) {
-            physicalBody.innerHTML = '<div class="empty-col"><i class="bi bi-hdd-stack"></i><p>暂无物理实体</p><p style="font-size:.72rem; margin-top:.25rem;">该对象暂未关联物理层数据</p></div>';
-        } else {
-            physicalBody.innerHTML = physicals.map(p => {
-                const name = typeof p === 'string' ? p : p.entity_name;
-                const strength = (p.relation_strength || 0);
-                const dotClass = strength >= 0.8 ? 'strong' : strength >= 0.5 ? 'medium' : 'weak';
-                return `<div class="entity-item" data-name="${esc(name)}" data-layer="physical">
-                    <span class="entity-dot ${dotClass}"></span>
-                    <span class="entity-text">${esc(name)}</span>
-                </div>`;
-            }).join('');
-        }
+        // Physical column - 待接入生产系统
     }
 
     function toggleLogicalGroup(header) {
@@ -1512,7 +1528,7 @@
         }
 
         try {
-            const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+            const domainParam = getDomainParam();
             const resp = await fetch('/api/olm/sankey-data' + domainParam);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
@@ -1525,8 +1541,16 @@
 
     function renderSankeyChart(data) {
         const nodes = (data.nodes || []).map(n => {
-            const colors = { object: '#6366f1', concept: '#818cf8', logical_agg: '#10b981', physical_agg: '#f59e0b' };
-            const borders = { object: '#4f46e5', concept: '#6366f1', logical_agg: '#059669', physical_agg: '#d97706' };
+            const colors = {
+                object: '#6366f1', concept: '#818cf8',
+                logical: '#10b981', logical_agg: '#34d399',
+                physical: '#f59e0b', physical_agg: '#fbbf24'
+            };
+            const borders = {
+                object: '#4f46e5', concept: '#6366f1',
+                logical: '#059669', logical_agg: '#10b981',
+                physical: '#d97706', physical_agg: '#f59e0b'
+            };
             return {
                 name: n.name,
                 depth: n.depth,
@@ -1559,15 +1583,14 @@
             series: [{
                 type: 'sankey', layout: 'none',
                 emphasis: { focus: 'adjacency' },
-                nodeAlign: 'left', nodeGap: 14, nodeWidth: 20,
+                nodeAlign: 'left', nodeGap: 10, nodeWidth: 18,
                 data: nodes, links: links,
                 lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.35 },
-                label: { color: '#334155', fontSize: 11, fontWeight: 500 },
+                label: { color: '#334155', fontSize: 10, fontWeight: 500, overflow: 'truncate', width: 120 },
                 levels: [
                     { depth: 0, itemStyle: { color: '#6366f1' }, lineStyle: { color: 'source', opacity: 0.3 } },
                     { depth: 1, itemStyle: { color: '#818cf8' }, lineStyle: { color: 'source', opacity: 0.25 } },
-                    { depth: 2, itemStyle: { color: '#10b981' }, lineStyle: { color: 'source', opacity: 0.25 } },
-                    { depth: 3, itemStyle: { color: '#f59e0b' }, lineStyle: { color: 'source', opacity: 0.2 } }
+                    { depth: 2, itemStyle: { color: '#10b981' }, lineStyle: { color: 'source', opacity: 0.25 } }
                 ]
             }]
         }, true);
@@ -1578,7 +1601,7 @@
         const nodes = [];
         const links = [];
         const nodeSet = new Set();
-        let totalLogical = 0, totalPhysical = 0;
+        let totalLogical = 0;
 
         extractedObjects.forEach(obj => {
             const name = obj.object_name;
@@ -1586,8 +1609,8 @@
                 nodes.push({ name, itemStyle: { color: '#6366f1', borderColor: '#4f46e5' }, depth: 0 });
                 nodeSet.add(name);
             }
-            const cc = obj.stats?.concept || 0, lc = obj.stats?.logical || 0, pc = obj.stats?.physical || 0;
-            totalLogical += lc; totalPhysical += pc;
+            const cc = obj.stats?.concept || 0, lc = obj.stats?.logical || 0;
+            totalLogical += lc;
             if (cc > 0) {
                 const cn = `概念实体(${name})`;
                 if (!nodeSet.has(cn)) { nodes.push({ name: cn, itemStyle: { color: '#818cf8' }, depth: 1 }); nodeSet.add(cn); }
@@ -1596,10 +1619,6 @@
             }
         });
         if (totalLogical > 0 && !nodeSet.has('逻辑实体层')) { nodes.push({ name: '逻辑实体层', itemStyle: { color: '#10b981' }, depth: 2 }); nodeSet.add('逻辑实体层'); }
-        if (totalPhysical > 0) {
-            if (!nodeSet.has('物理实体层')) { nodes.push({ name: '物理实体层', itemStyle: { color: '#f59e0b' }, depth: 3 }); nodeSet.add('物理实体层'); }
-            links.push({ source: '逻辑实体层', target: '物理实体层', value: totalPhysical });
-        }
         renderSankeyChart({ nodes: nodes.map(n => ({ ...n, type: 'object' })), links });
     }
 
@@ -1609,9 +1628,9 @@
         const list = document.getElementById('extractDomainList');
         // 清空旧内容
         list.replaceChildren();
-        // 从域选择器的 radio 按钮获取所有域信息
-        const radios = document.querySelectorAll('input[name="domain"]');
-        radios.forEach(function(r) {
+        // 从域选择器的 checkbox 获取所有域信息
+        const cbs = document.querySelectorAll('.domain-cb');
+        cbs.forEach(function(r) {
             const labelEl = r.closest('.domain-item');
             const domainName = labelEl ? labelEl.querySelector('span').textContent : r.value;
             const item = document.createElement('label');
@@ -1619,13 +1638,17 @@
             const cb = document.createElement('input');
             cb.type = 'checkbox';
             cb.value = r.value;
-            if (r.value === selectedDomain) cb.checked = true;
+            // 默认勾选当前侧边栏选中的域
+            if (selectedDomains.includes(r.value)) cb.checked = true;
             const span = document.createElement('span');
             span.textContent = domainName;
             item.appendChild(cb);
             item.appendChild(span);
             list.appendChild(item);
         });
+        // 确保 DeepSeek 开关恢复默认（关闭）
+        const llmToggle = document.getElementById('extractUseLLM');
+        if (llmToggle) llmToggle.checked = false;
         modal.style.display = 'flex';
     }
 
@@ -1647,7 +1670,7 @@
             const resp = await fetch('/api/olm/run-extraction', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ use_llm: true, target_clusters: 15, domains: domains })
+                body: JSON.stringify({ use_llm: !!document.getElementById('extractUseLLM')?.checked, target_clusters: 15, domains: domains })
             });
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
             const data = await resp.json();
@@ -1668,14 +1691,14 @@
 
     async function exportObjects() {
         try {
-            const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+            const domainParam = getDomainParam();
             const resp = await fetch('/api/olm/export-objects' + domainParam);
             if (!resp.ok) throw new Error(`导出失败: HTTP ${resp.status}`);
             const blob = await resp.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `extracted_objects_${selectedDomain || 'all'}.json`;
+            a.download = `extracted_objects_${selectedDomains.join('-') || 'all'}.json`;
             a.click();
             window.URL.revokeObjectURL(url);
             showToast('导出成功', 'success');
@@ -1725,7 +1748,7 @@
     }
 
     async function loadGraphData(objectCode) {
-        const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+        const domainParam = getDomainParam();
         try {
             const resp = await fetch(`/api/olm/graph-data/${encodeURIComponent(objectCode)}${domainParam}`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -1842,7 +1865,7 @@
 
     async function loadGranularity() {
         document.getElementById('section-granularity').style.display = 'block';
-        const domainParam = selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : '';
+        const domainParam = getDomainParam();
         try {
             const resp = await fetch('/api/olm/granularity-report' + domainParam);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -2035,7 +2058,7 @@
         document.getElementById('section-lifecycle').style.display = 'block';
         // 加载阶段统计
         try {
-            const resp = await fetch('/api/olm/lifecycle-stats' + (selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : ''));
+            const resp = await fetch('/api/olm/lifecycle-stats' + getDomainParam());
             if (resp.ok) {
                 const data = await resp.json();
                 const statsMap = {};
@@ -2058,7 +2081,7 @@
         container.innerHTML = '<div style="text-align:center;padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
 
         try {
-            const resp = await fetch(`/api/olm/object-lifecycle/${encodeURIComponent(objectCode)}` + (selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : ''));
+            const resp = await fetch(`/api/olm/object-lifecycle/${encodeURIComponent(objectCode)}` + getDomainParam());
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
             renderLifecycleTimeline(data.lifecycle || [], objectCode);
@@ -2141,7 +2164,7 @@
         container.innerHTML = '<div style="text-align:center;padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
 
         try {
-            const resp = await fetch('/api/olm/traceability-chains' + (selectedDomain ? `?domain=${encodeURIComponent(selectedDomain)}` : ''));
+            const resp = await fetch('/api/olm/traceability-chains' + getDomainParam());
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
             renderChainList(data.chains || []);
@@ -2670,7 +2693,7 @@
     // ========== Phase 6: Governance Dashboard ==========
     async function loadGovernance() {
         document.getElementById('section-governance').style.display = 'block';
-        const domainParam = selectedDomain ? `?domain=${selectedDomain}` : '';
+        const domainParam = getDomainParam();
 
         // 并行加载所有治理数据
         Promise.all([
@@ -2812,6 +2835,13 @@
             <h3>选择抽取域</h3>
             <p style="color:#94a3b8;font-size:.82rem;margin-bottom:.75rem">勾选要执行抽取的数据域，抽取将替换所选域的现有数据</p>
             <div id="extractDomainList"></div>
+            <div style="margin-top:.75rem;padding:.65rem .75rem;background:#0f172a;border-radius:.5rem">
+                <label class="domain-check-item" style="margin-bottom:0">
+                    <input type="checkbox" id="extractUseLLM">
+                    <span>使用 DeepSeek LLM 命名对象</span>
+                </label>
+                <p style="color:#64748b;font-size:.72rem;margin:.25rem 0 0 1.6rem">关闭则使用规则命名（更快，无需API调用）</p>
+            </div>
             <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
                 <button class="btn btn-outline" onclick="closeExtractModal()">取消</button>
                 <button class="btn btn-primary" onclick="confirmExtraction()">确认抽取</button>
