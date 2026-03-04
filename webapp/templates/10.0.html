@@ -481,7 +481,7 @@
             background: var(--bg-card); border-radius: var(--radius);
             border: 1px solid var(--border); padding: 1.25rem;
         }
-        #sankey-chart { width: 100%; height: 700px; }
+        #sankey-chart { width: 100%; min-height: 500px; height: 700px; }
 
         /* ========== Datasets Table ========== */
         .datasets-table {
@@ -648,7 +648,7 @@
             <div class="layer-legend">
                 <span class="legend-chip"><span class="legend-dot concept"></span>概念实体</span>
                 <span class="legend-chip"><span class="legend-dot logical"></span>逻辑实体</span>
-                <span class="legend-chip"><span class="legend-dot physical"></span>物理实体 <span style="font-size:.7rem;color:#94a3b8">(待接入)</span></span>
+                <span class="legend-chip"><span class="legend-dot physical"></span>物理实体</span>
             </div>
             <div class="topbar-actions">
                 <button class="btn btn-outline" onclick="refreshAll()" title="刷新数据">
@@ -1540,26 +1540,10 @@
     }
 
     function renderSankeyChart(data) {
-        const nodes = (data.nodes || []).map(n => {
-            const colors = {
-                object: '#6366f1', concept: '#818cf8',
-                logical: '#10b981', logical_agg: '#34d399',
-                physical: '#f59e0b', physical_agg: '#fbbf24'
-            };
-            const borders = {
-                object: '#4f46e5', concept: '#6366f1',
-                logical: '#059669', logical_agg: '#10b981',
-                physical: '#d97706', physical_agg: '#f59e0b'
-            };
-            return {
-                name: n.name,
-                depth: n.depth,
-                itemStyle: { color: colors[n.type] || '#6366f1', borderColor: borders[n.type] || '#4f46e5' }
-            };
-        });
-        const links = data.links || [];
+        const rawNodes = data.nodes || [];
+        const rawLinks = data.links || [];
 
-        if (!links.length) {
+        if (!rawLinks.length) {
             sankeyChart.clear();
             sankeyChart.setOption({
                 backgroundColor: 'transparent',
@@ -1569,57 +1553,139 @@
             return;
         }
 
+        // ── Build lookup ──
+        const nodeMap = {};
+        rawNodes.forEach(n => { nodeMap[n.name] = n; });
+
+        // ── Separate by layer ──
+        const objArr = rawNodes.filter(n => n.depth === 0);
+        const conArr = rawNodes.filter(n => n.depth === 1);
+
+        // Sort concept nodes by parent-object name (extracted from "XXX(parent)")
+        const parentOf = name => { const m = name.match(/\(([^)]+)\)$/); return m ? m[1] : ''; };
+        conArr.sort((a, b) => parentOf(a.name).localeCompare(parentOf(b.name), 'zh'));
+
+        // Sort objects so they line up with their concept groups
+        const objIdx = {};
+        conArr.forEach((c, i) => { const p = parentOf(c.name); if (!(p in objIdx)) objIdx[p] = i; });
+        objArr.sort((a, b) => (objIdx[a.name] ?? 999) - (objIdx[b.name] ?? 999));
+
+        // ── Final nodes: objects + concepts + 2 aggregate blocks ──
+        const nodes = [
+            ...objArr.map(n => ({ name: n.name, depth: 0,
+                itemStyle: { color: '#6366f1', borderColor: '#4f46e5', borderWidth: 1 } })),
+            ...conArr.map(n => ({ name: n.name, depth: 1,
+                itemStyle: { color: '#818cf8', borderColor: '#6366f1', borderWidth: 0 } })),
+            { name: '逻辑实体层', depth: 2,
+              itemStyle: { color: '#10b981', borderColor: '#059669', borderWidth: 2 } },
+            { name: '物理实体层', depth: 3,
+              itemStyle: { color: '#f59e0b', borderColor: '#d97706', borderWidth: 2 } }
+        ];
+
+        // ── Links: keep obj→concept, aggregate concept→logical ──
+        const links = [];
+        const conLogSum = {};
+        let logicalTotal = 0;
+
+        rawLinks.forEach(l => {
+            const src = nodeMap[l.source];
+            if (!src) return;
+            if (src.depth === 0) {
+                // object → concept: keep as-is
+                links.push({ source: l.source, target: l.target, value: l.value });
+            } else if (src.depth === 1) {
+                // concept → logical/*: aggregate into 逻辑实体层
+                conLogSum[l.source] = (conLogSum[l.source] || 0) + l.value;
+                logicalTotal += l.value;
+            }
+        });
+
+        // concept → 逻辑实体层
+        Object.entries(conLogSum).forEach(([s, v]) => {
+            links.push({ source: s, target: '逻辑实体层', value: v });
+        });
+        // 逻辑实体层 → 物理实体层
+        if (logicalTotal > 0) {
+            links.push({ source: '逻辑实体层', target: '物理实体层', value: logicalTotal });
+        }
+
+        // ── Dynamic height ──
+        const rows = Math.max(objArr.length, conArr.length);
+        const h = Math.max(480, rows * 28 + 80);
+        document.getElementById('sankey-chart').style.height = h + 'px';
+        sankeyChart.resize();
+
+        // ── Render ──
         sankeyChart.setOption({
             backgroundColor: 'transparent',
             tooltip: {
                 trigger: 'item', triggerOn: 'mousemove',
-                formatter: params => {
-                    if (params.dataType === 'edge') {
-                        return `${esc(params.data.source)} → ${esc(params.data.target)}<br/>关联数量: ${params.data.value}`;
-                    }
-                    return esc(params.name);
+                formatter: p => {
+                    if (p.dataType === 'edge')
+                        return `${esc(p.data.source)} → ${esc(p.data.target)}<br/>关联: ${p.data.value}`;
+                    return esc(p.name);
                 }
             },
             series: [{
-                type: 'sankey', layout: 'none',
+                type: 'sankey',
+                left: 40, right: 150, top: 20, bottom: 20,
                 emphasis: { focus: 'adjacency' },
                 nodeAlign: 'left', nodeGap: 10, nodeWidth: 18,
+                layoutIterations: 64,
                 data: nodes, links: links,
-                lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.35 },
-                label: { color: '#334155', fontSize: 10, fontWeight: 500, overflow: 'truncate', width: 120 },
+                lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.3 },
+                label: { color: '#334155', fontSize: 11, fontWeight: 500,
+                         overflow: 'truncate', width: 180 },
                 levels: [
-                    { depth: 0, itemStyle: { color: '#6366f1' }, lineStyle: { color: 'source', opacity: 0.3 } },
-                    { depth: 1, itemStyle: { color: '#818cf8' }, lineStyle: { color: 'source', opacity: 0.25 } },
-                    { depth: 2, itemStyle: { color: '#10b981' }, lineStyle: { color: 'source', opacity: 0.25 } }
+                    { depth: 0, itemStyle: { color: '#6366f1', borderWidth: 1 },
+                      lineStyle: { color: 'source', opacity: 0.25 },
+                      label: { fontSize: 12, fontWeight: 600, color: '#1e293b' } },
+                    { depth: 1, itemStyle: { color: '#818cf8', borderWidth: 0 },
+                      lineStyle: { color: 'source', opacity: 0.2 },
+                      label: { fontSize: 10.5, color: '#475569' } },
+                    { depth: 2, itemStyle: { color: '#10b981', borderWidth: 2, borderColor: '#059669' },
+                      lineStyle: { color: '#10b981', opacity: 0.15 },
+                      label: { fontSize: 14, fontWeight: 700, color: '#fff', position: 'inside' } },
+                    { depth: 3, itemStyle: { color: '#f59e0b', borderWidth: 2, borderColor: '#d97706' },
+                      lineStyle: { color: '#f59e0b', opacity: 0.15 },
+                      label: { fontSize: 14, fontWeight: 700, color: '#fff', position: 'inside' } }
                 ]
             }]
         }, true);
     }
 
     function renderSankeyFallback() {
-        // Fallback using object-level stats when API unavailable
+        // Fallback: build simplified flow from object stats
         const nodes = [];
         const links = [];
         const nodeSet = new Set();
-        let totalLogical = 0;
+        let logicalTotal = 0;
 
         extractedObjects.forEach(obj => {
             const name = obj.object_name;
             if (!nodeSet.has(name)) {
-                nodes.push({ name, itemStyle: { color: '#6366f1', borderColor: '#4f46e5' }, depth: 0 });
+                nodes.push({ name, depth: 0, itemStyle: { color: '#6366f1', borderColor: '#4f46e5' } });
                 nodeSet.add(name);
             }
             const cc = obj.stats?.concept || 0, lc = obj.stats?.logical || 0;
-            totalLogical += lc;
             if (cc > 0) {
                 const cn = `概念实体(${name})`;
-                if (!nodeSet.has(cn)) { nodes.push({ name: cn, itemStyle: { color: '#818cf8' }, depth: 1 }); nodeSet.add(cn); }
+                if (!nodeSet.has(cn)) { nodes.push({ name: cn, depth: 1, itemStyle: { color: '#818cf8' } }); nodeSet.add(cn); }
                 links.push({ source: name, target: cn, value: cc });
-                if (lc > 0) links.push({ source: cn, target: '逻辑实体层', value: lc });
+                if (lc > 0) {
+                    links.push({ source: cn, target: '逻辑实体层', value: lc });
+                    logicalTotal += lc;
+                }
             }
         });
-        if (totalLogical > 0 && !nodeSet.has('逻辑实体层')) { nodes.push({ name: '逻辑实体层', itemStyle: { color: '#10b981' }, depth: 2 }); nodeSet.add('逻辑实体层'); }
-        renderSankeyChart({ nodes: nodes.map(n => ({ ...n, type: 'object' })), links });
+
+        if (logicalTotal > 0) {
+            nodes.push({ name: '逻辑实体层', depth: 2, itemStyle: { color: '#10b981' } });
+            nodes.push({ name: '物理实体层', depth: 3, itemStyle: { color: '#f59e0b' } });
+            links.push({ source: '逻辑实体层', target: '物理实体层', value: logicalTotal });
+        }
+
+        renderSankeyChart({ nodes: nodes.map(n => ({ ...n, type: n.depth === 0 ? 'object' : 'concept' })), links });
     }
 
     // ========== Actions ==========
