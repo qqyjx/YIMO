@@ -107,16 +107,27 @@ do_stop() {
 
 # ===================== status =====================
 do_status() {
+    # 数据库状态
+    echo -ne "  MySQL (port 3307): "
+    if mysql -h127.0.0.1 -P3307 -ueav_user -peavpass123 -e "SELECT 1" >/dev/null 2>&1; then
+        local obj_cnt
+        obj_cnt=$(mysql -h127.0.0.1 -P3307 -ueav_user -peavpass123 eav_db -N -e "SELECT COUNT(*) FROM extracted_objects" 2>/dev/null || echo "?")
+        echo -e "${GREEN}✓ 运行中 ($obj_cnt 个对象)${NC}"
+    else
+        echo -e "${RED}✗ 未运行${NC}"
+    fi
+
+    # Web 服务状态
     local pid
     if pid=$(get_pid); then
-        echo -e "${GREEN}✓ 服务运行中 (PID $pid, 端口 $WEB_PORT)${NC}"
+        echo -e "${GREEN}✓ Web 服务运行中 (PID $pid, 端口 $WEB_PORT)${NC}"
         if curl --noproxy '*' -sS -m 3 "http://127.0.0.1:$WEB_PORT/health" 2>/dev/null | grep -q "ok"; then
             echo -e "${GREEN}✓ 健康检查通过${NC}"
         else
             echo -e "${YELLOW}! 健康检查失败${NC}"
         fi
     else
-        echo -e "${YELLOW}服务未运行${NC}"
+        echo -e "${YELLOW}Web 服务未运行${NC}"
     fi
 }
 
@@ -131,6 +142,39 @@ do_start() {
     fi
 
     echo -e "${BOLD}YIMO 对象抽取与三层架构关联系统${NC}"
+    echo ""
+
+    # ---- 检查并启动 MySQL (port 3307) ----
+    echo -ne "  MySQL (port 3307): "
+    if mysql -h127.0.0.1 -P3307 -ueav_user -peavpass123 -e "SELECT 1" >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ 已运行${NC}"
+    else
+        echo -e "${YELLOW}未运行，正在启动...${NC}"
+        sudo service mysql start 2>/dev/null || true
+        local db_ok=false
+        for i in {1..30}; do
+            if mysql -h127.0.0.1 -P3307 -ueav_user -peavpass123 -e "SELECT 1" >/dev/null 2>&1; then
+                db_ok=true; break
+            fi
+            sleep 1
+        done
+        if [[ "$db_ok" == true ]]; then
+            echo -e "  ${GREEN}✓ MySQL 启动成功${NC}"
+        else
+            echo -e "  ${RED}✗ MySQL 启动失败！请检查: sudo service mysql status${NC}"
+            echo -e "  ${YELLOW}Web 服务仍可启动，但将使用 JSON 回退模式${NC}"
+        fi
+    fi
+    # 显示数据库摘要
+    local db_summary
+    db_summary=$(mysql -h127.0.0.1 -P3307 -ueav_user -peavpass123 eav_db -N -e "
+        SELECT CONCAT(
+            '  数据库: 对象 ', (SELECT COUNT(*) FROM extracted_objects),
+            ' | 关联 ', (SELECT COUNT(*) FROM object_entity_relations),
+            ' | EAV实体 ', (SELECT COUNT(*) FROM eav_entities),
+            ' | EAV值 ', (SELECT COUNT(*) FROM eav_values)
+        );" 2>/dev/null) || db_summary=""
+    [[ -n "$db_summary" ]] && echo -e "${CYAN}${db_summary}${NC}"
     echo ""
 
     # 检测 Python
