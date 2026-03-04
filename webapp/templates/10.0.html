@@ -1880,7 +1880,9 @@
                         return `<b style="font-size:14px">${esc(p.data.name)}</b><br/>`
                              + `<span style="color:${categoryColors[p.data.category]}">${esc(cat)}</span>${val}`;
                     }
-                    return `${esc(p.data.source)} → ${esc(p.data.target)}`;
+                    const sName = (typeof p.data.source === 'number' ? data.nodes[p.data.source]?.name : p.data.source) || p.data.source;
+                    const tName = (typeof p.data.target === 'number' ? data.nodes[p.data.target]?.name : p.data.target) || p.data.target;
+                    return `${esc(sName)} → ${esc(tName)}`;
                 }
             },
             legend: {
