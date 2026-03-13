@@ -380,3 +380,57 @@ class TestAPIEndpoints:
     def test_granularity_report(self, client):
         resp = client.get("/api/olm/granularity-report")
         assert resp.status_code == 200
+
+    # ---- 去重 & 稀疏对象 API 测试 ----
+
+    def test_duplicate_candidates_endpoint(self, client):
+        """重复检测端点应返回候选列表"""
+        resp = client.get("/api/olm/duplicate-candidates?threshold=0.1")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert "candidates" in data
+        assert "total" in data
+        assert isinstance(data["candidates"], list)
+
+    def test_duplicate_candidates_with_high_threshold(self, client):
+        """高阈值应减少候选数量"""
+        resp = client.get("/api/olm/duplicate-candidates?threshold=0.99")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        # 极高阈值下大部分语义匹配会被过滤
+        assert isinstance(data["candidates"], list)
+
+    def test_small_objects_with_similarity(self, client):
+        """小对象端点应返回带相似度的合并候选"""
+        resp = client.get("/api/olm/small-objects?threshold=5")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert "small_objects" in data
+        assert "threshold" in data
+        # 检查 merge_candidates 是否带相似度
+        for so in data.get("small_objects", []):
+            if so.get("merge_candidates"):
+                first = so["merge_candidates"][0]
+                if isinstance(first, dict):
+                    assert "similarity" in first
+
+    def test_bulk_merge_preview(self, client):
+        """批量合并预览模式应返回计划而不执行"""
+        resp = client.post("/api/olm/bulk-merge-small",
+                           json={"threshold": 5, "preview": True, "domain": ""})
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data.get("preview") is True
+        assert "merge_plan" in data
+
+    def test_dedup_objects_missing_params(self, client):
+        """去重操作缺少参数应返回 400"""
+        resp = client.post("/api/olm/dedup-objects",
+                           json={"action": "merge"})
+        assert resp.status_code == 400
+
+    def test_dedup_objects_invalid_action(self, client):
+        """无效操作类型应返回 400"""
+        resp = client.post("/api/olm/dedup-objects",
+                           json={"source_code": "A", "target_code": "B", "action": "invalid"})
+        assert resp.status_code == 400

@@ -792,6 +792,7 @@
                 </div>
                 <div id="granularity-chart" style="width:100%;height:320px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);"></div>
                 <div id="smallObjectsPanel" style="margin-top:12px;"></div>
+                <div id="dedupPanel" style="margin-top:16px;"></div>
             </section>
 
             <!-- Section: Sankey -->
@@ -1944,6 +1945,7 @@
             const data = await resp.json();
             renderGranularityChart(data.report);
             renderSmallObjects(data.report, data.summary);
+            loadDedupCandidates();
         } catch(e) {
             showToast('颗粒度分析失败: ' + e.message, 'error');
         }
@@ -1974,38 +1976,68 @@
         }, true);
     }
 
-    function renderSmallObjects(report, summary) {
+    async function renderSmallObjects(report, summary) {
         const panel = document.getElementById('smallObjectsPanel');
-        const small = report.filter(r => r.cluster_size < 3);
+        const SMALL_THRESHOLD = 5;
+
+        // 调用 API 获取带相似度分数的合并候选
+        try {
+            const domainParam = getDomainParam();
+            const resp = await fetch('/api/olm/small-objects' + domainParam + (domainParam ? '&' : '?') + 'threshold=' + SMALL_THRESHOLD);
+            if (resp.ok) {
+                const data = await resp.json();
+                if (!data.small_objects || !data.small_objects.length) {
+                    panel.textContent = '';
+                    const msg = document.createElement('div');
+                    msg.style.cssText = 'padding:12px;color:var(--text-muted);font-size:.85rem;';
+                    const icon = document.createElement('i');
+                    icon.className = 'bi bi-check-circle';
+                    icon.style.color = '#10b981';
+                    msg.appendChild(icon);
+                    msg.appendChild(document.createTextNode(' 所有对象实体数量均 >= ' + SMALL_THRESHOLD + '，无需合并'));
+                    panel.appendChild(msg);
+                    return;
+                }
+                const large = report.filter(function(r) { return r.cluster_size >= SMALL_THRESHOLD; });
+                buildSmallObjectsTable(panel, data.small_objects, large, SMALL_THRESHOLD);
+                return;
+            }
+        } catch(e) { /* fallback to report data */ }
+
+        // Fallback: 从 report 数据渲染
+        const small = report.filter(function(r) { return r.cluster_size < SMALL_THRESHOLD; });
         if (!small.length) {
             panel.textContent = '';
-            const msg = document.createElement('div');
-            msg.style.cssText = 'padding:12px;color:var(--text-muted);font-size:.85rem;';
-            const icon = document.createElement('i');
-            icon.className = 'bi bi-check-circle';
-            icon.style.color = '#10b981';
-            msg.appendChild(icon);
-            msg.appendChild(document.createTextNode(' 所有对象实体数量均 >= 3，无需合并'));
-            panel.appendChild(msg);
             return;
         }
-        const large = report.filter(r => r.cluster_size >= 3);
-        buildSmallObjectsTable(panel, small, large);
+        const large = report.filter(function(r) { return r.cluster_size >= SMALL_THRESHOLD; });
+        buildSmallObjectsTable(panel, small, large, SMALL_THRESHOLD);
     }
 
-    function buildSmallObjectsTable(panel, small, large) {
+    function buildSmallObjectsTable(panel, small, large, threshold) {
         panel.textContent = '';
         const wrapper = document.createElement('div');
         wrapper.style.cssText = 'padding:12px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);';
 
+        const headerRow = document.createElement('div');
+        headerRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;';
+
         const header = document.createElement('div');
-        header.style.cssText = 'font-weight:600;margin-bottom:8px;color:var(--text-main);';
+        header.style.cssText = 'font-weight:600;color:var(--text-main);';
         const warnIcon = document.createElement('i');
         warnIcon.className = 'bi bi-exclamation-triangle';
         warnIcon.style.color = '#f59e0b';
         header.appendChild(warnIcon);
-        header.appendChild(document.createTextNode(` ${small.length} 个小对象（聚类大小 < 3）建议合并或删除`));
-        wrapper.appendChild(header);
+        header.appendChild(document.createTextNode(` ${small.length} 个稀疏对象（聚类大小 < ${threshold}）建议合并或删除`));
+        headerRow.appendChild(header);
+
+        // 批量合并按钮
+        const bulkBtn = document.createElement('button');
+        bulkBtn.textContent = '批量合并';
+        bulkBtn.style.cssText = 'padding:4px 12px;border-radius:4px;border:1px solid #ef4444;background:#ef4444;color:#fff;cursor:pointer;font-size:.78rem;';
+        bulkBtn.addEventListener('click', bulkMergeSmall);
+        headerRow.appendChild(bulkBtn);
+        wrapper.appendChild(headerRow);
 
         const table = document.createElement('table');
         table.style.cssText = 'width:100%;font-size:.82rem;border-collapse:collapse;';
@@ -2013,7 +2045,7 @@
         const thead = document.createElement('thead');
         const headRow = document.createElement('tr');
         headRow.style.borderBottom = '1px solid var(--border)';
-        ['对象', '聚类大小', '实体数', '操作'].forEach(text => {
+        ['对象', '聚类大小', '实体数', '推荐合并目标', '操作'].forEach(text => {
             const th = document.createElement('th');
             th.style.cssText = text === '对象' ? 'text-align:left;padding:6px;' : 'padding:6px;text-align:center;';
             th.textContent = text;
@@ -2027,7 +2059,6 @@
             const row = document.createElement('tr');
             row.style.borderBottom = '1px solid var(--border)';
 
-            // Name cell
             const tdName = document.createElement('td');
             tdName.style.padding = '6px';
             tdName.textContent = s.object_name + ' ';
@@ -2037,35 +2068,51 @@
             tdName.appendChild(codeSpan);
             row.appendChild(tdName);
 
-            // Cluster size
             const tdSize = document.createElement('td');
             tdSize.style.cssText = 'text-align:center;color:#ef4444;font-weight:600;';
             tdSize.textContent = s.cluster_size;
             row.appendChild(tdSize);
 
-            // Entity counts
             const tdCount = document.createElement('td');
             tdCount.style.textAlign = 'center';
             tdCount.textContent = `${s.concept_count}/${s.logical_count}`;
             row.appendChild(tdCount);
 
-            // Actions
-            const tdAction = document.createElement('td');
-            tdAction.style.textAlign = 'center';
+            // 合并目标下拉（带相似度分数）
+            const tdTarget = document.createElement('td');
+            tdTarget.style.textAlign = 'center';
             const select = document.createElement('select');
             select.id = 'merge_' + s.object_code;
-            select.style.cssText = 'font-size:.75rem;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);';
-            for (const l of large.slice(0, 5)) {
-                const opt = document.createElement('option');
-                opt.value = l.object_code;
-                opt.textContent = `${l.object_name} (${l.cluster_size})`;
-                select.appendChild(opt);
+            select.style.cssText = 'font-size:.75rem;padding:2px 4px;border-radius:4px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);max-width:180px;';
+            if (s.merge_candidates && s.merge_candidates.length) {
+                for (const c of s.merge_candidates) {
+                    const opt = document.createElement('option');
+                    if (typeof c === 'object') {
+                        opt.value = c.object_code;
+                        const simPct = Math.round((c.similarity || 0) * 100);
+                        opt.textContent = `${c.object_name} (${c.cluster_size}) [${simPct}%]`;
+                    } else {
+                        opt.value = c;
+                        opt.textContent = c;
+                    }
+                    select.appendChild(opt);
+                }
+            } else {
+                for (const l of large.slice(0, 5)) {
+                    const opt = document.createElement('option');
+                    opt.value = l.object_code;
+                    opt.textContent = `${l.object_name} (${l.cluster_size})`;
+                    select.appendChild(opt);
+                }
             }
-            tdAction.appendChild(select);
+            tdTarget.appendChild(select);
+            row.appendChild(tdTarget);
 
+            const tdAction = document.createElement('td');
+            tdAction.style.textAlign = 'center';
             const mergeBtn = document.createElement('button');
             mergeBtn.textContent = '合并';
-            mergeBtn.style.cssText = 'margin-left:4px;padding:2px 8px;border-radius:4px;border:1px solid #ef4444;background:transparent;color:#ef4444;cursor:pointer;font-size:.72rem;';
+            mergeBtn.style.cssText = 'padding:2px 8px;border-radius:4px;border:1px solid #ef4444;background:transparent;color:#ef4444;cursor:pointer;font-size:.72rem;';
             mergeBtn.addEventListener('click', () => mergeObject(s.object_code));
             tdAction.appendChild(mergeBtn);
 
@@ -2122,6 +2169,210 @@
             }
         } catch(e) {
             showToast('删除失败: ' + e.message, 'error');
+        }
+    }
+
+    // ========== Bulk Merge & Dedup Panel ==========
+    async function bulkMergeSmall() {
+        const domainParam = getDomainParam();
+        try {
+            const resp = await fetch('/api/olm/bulk-merge-small', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ threshold: 5, preview: true, domain: domainParam.replace('?domain=', '') })
+            });
+            const data = await resp.json();
+            if (!data.merge_plan || !data.merge_plan.length) {
+                showToast('没有需要合并的稀疏对象', 'info');
+                return;
+            }
+            const details = data.merge_plan.map(p =>
+                p.source_name + '(' + p.source_size + ') -> ' + p.target_name + '(' + p.target_size + ') [' + Math.round(p.similarity*100) + '%]'
+            ).join('\n');
+            if (!confirm('将执行 ' + data.merge_count + ' 个合并操作：\n\n' + details + '\n\n确认？')) return;
+
+            const execResp = await fetch('/api/olm/bulk-merge-small', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ threshold: 5, preview: false, domain: domainParam.replace('?domain=', '') })
+            });
+            const execData = await execResp.json();
+            if (execData.success) {
+                showToast(execData.message, 'success');
+                loadObjects();
+                loadGranularity();
+            } else {
+                showToast('批量合并失败: ' + (execData.error || ''), 'error');
+            }
+        } catch(e) {
+            showToast('批量合并失败: ' + e.message, 'error');
+        }
+    }
+
+    async function loadDedupCandidates() {
+        const panel = document.getElementById('dedupPanel');
+        if (!panel) return;
+        try {
+            const resp = await fetch('/api/olm/duplicate-candidates?threshold=0.3');
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            renderDedupPanel(panel, data.candidates || []);
+        } catch(e) {
+            panel.textContent = '';
+        }
+    }
+
+    function _createTextTd(text, style) {
+        const td = document.createElement('td');
+        td.style.cssText = style || 'padding:6px;text-align:center;';
+        td.textContent = text;
+        return td;
+    }
+
+    function renderDedupPanel(panel, candidates) {
+        panel.textContent = '';
+        if (!candidates.length) {
+            const msg = document.createElement('div');
+            msg.style.cssText = 'padding:12px;color:var(--text-muted);font-size:.85rem;';
+            const icon = document.createElement('i');
+            icon.className = 'bi bi-check-circle';
+            icon.style.color = '#10b981';
+            msg.appendChild(icon);
+            msg.appendChild(document.createTextNode(' 未检测到重复对象'));
+            panel.appendChild(msg);
+            return;
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'padding:12px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);';
+
+        const header = document.createElement('div');
+        header.style.cssText = 'font-weight:600;margin-bottom:8px;color:var(--text-main);';
+        const filesIcon = document.createElement('i');
+        filesIcon.className = 'bi bi-files';
+        filesIcon.style.color = '#f59e0b';
+        header.appendChild(filesIcon);
+        header.appendChild(document.createTextNode(' 检测到 ' + candidates.length + ' 对疑似重复对象'));
+        wrapper.appendChild(header);
+
+        const table = document.createElement('table');
+        table.style.cssText = 'width:100%;font-size:.82rem;border-collapse:collapse;';
+        const thead = document.createElement('thead');
+        const headRow = document.createElement('tr');
+        headRow.style.borderBottom = '1px solid var(--border)';
+        ['对象A', '域', '对象B', '域', '相似度', '类型', '操作'].forEach(function(text) {
+            const th = document.createElement('th');
+            th.style.cssText = 'padding:6px;text-align:center;';
+            th.textContent = text;
+            headRow.appendChild(th);
+        });
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        for (const c of candidates) {
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid var(--border)';
+
+            // Object A
+            const tdA = document.createElement('td');
+            tdA.style.cssText = 'padding:6px;text-align:center;';
+            tdA.appendChild(document.createTextNode(c.name_a + ' '));
+            const codeA = document.createElement('span');
+            codeA.style.cssText = 'color:var(--text-muted);font-size:.72rem;';
+            codeA.textContent = c.object_a;
+            tdA.appendChild(codeA);
+            row.appendChild(tdA);
+
+            row.appendChild(_createTextTd(c.domain_a || '-'));
+
+            // Object B
+            const tdB = document.createElement('td');
+            tdB.style.cssText = 'padding:6px;text-align:center;';
+            tdB.appendChild(document.createTextNode(c.name_b + ' '));
+            const codeB = document.createElement('span');
+            codeB.style.cssText = 'color:var(--text-muted);font-size:.72rem;';
+            codeB.textContent = c.object_b;
+            tdB.appendChild(codeB);
+            row.appendChild(tdB);
+
+            row.appendChild(_createTextTd(c.domain_b || '-'));
+
+            // Similarity
+            const tdSim = document.createElement('td');
+            tdSim.style.cssText = 'padding:6px;text-align:center;';
+            const simSpan = document.createElement('span');
+            simSpan.style.cssText = 'font-weight:600;color:' + (c.similarity >= 0.9 ? '#ef4444' : '#f59e0b');
+            simSpan.textContent = Math.round(c.similarity * 100) + '%';
+            tdSim.appendChild(simSpan);
+            row.appendChild(tdSim);
+
+            // Match type badge
+            const tdType = document.createElement('td');
+            tdType.style.cssText = 'padding:6px;text-align:center;';
+            const badge = document.createElement('span');
+            var badgeColor = c.match_type === 'EXACT_CODE' ? '#6366f1' : c.match_type === 'EXACT_NAME' ? '#3b82f6' : '#64748b';
+            badge.style.cssText = 'font-size:.72rem;padding:1px 6px;border-radius:3px;background:' + badgeColor + ';color:#fff;';
+            badge.textContent = c.match_type;
+            tdType.appendChild(badge);
+            row.appendChild(tdType);
+
+            // Action buttons
+            const tdAction = document.createElement('td');
+            tdAction.style.cssText = 'padding:6px;text-align:center;white-space:nowrap;';
+
+            var mergeBtn = document.createElement('button');
+            mergeBtn.textContent = '合并';
+            mergeBtn.style.cssText = 'padding:2px 8px;border-radius:4px;border:1px solid #ef4444;background:transparent;color:#ef4444;cursor:pointer;font-size:.72rem;';
+            mergeBtn.addEventListener('click', (function(cc) { return function() { dedupAction(cc, 'merge'); }; })(c));
+            tdAction.appendChild(mergeBtn);
+
+            var linkBtn = document.createElement('button');
+            linkBtn.textContent = '关联';
+            linkBtn.style.cssText = 'margin-left:2px;padding:2px 8px;border-radius:4px;border:1px solid #3b82f6;background:transparent;color:#3b82f6;cursor:pointer;font-size:.72rem;';
+            linkBtn.addEventListener('click', (function(cc) { return function() { dedupAction(cc, 'link'); }; })(c));
+            tdAction.appendChild(linkBtn);
+
+            var ignoreBtn = document.createElement('button');
+            ignoreBtn.textContent = '忽略';
+            ignoreBtn.style.cssText = 'margin-left:2px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-size:.72rem;';
+            ignoreBtn.addEventListener('click', (function(cc) { return function() { dedupAction(cc, 'ignore'); }; })(c));
+            tdAction.appendChild(ignoreBtn);
+
+            row.appendChild(tdAction);
+            tbody.appendChild(row);
+        }
+        table.appendChild(tbody);
+        wrapper.appendChild(table);
+        panel.appendChild(wrapper);
+    }
+
+    async function dedupAction(candidate, action) {
+        var actionLabel = action === 'merge' ? '合并' : action === 'link' ? '关联' : '忽略';
+        if (action === 'merge' && !confirm('确认将 ' + candidate.name_a + '(' + candidate.domain_a + ') 合并到 ' + candidate.name_b + '(' + candidate.domain_b + ')？')) return;
+        try {
+            const resp = await fetch('/api/olm/dedup-objects', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    source_code: candidate.object_a,
+                    source_domain: candidate.domain_a,
+                    target_code: candidate.object_b,
+                    target_domain: candidate.domain_b,
+                    action: action,
+                    similarity: candidate.similarity
+                })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                showToast(data.message, 'success');
+                loadDedupCandidates();
+                if (action === 'merge') { loadObjects(); loadGranularity(); }
+            } else {
+                showToast(actionLabel + '失败: ' + (data.error || ''), 'error');
+            }
+        } catch(e) {
+            showToast(actionLabel + '失败: ' + e.message, 'error');
         }
     }
 

@@ -532,6 +532,7 @@ def api_small_objects():
     data = _load_data(domain)
     objects = data.get('objects', [])
     stats = data.get('stats', {})
+    _enrich_sample_entities(objects, domain)
 
     small_objects = []
     large_objects = []
@@ -553,10 +554,27 @@ def api_small_objects():
                 'cluster_size': cluster_size
             })
 
-    # 推荐合并目标: 按 cluster_size 排序的大对象
-    large_objects.sort(key=lambda x: -x['cluster_size'])
+    # 推荐合并目标: 按语义相似度排序（而非仅按大小）
+    # 先为每个 small_object 收集 sample_entities
+    obj_samples = {}
+    for obj in objects:
+        code = obj.get('object_code', '')
+        obj_samples[code] = obj.get('sample_entities', [])
+
     for so in small_objects:
-        so['merge_candidates'] = [lo['object_code'] for lo in large_objects[:5]]
+        so_samples = obj_samples.get(so['object_code'], [])
+        scored_candidates = []
+        for lo in large_objects:
+            lo_samples = obj_samples.get(lo['object_code'], [])
+            sim = _compute_keyword_overlap(so_samples, lo_samples)
+            scored_candidates.append({
+                'object_code': lo['object_code'],
+                'object_name': lo['object_name'],
+                'cluster_size': lo['cluster_size'],
+                'similarity': round(sim, 4)
+            })
+        scored_candidates.sort(key=lambda x: -x['similarity'])
+        so['merge_candidates'] = scored_candidates[:5]
 
     return jsonify({
         'small_objects': small_objects,
@@ -612,6 +630,363 @@ def api_merge_objects():
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================================
+# 对象去重与稀疏对象管理 API
+# ============================================================================
+
+
+def _enrich_sample_entities(objects, domain=''):
+    """为对象列表补充 sample_entities（从 JSON 文件获取，DB 中不存此字段）"""
+    # 构建 JSON 数据中的 sample_entities 索引
+    json_samples = {}
+    if domain:
+        domains = [domain]
+    else:
+        domains = [f.stem.replace('extraction_', '') for f in OUTPUTS_DIR.glob('extraction_*.json')]
+
+    for d in domains:
+        jdata = load_json_data(d)
+        for obj in jdata.get('objects', []):
+            code = obj.get('object_code', '')
+            samples = obj.get('sample_entities', [])
+            if samples:
+                json_samples[code] = samples
+                # 也用带域后缀的 key
+                json_samples[code + '_' + d] = samples
+
+    for obj in objects:
+        if not obj.get('sample_entities'):
+            code = obj.get('object_code', '')
+            obj['sample_entities'] = json_samples.get(code, [])
+
+
+def _compute_keyword_overlap(entities_a, entities_b):
+    """计算两组实体名的关键词重叠度（2-3字子串交集比例）"""
+    def extract_keywords(entities):
+        kw = set()
+        for e in entities:
+            if not e:
+                continue
+            for length in (2, 3):
+                for i in range(len(e) - length + 1):
+                    word = e[i:i+length]
+                    if not any(c in word for c in "0123456789-_()（）、，。 "):
+                        kw.add(word)
+        return kw
+
+    kw_a = extract_keywords(entities_a)
+    kw_b = extract_keywords(entities_b)
+    if not kw_a or not kw_b:
+        return 0.0
+    intersection = len(kw_a & kw_b)
+    union = len(kw_a | kw_b)
+    return intersection / union if union > 0 else 0.0
+
+
+@olm_api.route('/api/olm/duplicate-candidates')
+def api_duplicate_candidates():
+    """检测跨域/域内语义重复对象
+
+    参数:
+      threshold: 相似度阈值 (默认 0.3)
+      domain: 限定域 (空=全部)
+    """
+    threshold = float(request.args.get('threshold', '0.3'))
+    domain = request.args.get('domain', '')
+
+    # 加载所有域的对象
+    all_objects = []
+    if domain:
+        data = _load_data(domain)
+        for obj in data.get('objects', []):
+            obj['_domain'] = domain
+            all_objects.append(obj)
+    else:
+        # 扫描所有可用域的 JSON 文件
+        for json_file in OUTPUTS_DIR.glob('extraction_*.json'):
+            d = json_file.stem.replace('extraction_', '')
+            data = _load_data(d)
+            for obj in data.get('objects', []):
+                obj['_domain'] = d
+                all_objects.append(obj)
+
+    # 补充 sample_entities（DB 中不存此字段）
+    _enrich_sample_entities(all_objects, domain)
+
+    # 查询已决策的对
+    decided_pairs = set()
+    if is_db_available():
+        rows = execute_query("SELECT source_object_code, source_domain, target_object_code, target_domain FROM object_dedup_decisions")
+        if isinstance(rows, list):
+            for r in rows:
+                decided_pairs.add((r['source_object_code'], r.get('source_domain', ''),
+                                   r['target_object_code'], r.get('target_domain', '')))
+
+    candidates = []
+    for i, obj_a in enumerate(all_objects):
+        for j in range(i + 1, len(all_objects)):
+            obj_b = all_objects[j]
+
+            code_a = obj_a.get('object_code', '')
+            code_b = obj_b.get('object_code', '')
+            domain_a = obj_a.get('_domain', '')
+            domain_b = obj_b.get('_domain', '')
+
+            # 跳过同域同对象
+            if code_a == code_b and domain_a == domain_b:
+                continue
+
+            # 跳过已决策对
+            pair_key = (code_a, domain_a, code_b, domain_b)
+            pair_key_r = (code_b, domain_b, code_a, domain_a)
+            if pair_key in decided_pairs or pair_key_r in decided_pairs:
+                continue
+
+            # 精确匹配：同 code 跨域
+            if code_a == code_b and domain_a != domain_b:
+                candidates.append({
+                    'object_a': code_a, 'name_a': obj_a.get('object_name', ''),
+                    'domain_a': domain_a,
+                    'object_b': code_b, 'name_b': obj_b.get('object_name', ''),
+                    'domain_b': domain_b,
+                    'similarity': 1.0, 'match_type': 'EXACT_CODE'
+                })
+                continue
+
+            # 名称匹配
+            name_a = obj_a.get('object_name', '')
+            name_b = obj_b.get('object_name', '')
+            if name_a and name_b and name_a == name_b:
+                candidates.append({
+                    'object_a': code_a, 'name_a': name_a, 'domain_a': domain_a,
+                    'object_b': code_b, 'name_b': name_b, 'domain_b': domain_b,
+                    'similarity': 0.95, 'match_type': 'EXACT_NAME'
+                })
+                continue
+
+            # 语义相似度：用实体名关键词重叠
+            samples_a = obj_a.get('sample_entities', [])
+            samples_b = obj_b.get('sample_entities', [])
+            if samples_a and samples_b:
+                sim = _compute_keyword_overlap(samples_a, samples_b)
+                if sim >= threshold:
+                    candidates.append({
+                        'object_a': code_a, 'name_a': name_a, 'domain_a': domain_a,
+                        'object_b': code_b, 'name_b': name_b, 'domain_b': domain_b,
+                        'similarity': round(sim, 4), 'match_type': 'SEMANTIC'
+                    })
+
+    candidates.sort(key=lambda x: -x['similarity'])
+    return jsonify({
+        'candidates': candidates,
+        'total': len(candidates),
+        'threshold': threshold
+    })
+
+
+@olm_api.route('/api/olm/dedup-objects', methods=['POST'])
+def api_dedup_objects():
+    """执行对象去重操作
+
+    Body: {source_code, source_domain, target_code, target_domain, action: "merge"|"link"|"ignore"}
+    """
+    body = request.get_json(force=True)
+    source_code = body.get('source_code')
+    target_code = body.get('target_code')
+    action = body.get('action', 'merge')
+    source_domain = body.get('source_domain', '')
+    target_domain = body.get('target_domain', '')
+    similarity = body.get('similarity', 0)
+
+    if not source_code or not target_code:
+        return jsonify({'success': False, 'error': '缺少 source_code 或 target_code'}), 400
+    if action not in ('merge', 'link', 'ignore'):
+        return jsonify({'success': False, 'error': 'action 必须为 merge/link/ignore'}), 400
+
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        # 记录决策
+        execute_query("""
+            INSERT INTO object_dedup_decisions
+            (source_object_code, source_domain, target_object_code, target_domain, decision, similarity_score)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (source_code, source_domain, target_code, target_domain,
+              action.upper() if action == 'ignore' else 'MERGED' if action == 'merge' else 'LINKED',
+              similarity), fetch=False)
+
+        if action == 'merge':
+            # 复用已有合并逻辑
+            src = execute_query(
+                "SELECT object_id FROM extracted_objects WHERE object_code = %s AND data_domain = %s",
+                (source_code, source_domain))
+            tgt = execute_query(
+                "SELECT object_id FROM extracted_objects WHERE object_code = %s AND data_domain = %s",
+                (target_code, target_domain))
+            if not src or not tgt or isinstance(src, dict) or isinstance(tgt, dict):
+                return jsonify({'success': False, 'error': '对象不存在'}), 404
+
+            src_id = src[0]['object_id']
+            tgt_id = tgt[0]['object_id']
+
+            execute_query("""
+                INSERT IGNORE INTO object_entity_relations
+                (object_id, entity_layer, entity_name, entity_code, relation_type,
+                 relation_strength, match_method, via_concept_entity, data_domain,
+                 data_subdomain, source_file, source_sheet, source_row)
+                SELECT %s, entity_layer, entity_name, entity_code, relation_type,
+                       relation_strength * 0.9, 'MERGE', via_concept_entity, data_domain,
+                       data_subdomain, source_file, source_sheet, source_row
+                FROM object_entity_relations WHERE object_id = %s
+            """, (tgt_id, src_id), fetch=False)
+
+            execute_query("DELETE FROM object_entity_relations WHERE object_id = %s", (src_id,), fetch=False)
+            execute_query("DELETE FROM object_business_object_mapping WHERE object_id = %s", (src_id,), fetch=False)
+            execute_query("DELETE FROM extracted_objects WHERE object_id = %s", (src_id,), fetch=False)
+
+            return jsonify({'success': True, 'message': f'已将 {source_code}({source_domain}) 合并到 {target_code}({target_domain})'})
+
+        elif action == 'link':
+            # 创建同义词链接
+            tgt = execute_query(
+                "SELECT object_id FROM extracted_objects WHERE object_code = %s AND data_domain = %s",
+                (target_code, target_domain))
+            if tgt and not isinstance(tgt, dict):
+                execute_query("""
+                    INSERT IGNORE INTO object_synonyms (object_id, synonym, source)
+                    VALUES (%s, %s, 'DEDUP_LINK')
+                """, (tgt[0]['object_id'], f"{source_code}@{source_domain}"), fetch=False)
+            return jsonify({'success': True, 'message': f'已关联 {source_code} ↔ {target_code}'})
+
+        else:  # ignore
+            return jsonify({'success': True, 'message': f'已标记为忽略'})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/bulk-merge-small', methods=['POST'])
+def api_bulk_merge_small():
+    """批量合并稀疏对象
+
+    Body: {threshold: 5, preview: true, domain: ""}
+    preview=true 仅返回合并计划，preview=false 执行合并
+    """
+    body = request.get_json(force=True)
+    threshold = int(body.get('threshold', 5))
+    preview = body.get('preview', True)
+    domain = body.get('domain', '')
+
+    # 必须保留的对象
+    required_codes = {'OBJ_PROJECT', 'OBJ_DEVICE', 'OBJ_ASSET'}
+
+    data = _load_data(domain)
+    objects = data.get('objects', [])
+    stats = data.get('stats', {})
+    _enrich_sample_entities(objects, domain)
+
+    small_objects = []
+    large_objects = []
+    for obj in objects:
+        code = obj.get('object_code', '')
+        cluster_size = obj.get('cluster_size', 0)
+        if code in required_codes:
+            large_objects.append(obj)
+        elif cluster_size < threshold:
+            small_objects.append(obj)
+        else:
+            large_objects.append(obj)
+
+    if not large_objects:
+        return jsonify({'success': False, 'error': '没有可用的合并目标'}), 400
+
+    # 为每个小对象找最佳合并目标（基于关键词重叠度）
+    merge_plan = []
+    for so in small_objects:
+        so_samples = so.get('sample_entities', [])
+        best_target, best_sim = None, 0
+        for lo in large_objects:
+            lo_samples = lo.get('sample_entities', [])
+            sim = _compute_keyword_overlap(so_samples, lo_samples)
+            if sim > best_sim:
+                best_sim, best_target = sim, lo
+
+        if best_target:
+            merge_plan.append({
+                'source_code': so['object_code'],
+                'source_name': so.get('object_name', ''),
+                'source_size': so.get('cluster_size', 0),
+                'target_code': best_target['object_code'],
+                'target_name': best_target.get('object_name', ''),
+                'target_size': best_target.get('cluster_size', 0),
+                'similarity': round(best_sim, 4)
+            })
+
+    if preview:
+        return jsonify({
+            'preview': True,
+            'merge_plan': merge_plan,
+            'small_count': len(small_objects),
+            'merge_count': len(merge_plan),
+            'threshold': threshold
+        })
+
+    # 执行合并
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用，无法执行合并'}), 503
+
+    merged = 0
+    errors = []
+    for item in merge_plan:
+        try:
+            src = execute_query(
+                "SELECT object_id FROM extracted_objects WHERE object_code = %s",
+                (item['source_code'],))
+            tgt = execute_query(
+                "SELECT object_id FROM extracted_objects WHERE object_code = %s",
+                (item['target_code'],))
+            if not src or not tgt or isinstance(src, dict) or isinstance(tgt, dict):
+                errors.append(f"{item['source_code']}: 对象不存在")
+                continue
+
+            src_id = src[0]['object_id']
+            tgt_id = tgt[0]['object_id']
+
+            execute_query("""
+                INSERT IGNORE INTO object_entity_relations
+                (object_id, entity_layer, entity_name, entity_code, relation_type,
+                 relation_strength, match_method, via_concept_entity, data_domain,
+                 data_subdomain, source_file, source_sheet, source_row)
+                SELECT %s, entity_layer, entity_name, entity_code, relation_type,
+                       relation_strength * 0.9, 'MERGE', via_concept_entity, data_domain,
+                       data_subdomain, source_file, source_sheet, source_row
+                FROM object_entity_relations WHERE object_id = %s
+            """, (tgt_id, src_id), fetch=False)
+
+            execute_query("DELETE FROM object_entity_relations WHERE object_id = %s", (src_id,), fetch=False)
+            execute_query("DELETE FROM object_business_object_mapping WHERE object_id = %s", (src_id,), fetch=False)
+            execute_query("DELETE FROM extracted_objects WHERE object_id = %s", (src_id,), fetch=False)
+
+            # 记录决策
+            execute_query("""
+                INSERT INTO object_dedup_decisions
+                (source_object_code, source_domain, target_object_code, target_domain, decision, similarity_score)
+                VALUES (%s, %s, %s, %s, 'MERGED', %s)
+            """, (item['source_code'], domain, item['target_code'], domain, item['similarity']), fetch=False)
+
+            merged += 1
+        except Exception as e:
+            errors.append(f"{item['source_code']}: {str(e)}")
+
+    return jsonify({
+        'success': True,
+        'merged': merged,
+        'errors': errors,
+        'message': f'已合并 {merged}/{len(merge_plan)} 个稀疏对象'
+    })
 
 
 @olm_api.route('/api/olm/graph-data/<object_code>')

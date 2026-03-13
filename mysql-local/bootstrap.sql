@@ -593,6 +593,22 @@ FROM extracted_objects o
 WHERE NOT EXISTS (SELECT 1 FROM object_attribute_definitions ad WHERE ad.object_id = o.object_id);
 
 -- ============================================================================
+-- 对象去重决策记录表
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `object_dedup_decisions` (
+    `decision_id` INT AUTO_INCREMENT PRIMARY KEY,
+    `source_object_code` VARCHAR(64) NOT NULL COMMENT '被合并/关联的源对象',
+    `source_domain` VARCHAR(128) COMMENT '源对象数据域',
+    `target_object_code` VARCHAR(64) NOT NULL COMMENT '目标对象',
+    `target_domain` VARCHAR(128) COMMENT '目标对象数据域',
+    `decision` ENUM('MERGED', 'LINKED', 'IGNORED') NOT NULL COMMENT '决策类型',
+    `similarity_score` DECIMAL(5,4) COMMENT '相似度分数',
+    `decided_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_dedup_source` (`source_object_code`, `source_domain`),
+    INDEX `idx_dedup_target` (`target_object_code`, `target_domain`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='对象去重决策记录';
+
+-- ============================================================================
 -- 完成提示
 -- ============================================================================
-SELECT '✅ YIMO 对象抽取与三层架构关联 Schema 初始化完成（含生命周期、溯源链路、机理函数、预警表、治理看板视图）!' AS message;
+SELECT '✅ YIMO 对象抽取与三层架构关联 Schema 初始化完成（含生命周期、溯源链路、机理函数、预警表、治理看板视图、去重决策表）!' AS message;

@@ -496,3 +496,98 @@ class TestSmallObjectHandler:
         assert len(tgt_rels) == 2
         transferred = [r for r in tgt_rels if r.entity_name == "实体A"][0]
         assert transferred.relation_strength == pytest.approx(0.9)  # 1.0 * 0.9
+
+
+# ============================================================
+# 后命名去重测试
+# ============================================================
+
+class TestDeduplicateNamedObjects:
+    """后命名语义去重"""
+
+    def test_pending_merge_objects_removed(self):
+        """_PENDING_MERGE_ 对象应被合并到最近的正常对象"""
+        namer = LLMObjectNamer(api_key="")
+        objects = [
+            ExtractedObject(object_code="OBJ_PROJECT", object_name="项目",
+                            cluster_size=10, sample_entities=["项目信息", "项目进度"]),
+            ExtractedObject(object_code="OBJ__PENDING_MERGE_1", object_name="发放",
+                            cluster_size=1, sample_entities=["项目发放记录"]),
+        ]
+        result = namer._deduplicate_named_objects(objects)
+        codes = {o.object_code for o in result}
+        assert "OBJ__PENDING_MERGE_1" not in codes
+        assert "OBJ_PROJECT" in codes
+
+    def test_same_name_objects_merged(self):
+        """同名对象应被合并（小→大）"""
+        namer = LLMObjectNamer(api_key="")
+        objects = [
+            ExtractedObject(object_code="OBJ_A", object_name="指标",
+                            cluster_size=10, sample_entities=["指标A"]),
+            ExtractedObject(object_code="OBJ_B", object_name="指标",
+                            cluster_size=3, sample_entities=["指标B"]),
+        ]
+        result = namer._deduplicate_named_objects(objects)
+        assert len(result) == 1
+        assert result[0].object_code == "OBJ_A"
+
+    def test_no_dedup_for_different_objects(self):
+        """不同名对象不应被合并"""
+        namer = LLMObjectNamer(api_key="")
+        objects = [
+            ExtractedObject(object_code="OBJ_PROJECT", object_name="项目",
+                            cluster_size=10, sample_entities=["项目信息"]),
+            ExtractedObject(object_code="OBJ_DEVICE", object_name="设备",
+                            cluster_size=8, sample_entities=["变压器"]),
+        ]
+        result = namer._deduplicate_named_objects(objects)
+        assert len(result) == 2
+
+    def test_single_object_no_error(self):
+        """只有一个对象时不报错"""
+        namer = LLMObjectNamer(api_key="")
+        objects = [ExtractedObject(object_code="OBJ_A", object_name="测试", cluster_size=5)]
+        result = namer._deduplicate_named_objects(objects)
+        assert len(result) == 1
+
+
+class TestExpandedKeywordMap:
+    """扩展关键词映射测试"""
+
+    def test_ticket_maps_to_voucher(self):
+        """票据关键词应映射到 OBJ_VOUCHER"""
+        namer = LLMObjectNamer(api_key="")
+        clusters = [
+            {"cluster_id": 0, "size": 8, "centroid_entity": "票据信息",
+             "sample_entities": ["票据信息", "票据编号", "凭证号", "票据金额"]},
+        ]
+        objects = namer._rule_based_naming(clusters)
+        codes = {o.object_code for o in objects}
+        assert "OBJ_VOUCHER" in codes
+
+    def test_generation_maps_correctly(self):
+        """发电关键词应映射到 OBJ_GENERATION"""
+        namer = LLMObjectNamer(api_key="")
+        clusters = [
+            {"cluster_id": 0, "size": 6, "centroid_entity": "发电量统计",
+             "sample_entities": ["发电量统计", "电站容量", "机组出力", "发电计划"]},
+        ]
+        objects = namer._rule_based_naming(clusters)
+        codes = {o.object_code for o in objects}
+        assert "OBJ_GENERATION" in codes
+
+
+class TestNameQualityGate:
+    """命名质量门槛测试"""
+
+    def test_low_frequency_marked_pending(self):
+        """低频词应标记为待合并而非创建独立对象"""
+        cluster = {
+            "cluster_id": 5, "size": 3, "centroid_entity": "XYZ系统",
+            "sample_entities": ["ABC模块", "DEF功能"]
+        }
+        used_codes = set()
+        name, name_en, code = LLMObjectNamer._name_from_cluster_content(cluster, used_codes)
+        # 子串频率低（大部分是不重叠的随机字），应返回 PENDING_MERGE
+        assert "_PENDING_MERGE_" in code

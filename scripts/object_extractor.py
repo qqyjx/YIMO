@@ -168,7 +168,7 @@ DOMAIN_CONFIG = {
 }
 
 # 小对象合并阈值（聚类实体数低于此值的对象将自动合并到最近的大对象）
-SMALL_OBJECT_THRESHOLD = 3
+SMALL_OBJECT_THRESHOLD = 5
 
 
 def get_domain_name(domain_code: str) -> str:
@@ -952,6 +952,8 @@ class LLMObjectNamer:
             objects = self._llm_batch_naming(clusters)
             # 确保必须的对象存在
             objects = self._ensure_required_objects(objects, clusters)
+            # 后命名语义去重：合并语义相近的对象和待合并对象
+            objects = self._deduplicate_named_objects(objects)
             return objects
         except Exception as e:
             print(f"[ERROR] 大模型调用失败: {e}")
@@ -1098,26 +1100,25 @@ class LLMObjectNamer:
         # 排除已被使用的关键词
         existing_names = {"信息", "数据", "管理", "记录", "清单", "明细", "编码", "名称", "类型", "状态"}
 
+        # 质量门槛：最佳候选子串出现次数 >= 3 才创建独立对象
+        MIN_NAME_FREQUENCY = 3
+
         if word_counts:
             for word, count in word_counts.most_common(20):
                 if word in existing_names:
                     continue
-                # 用这个词作为对象名
-                # 生成 pinyin 风格编码
+                if count < MIN_NAME_FREQUENCY:
+                    # 出现次数不足，标记为待合并（返回特殊前缀）
+                    code = f"OBJ__PENDING_MERGE_{cluster.get('cluster_id', 0)}"
+                    return word, word, code
                 code = f"OBJ_{word}"
                 if code not in used_codes:
                     return word, word, code
 
-        # 最终回退：使用聚类中心实体的前两个字
-        if centroid and len(centroid) >= 2:
-            short_name = centroid[:4] if len(centroid) >= 4 else centroid[:2]
-            code = f"OBJ_{short_name}"
-            if code not in used_codes:
-                return short_name, short_name, code
-
-        # 极端回退
+        # 最终回退：标记为待合并
         cid = cluster.get("cluster_id", 0)
-        return f"聚类{cid + 1}", f"Cluster{cid + 1}", f"OBJ_CLUSTER_{cid}"
+        centroid_label = centroid[:4] if centroid and len(centroid) >= 4 else f"聚类{cid + 1}"
+        return centroid_label, centroid_label, f"OBJ__PENDING_MERGE_{cid}"
 
     # 必需对象的标准编码映射（避免中文 upper() 问题）
     REQUIRED_OBJECT_CODE_MAP = {
@@ -1170,6 +1171,90 @@ class LLMObjectNamer:
 
         return objects
 
+    def _deduplicate_named_objects(self, objects: List[ExtractedObject]) -> List[ExtractedObject]:
+        """后命名语义去重：合并语义相近对象和待合并（PENDING_MERGE）对象
+
+        策略：
+        1. 先处理 _PENDING_MERGE_ 对象：找到语义最近的正常对象合并进去
+        2. 再检查正常对象间的语义重复（名称/同义词交叉）
+        """
+        if len(objects) <= 1:
+            return objects
+
+        # 分离正常对象和待合并对象
+        normal = [o for o in objects if "_PENDING_MERGE_" not in o.object_code]
+        pending = [o for o in objects if "_PENDING_MERGE_" in o.object_code]
+
+        if pending:
+            print(f"[INFO] 后命名去重：{len(pending)} 个待合并对象需处理")
+
+        # 步骤1：将待合并对象合并到语义最近的正常对象
+        for p_obj in pending:
+            if not normal:
+                break
+            # 用 sample_entities 关键词重叠度找最佳目标
+            best_target, best_score = None, 0
+            p_keywords = set()
+            for e in p_obj.sample_entities:
+                for length in (2, 3):
+                    for i in range(len(e) - length + 1):
+                        p_keywords.add(e[i:i+length])
+
+            for n_obj in normal:
+                n_keywords = set()
+                for e in n_obj.sample_entities:
+                    for length in (2, 3):
+                        for i in range(len(e) - length + 1):
+                            n_keywords.add(e[i:i+length])
+                overlap = len(p_keywords & n_keywords)
+                if overlap > best_score:
+                    best_score, best_target = overlap, n_obj
+
+            if best_target:
+                # 合并 sample_entities
+                merged_samples = list(set(best_target.sample_entities + p_obj.sample_entities))
+                best_target.sample_entities = merged_samples[:20]
+                best_target.cluster_size = max(best_target.cluster_size,
+                                               best_target.cluster_size + p_obj.cluster_size)
+                print(f"  待合并 '{p_obj.object_name}' → 合入 '{best_target.object_name}'")
+
+        # 步骤2：检查正常对象间的语义重复（名称完全相同或名称出现在对方同义词中）
+        to_remove = set()
+        for i, obj_a in enumerate(normal):
+            if i in to_remove:
+                continue
+            for j in range(i + 1, len(normal)):
+                if j in to_remove:
+                    continue
+                obj_b = normal[j]
+
+                # 检查名称相同
+                name_match = (obj_a.object_name == obj_b.object_name)
+
+                # 检查同义词交叉
+                synonyms_a = set(getattr(obj_a, 'synonyms', []) or [])
+                synonyms_b = set(getattr(obj_b, 'synonyms', []) or [])
+                cross_match = (obj_a.object_name in synonyms_b or
+                               obj_b.object_name in synonyms_a)
+
+                if name_match or cross_match:
+                    # 合并小→大
+                    if obj_a.cluster_size >= obj_b.cluster_size:
+                        keeper, victim, victim_idx = obj_a, obj_b, j
+                    else:
+                        keeper, victim, victim_idx = obj_b, obj_a, i
+                    keeper.cluster_size += victim.cluster_size
+                    merged = list(set(keeper.sample_entities + victim.sample_entities))
+                    keeper.sample_entities = merged[:20]
+                    to_remove.add(victim_idx)
+                    print(f"  语义重复 '{victim.object_name}' → 合入 '{keeper.object_name}'")
+
+        result = [o for i, o in enumerate(normal) if i not in to_remove]
+        removed_count = len(objects) - len(result)
+        if removed_count > 0:
+            print(f"[INFO] 后命名去重完成：去除 {removed_count} 个对象，剩余 {len(result)} 个")
+        return result
+
     def _rule_based_naming(self, clusters: List[Dict]) -> List[ExtractedObject]:
         """基于规则的命名（备选方案）"""
         print("[INFO] 使用规则进行聚类命名...")
@@ -1203,6 +1288,33 @@ class LLMObjectNamer:
             "平台": ("OBJ_SYSTEM", "系统", "System", "AUXILIARY", "信息系统"),
             "标准": ("OBJ_STANDARD", "标准", "Standard", "AUXILIARY", "技术标准"),
             "规范": ("OBJ_STANDARD", "标准", "Standard", "AUXILIARY", "技术标准"),
+            # ---- 扩展映射：减少垃圾名回退 ----
+            "票据": ("OBJ_VOUCHER", "票据", "Voucher", "AUXILIARY", "财务票据凭证"),
+            "凭证": ("OBJ_VOUCHER", "票据", "Voucher", "AUXILIARY", "财务票据凭证"),
+            "发票": ("OBJ_VOUCHER", "票据", "Voucher", "AUXILIARY", "财务票据凭证"),
+            "监督": ("OBJ_AUDIT", "监督", "Audit", "AUXILIARY", "监督稽查"),
+            "稽查": ("OBJ_AUDIT", "监督", "Audit", "AUXILIARY", "监督稽查"),
+            "检查": ("OBJ_AUDIT", "监督", "Audit", "AUXILIARY", "监督稽查"),
+            "发电": ("OBJ_GENERATION", "发电", "Generation", "CORE", "发电生产"),
+            "电站": ("OBJ_GENERATION", "发电", "Generation", "CORE", "发电生产"),
+            "机组": ("OBJ_GENERATION", "发电", "Generation", "CORE", "发电生产"),
+            "线路": ("OBJ_LINE", "线路", "Line", "CORE", "输配电线路"),
+            "电缆": ("OBJ_LINE", "线路", "Line", "CORE", "输配电线路"),
+            "杆塔": ("OBJ_LINE", "线路", "Line", "CORE", "输配电线路"),
+            "班组": ("OBJ_TEAM", "班站", "Team", "AUXILIARY", "班组站所"),
+            "班站": ("OBJ_TEAM", "班站", "Team", "AUXILIARY", "班组站所"),
+            "供电所": ("OBJ_TEAM", "班站", "Team", "AUXILIARY", "班组站所"),
+            "授权": ("OBJ_PROCESS", "流程", "Process", "AUXILIARY", "业务流程"),
+            "权限": ("OBJ_PROCESS", "流程", "Process", "AUXILIARY", "业务流程"),
+            "计划": ("OBJ_PLAN", "计划", "Plan", "AUXILIARY", "业务计划"),
+            "方案": ("OBJ_PLAN", "计划", "Plan", "AUXILIARY", "业务计划"),
+            "配网": ("OBJ_DEVICE", "设备", "Device", "CORE", "电网设备"),
+            "主网": ("OBJ_DEVICE", "设备", "Device", "CORE", "电网设备"),
+            "台账": ("OBJ_LEDGER", "台账", "Ledger", "AUXILIARY", "设备资产台账"),
+            "缺陷": ("OBJ_DEFECT", "缺陷", "Defect", "AUXILIARY", "缺陷故障"),
+            "故障": ("OBJ_DEFECT", "缺陷", "Defect", "AUXILIARY", "缺陷故障"),
+            "结算": ("OBJ_COST", "费用", "Cost", "DERIVED", "费用成本"),
+            "付款": ("OBJ_COST", "费用", "Cost", "DERIVED", "费用成本"),
         }
 
         objects = []
@@ -1258,7 +1370,10 @@ class LLMObjectNamer:
                     ))
 
         # 确保必须的对象存在
-        return self._ensure_required_objects(objects, clusters)
+        objects = self._ensure_required_objects(objects, clusters)
+        # 后命名语义去重
+        objects = self._deduplicate_named_objects(objects)
+        return objects
 
 
 # ============================================================
