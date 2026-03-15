@@ -51,6 +51,8 @@ graph TB
     REL & LC & MF --> API
 ```
 
+> 📐 详细架构设计：[doc/系统架构设计-飞书版.md](doc/系统架构设计-飞书版.md) | 产品设计与 Palantir 对标：[doc/product-design.md](doc/product-design.md) | [doc/palantir-对标方案-飞书版.md](doc/palantir-对标方案-飞书版.md)
+
 ## 对象抽取算法
 
 ```mermaid
