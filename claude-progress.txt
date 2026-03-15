@@ -1,0 +1,29 @@
+# Claude Progress Log — YIMO (Object Extraction & Three-Tier Architecture)
+# 追加式日志，每次 session 在末尾追加，不修改历史条目
+
+## 2026-02-16 — Harness Bootstrap
+- 项目状态：代码项目，EAV 数据对象提取与三层架构关联系统
+- 技术栈：Python, Flask, MySQL, SBERT (语义聚类)
+- 核心模块：scripts/（数据处理脚本）+ webapp/（Flask Web 界面）+ mysql-local/（数据库配置）
+- 工作流：Excel/CSV 导入 → SBERT 语义去重 → 对象提取 → Web 展示
+- Harness 文件已创建：init.sh, task.json, claude-progress.txt
+- 下一步：T001 — 环境验证与代码审计
+
+## 2026-02-19 — 项目进展与需求满足度审查
+- 审查范围：object_extractor.py(2164行) + olm_api.py(2541行) + 10.0.html(2768行) + bootstrap.sql(598行) + 两域提取结果JSON
+- 1.md核心需求满足率：9/9 (100%) — 对象抽取、三层关联、前端展示、项目必须抽取、多域、EAV、SBERT、v10.0风格、旧功能删除
+- 0.md愿景需求满足率：6/8 (75%) — Phase 2-6全部实现（生命周期+溯源+机理+预警+治理），2项(HTAP+中台对比)阻塞于甲方输入
+- 数据验证：输配电域6对象/11928关联，计财域7对象/1294关联，两域均含OBJ_PROJECT
+- 技术指标：42个API端点、24张表+4视图、24个端点支持DB→JSON回退、100%参数化查询无SQL注入
+- 主要风险：无认证授权(高)、测试覆盖不足(高)、日志用print(中)、API无分页(中)
+- 结论：项目可进入部署验收阶段
+
+## 2026-02-27 — 健康检查与仓库清理
+- Git同步：本地 main 与 origin/main 完全一致，零差异
+- 测试：146 passed, 0 failed, 3 DeprecationWarning（faiss SwigPy 相关，无影响）
+- MySQL：端口3307连接正常，19张表，extracted_objects 18行，object_entity_relations 13898行，eav_entities 220883行
+- Webapp：Flask 重启后 HTTP 200，148KB 响应正常
+- 远程分支清理：删除33个已合并分支（26个 claude/* + 7个 feature/fix/cleanup），保留 main + feature/deploy-progress-bar（未合并）
+- 本地分支清理：删除3个 [gone] 本地分支
+- 冗余文件清理：删除9个 tracked 文件（4个 TSX 组件 + 1个 TS 服务 + 2个空 shell + 1个 JS + .gitkeep），清理 __pycache__/.pytest_cache/stale PID
+- 仓库状态：干净，分支精简，代码健康
