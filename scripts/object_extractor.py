@@ -168,7 +168,28 @@ DOMAIN_CONFIG = {
 }
 
 # 小对象合并阈值（聚类实体数低于此值的对象将自动合并到最近的大对象）
-SMALL_OBJECT_THRESHOLD = 5
+SMALL_OBJECT_THRESHOLD = 3
+
+# 垃圾名称检测模式（匹配这些模式的对象名称会被强制标记为待合并）
+import re
+GARBAGE_NAME_PATTERNS = [
+    re.compile(r'^[A-Za-z]{1,4}$'),           # 纯英文 1-4 字符（如 WH, AB, IT）
+    re.compile(r'^[\u4e00-\u9fff]{1}$'),       # 单个中文字符
+    re.compile(r'^[\u4e00-\u9fff]{2}$'),       # 两个中文字符（如 发放、主配、价信、填报、授权、日常、可再）
+    re.compile(r'^\d+$'),                       # 纯数字
+    re.compile(r'^[A-Za-z\d_-]{1,3}$'),        # 英文+数字 1-3 字符
+]
+
+def is_garbage_name(name: str) -> bool:
+    """检测对象名称是否为低质量的垃圾名称"""
+    if not name:
+        return True
+    # 如果名称在预定义的核心对象列表中，不视为垃圾
+    KNOWN_GOOD_NAMES = {"项目", "设备", "资产", "合同", "人员", "物资", "文档",
+                        "指标", "系统", "任务", "预算", "票据", "报表", "审计"}
+    if name in KNOWN_GOOD_NAMES:
+        return False
+    return any(p.match(name) for p in GARBAGE_NAME_PATTERNS)
 
 
 def get_domain_name(domain_code: str) -> str:
@@ -867,9 +888,10 @@ class SemanticClusterExtractor:
 
         n_samples = len(self.entity_names)
 
-        # 动态确定聚类数量
-        # 如果实体数量少于目标聚类数，则调整
-        n_clusters = min(self.target_clusters, max(5, n_samples // 10))
+        # 自适应聚类数量：每 20 个实体约 1 个聚类，范围 [5, 20]
+        # 避免过多聚类导致大量 cluster_size=1 的碎片对象
+        adaptive_count = max(5, min(20, n_samples // 20))
+        n_clusters = min(self.target_clusters or adaptive_count, max(5, n_samples // 10))
         n_clusters = min(n_clusters, self.max_clusters)
 
         print(f"  执行层次聚类 (n_clusters={n_clusters})...")
@@ -1107,6 +1129,9 @@ class LLMObjectNamer:
             for word, count in word_counts.most_common(20):
                 if word in existing_names:
                     continue
+                # 垃圾名称检测：即使频率足够，低质量名称也标记为待合并
+                if is_garbage_name(word):
+                    continue
                 if count < MIN_NAME_FREQUENCY:
                     # 出现次数不足，标记为待合并（返回特殊前缀）
                     code = f"OBJ__PENDING_MERGE_{cluster.get('cluster_id', 0)}"
@@ -1210,6 +1235,17 @@ class LLMObjectNamer:
                 if overlap > best_score:
                     best_score, best_target = overlap, n_obj
 
+            # 当关键词重叠为0时，回退到最长公共子串匹配
+            if best_score == 0 and normal:
+                p_text = " ".join(p_obj.sample_entities)
+                best_lcs, best_target = 0, normal[0]
+                for n_obj in normal:
+                    n_text = " ".join(n_obj.sample_entities)
+                    # 计算实体名称中共享的任意3字子串数
+                    shared_chars = sum(1 for c in set(p_text) if c in n_text)
+                    if shared_chars > best_lcs:
+                        best_lcs, best_target = shared_chars, n_obj
+
             if best_target:
                 # 合并 sample_entities
                 merged_samples = list(set(best_target.sample_entities + p_obj.sample_entities))
@@ -1217,6 +1253,28 @@ class LLMObjectNamer:
                 best_target.cluster_size = max(best_target.cluster_size,
                                                best_target.cluster_size + p_obj.cluster_size)
                 print(f"  待合并 '{p_obj.object_name}' → 合入 '{best_target.object_name}'")
+
+        # 步骤1.5：检查正常对象中的垃圾名称，降级为待合并
+        garbage_from_normal = []
+        remaining_normal = []
+        for obj in normal:
+            if is_garbage_name(obj.object_name) and obj.object_name not in set(REQUIRED_OBJECTS):
+                garbage_from_normal.append(obj)
+            else:
+                remaining_normal.append(obj)
+        if garbage_from_normal:
+            print(f"[INFO] 检测到 {len(garbage_from_normal)} 个垃圾名称对象，降级合并:")
+            for g_obj in garbage_from_normal:
+                if not remaining_normal:
+                    remaining_normal.append(g_obj)
+                    continue
+                # 找最大的正常对象合并
+                target = max(remaining_normal, key=lambda o: o.cluster_size)
+                merged_samples = list(set(target.sample_entities + g_obj.sample_entities))
+                target.sample_entities = merged_samples[:20]
+                target.cluster_size += g_obj.cluster_size
+                print(f"  垃圾名称 '{g_obj.object_name}' → 合入 '{target.object_name}'")
+        normal = remaining_normal
 
         # 步骤2：检查正常对象间的语义重复（名称完全相同或名称出现在对方同义词中）
         to_remove = set()
@@ -2247,7 +2305,9 @@ if __name__ == "__main__":
     parser.add_argument("--db-user", default="eav_user", help="数据库用户")
     parser.add_argument("--db-password", default="eavpass123", help="数据库密码")
     parser.add_argument("--db-name", default="eav_db", help="数据库名称")
-    parser.add_argument("--use-llm", action="store_true", help="使用大模型命名")
+    parser.add_argument("--use-llm", action="store_true", default=None,
+                        help="使用大模型命名（默认：当 DEEPSEEK_API_KEY 存在时自动启用）")
+    parser.add_argument("--no-llm", action="store_true", help="强制禁用大模型命名，仅使用规则")
     parser.add_argument("--no-db", action="store_true", help="不写入数据库")
     parser.add_argument("--output", "-o", default=None, help="输出JSON文件路径")
     parser.add_argument("--min-cluster-size", type=int, default=SMALL_OBJECT_THRESHOLD, help="小对象合并阈值(低于此值的对象自动合并)")
@@ -2275,6 +2335,16 @@ if __name__ == "__main__":
             "database": args.db_name
         }
 
+    # 自动检测 LLM：当 DEEPSEEK_API_KEY 存在时默认启用，除非 --no-llm
+    if args.no_llm:
+        use_llm = False
+    elif args.use_llm:
+        use_llm = True
+    else:
+        use_llm = bool(os.getenv("DEEPSEEK_API_KEY", ""))
+        if use_llm:
+            print("[INFO] 检测到 DEEPSEEK_API_KEY，自动启用 LLM 命名（使用 --no-llm 可禁用）")
+
     pipeline = SemanticObjectExtractionPipeline(
         data_dir=args.data_dir,
         db_config=db_config,
@@ -2283,7 +2353,7 @@ if __name__ == "__main__":
         excel_files=args.excel_files,
         min_cluster_size=args.min_cluster_size
     )
-    result = pipeline.run(use_llm=args.use_llm)
+    result = pipeline.run(use_llm=use_llm)
 
     # 输出JSON结果
     print("\n" + "=" * 60)

@@ -74,7 +74,7 @@ YIMO/
 │
 ├── webapp/                         # Flask web application
 │   ├── app.py                     # Main Flask app (RAG, DeepSeek proxy, domain discovery)
-│   ├── olm_api.py                 # REST API Blueprint (~2700 lines, 42 endpoints)
+│   ├── olm_api.py                 # REST API Blueprint (~2700 lines, 44 endpoints)
 │   ├── requirements.txt           # Python web dependencies (pinned versions)
 │   ├── .env.example               # Configuration template
 │   ├── start_web.sh               # Service start script (auto-detects Python env)
@@ -454,6 +454,7 @@ CREATE TABLE object_entity_relations (
 |----------|--------|-------------|
 | `/api/olm/graph-data/<code>` | GET | Single object knowledge graph (ECharts format) |
 | `/api/olm/graph-data-global` | GET | Global knowledge graph |
+| `/api/olm/graph-data-three-tier` | GET | Three-tier architecture knowledge graph (depth=2/3/4, max_concepts/logicals/physicals params) |
 | `/api/olm/sankey-data` | GET | Sankey flow diagram (objects → concepts → layers) |
 | `/api/olm/granularity-report` | GET | Cluster size analysis report |
 
@@ -464,6 +465,7 @@ CREATE TABLE object_entity_relations (
 | `/api/olm/batches` | GET | List extraction batches |
 | `/api/olm/stats` | GET | System statistics |
 | `/api/olm/domain-stats` | GET | Per-domain statistics |
+| `/api/olm/cross-domain-duplicates` | GET | Cross-domain duplicate object detection |
 | `/api/olm/summary` | GET | Dashboard summary (all metrics combined) |
 | `/api/olm/small-objects` | GET | Low-cardinality objects with merge suggestions |
 | `/api/olm/merge-objects` | POST | Merge two objects together |
@@ -533,18 +535,34 @@ Entity Collection → SBERT Vectorization → Semantic Clustering → LLM Naming
 
 1. **Data Collection**: Read three-tier architecture data from Excel (DA-01, DA-02, DA-03 sheets)
 2. **SBERT Vectorization**: Encode entity names using `shibing624/text2vec-base-chinese` (768-dim)
-3. **Hierarchical Clustering**: Use `AgglomerativeClustering` with cosine distance (~15 clusters)
-4. **LLM Naming**: Call DeepSeek API to name each cluster with an abstract object name
-5. **Relation Building**: Build object-entity relations based on cluster membership
+3. **Hierarchical Clustering**: Use `AgglomerativeClustering` with cosine distance, adaptive cluster count (`max(5, min(20, n_samples // 20))`)
+4. **LLM Naming**: Call DeepSeek API to name each cluster with an abstract object name (auto-enabled when `DEEPSEEK_API_KEY` env var exists; `--no-llm` to force disable)
+5. **Garbage Name Filtering**: Regex-based detection of low-quality names (pure English 1-4 chars, single/double Chinese chars, pure numbers); garbage names force `_PENDING_MERGE_` prefix
+6. **Deduplication & Merge**: Keyword overlap → character-level similarity fallback; small objects (cluster ≤ 3 entities) merged into nearest large object
+7. **Relation Building**: Build object-entity relations based on cluster membership
 
 ### Key Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `TARGET_CLUSTER_COUNT` | 15 | Target number of clusters |
+| `SMALL_OBJECT_THRESHOLD` | 3 | Minimum entities for standalone object (was 5) |
+| `TARGET_CLUSTER_COUNT` | adaptive | `max(5, min(20, n_samples // 20))` |
 | `MAX_CLUSTER_COUNT` | 20 | Maximum clusters |
 | `SBERT_MODEL_NAME` | text2vec-base-chinese | Embedding model |
 | `REQUIRED_OBJECTS` | ["项目"] | Objects that must exist |
+
+### CLI Flags
+
+```bash
+# Auto-detect DeepSeek API key (default behavior)
+python scripts/object_extractor.py --data-dir DATA --no-db -o output.json
+
+# Force disable LLM naming
+python scripts/object_extractor.py --no-llm --data-dir DATA --no-db -o output.json
+
+# Explicit LLM enable
+python scripts/object_extractor.py --use-llm --data-dir DATA --no-db -o output.json
+```
 
 ### Relation Strength
 
@@ -698,16 +716,17 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 | 模块 | 文件 | 代码行数 | 关键指标 |
 |------|------|----------|----------|
-| 核心算法 | `scripts/object_extractor.py` | 2164行 | 12个类, 49个函数 |
+| 核心算法 | `scripts/object_extractor.py` | 2369行 | 12个类, 49+函数, 垃圾名称过滤+自适应聚类+LLM自动检测 |
 | 回退抽取器 | `scripts/simple_extractor.py` | 321行 | 20+关键词, 15个核心对象 |
-| REST API | `webapp/olm_api.py` | 2701行 | **42个端点**, DB优先+JSON回退 |
+| REST API | `webapp/olm_api.py` | 3311行 | **44个端点**, DB优先+JSON回退, 含三层图谱+跨域检测 |
 | 主应用 | `webapp/app.py` | 357行 | 路由+DeepSeek代理+RAG查询 |
-| 前端主页 | `webapp/templates/10.0.html` | 2768行 | 64个JS函数, 29个fetch()调用, ECharts图表 |
+| 前端主页 | `webapp/templates/10.0.html` | 3304行 | 65+JS函数, 30个fetch()调用, 含三层图谱面板 |
 | 抽取界面 | `webapp/templates/object_extraction.html` | 767行 | 轻量级演示页 |
 | 数据库Schema | `mysql-local/bootstrap.sql` | 598行 | **19张表+4个视图** |
 | 测试套件 | `tests/` | 1557行 | 146个测试函数, 4个测试模块 |
-| 输配电域结果 | `outputs/extraction_shupeidian.json` | 6.7MB | 6个对象, 11928条关联 |
-| 计财域结果 | `outputs/extraction_jicai.json` | 734KB | 7个对象, 1294条关联 |
+| 输配电域结果 | `outputs/extraction_shupeidian.json` | 6.7MB | 10个对象, 11928条关联（待重新抽取去除垃圾对象） |
+| 计财域结果 | `outputs/extraction_jicai.json` | 734KB | 12个对象, 1294条关联（待重新抽取去除垃圾对象） |
+| 产品设计文档 | `doc/product-design.md` | 447行 | 9章+2附录, 产品化对标Palantir |
 
 ### 已满足需求（当前阶段核心需求 from 1.md）— 9/9 全部满足
 
@@ -729,9 +748,15 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 |----------|------|----------|
 | 算法流程图 | ✅ 已实现 | `figures/architecture/object_extraction_algorithm.mmd` |
 | 关键字规则回退抽取器 | ✅ 已实现 | `scripts/simple_extractor.py` (无SBERT依赖的快速回退) |
-| 数据库优先+JSON回退策略 | ✅ 已实现 | `olm_api.py` 所有42个端点均实现 MySQL → JSON fallback |
+| 数据库优先+JSON回退策略 | ✅ 已实现 | `olm_api.py` 所有44个端点均实现 MySQL → JSON fallback |
 | BA-04业务对象映射 | ✅ 已实现 | `object_business_object_mapping` 表 + API端点 |
 | 颗粒度分析与小对象合并 | ✅ 已实现 | `/api/olm/granularity-report` + `/api/olm/merge-objects` + 前端柱状图 |
+| 垃圾名称过滤 | ✅ 已实现 | `object_extractor.py`: regex检测(纯英文1-4字符/单双汉字/纯数字) + PENDING_MERGE强制合并 |
+| 自适应聚类参数 | ✅ 已实现 | `object_extractor.py`: `max(5, min(20, n_samples // 20))` 替代固定聚类数 |
+| DeepSeek LLM自动检测 | ✅ 已实现 | 自动检测 `DEEPSEEK_API_KEY` 环境变量启用LLM命名, `--no-llm` 强制禁用 |
+| 三层架构知识图谱 | ✅ 已实现 | `/api/olm/graph-data-three-tier` (depth=2/3/4) + 前端ECharts力导向图面板 |
+| 跨域重复对象检测 | ✅ 已实现 | `/api/olm/cross-domain-duplicates` 扫描所有域JSON检测同名对象 |
+| 产品化设计文档 | ✅ 已实现 | `doc/product-design.md` (447行, 9章+2附录, 对标Palantir Foundry) |
 
 ### 已实现需求（0.md 愿景需求，Phase 2-6 新增）— 6/6 全部实现
 
@@ -755,10 +780,10 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 | 维度 | 分数 | 备注 |
 |------|------|------|
-| 核心算法实现 | 10/10 | SBERT+聚类+LLM+层级穿透完整，含回退方案 |
-| API端点覆盖 | 10/10 | 42个端点，6大功能类别全覆盖 |
+| 核心算法实现 | 10/10 | SBERT+聚类+LLM+层级穿透+垃圾过滤+自适应聚类，含回退方案 |
+| API端点覆盖 | 10/10 | 44个端点，6大功能类别全覆盖，含三层图谱+跨域检测 |
 | 数据库设计 | 10/10 | 19张表+4视图，索引/外键/预置数据完整 |
-| 前端功能 | 9/10 | 11个功能面板全部实现，缺权限管理UI |
+| 前端功能 | 9/10 | 12个功能面板（含三层图谱），缺权限管理UI |
 | 错误处理与容错 | 9/10 | DB→JSON回退、SBERT→规则回退、LLM→规则命名回退 |
 | 测试数据 | 10/10 | 两域真实提取结果(6.7MB+734KB)，数据完整 |
 | **1.md需求满足率** | **100%** | 9/9 全部满足 |
@@ -808,7 +833,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 ---
 
-*Last updated: 2026-02-21 (Phase 1-6 实施完成 + 代码级需求满足度审查: 1.md需求100%满足, 0.md愿景75%实现 + 测试套件146测试 + 代码指标校准)*
+*Last updated: 2026-03-15 (甲方3.1/3.13反馈修复: 垃圾名称过滤+自适应聚类+三层图谱+跨域检测+LLM自动检测 + 产品设计文档 + README重写)*
 
 ---
 

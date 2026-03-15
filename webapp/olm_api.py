@@ -1170,6 +1170,160 @@ def api_graph_data_global():
     })
 
 
+@olm_api.route('/api/olm/graph-data-three-tier')
+def api_graph_data_three_tier():
+    """全局三层架构知识图谱：对象→概念实体→逻辑实体→物理实体
+
+    Parameters:
+        domain: 数据域过滤
+        depth: 展示深度 2=对象+概念, 3=+逻辑, 4=+物理 (default 3)
+        max_concepts: 每个对象最多显示的概念实体数 (default 8)
+        max_logicals: 每个概念实体最多显示的逻辑实体数 (default 3)
+        max_physicals: 每个逻辑实体最多显示的物理实体数 (default 2)
+    """
+    domain = request.args.get('domain', '')
+    depth = int(request.args.get('depth', '3'))
+    max_concepts = int(request.args.get('max_concepts', '8'))
+    max_logicals = int(request.args.get('max_logicals', '3'))
+    max_physicals = int(request.args.get('max_physicals', '2'))
+
+    data = _load_data(domain)
+    objects = data.get('objects', [])
+    relations = data.get('relations', [])
+    stats = data.get('stats', {})
+
+    # 四类节点分类
+    categories = [
+        {"name": "对象", "itemStyle": {"color": "#6366f1"}},
+        {"name": "概念实体", "itemStyle": {"color": "#818cf8"}},
+        {"name": "逻辑实体", "itemStyle": {"color": "#10b981"}},
+        {"name": "物理实体", "itemStyle": {"color": "#f59e0b"}}
+    ]
+
+    nodes = []
+    links = []
+    added_nodes = set()
+
+    # 预构建关联索引：按 object_code + entity_layer 分组
+    from collections import defaultdict
+    obj_concept_rels = defaultdict(list)
+    concept_logical_rels = defaultdict(list)
+    logical_physical_rels = defaultdict(list)
+
+    for r in relations:
+        oc = r.get('object_code', '')
+        layer = r.get('entity_layer', '')
+        if layer == 'CONCEPT':
+            obj_concept_rels[oc].append(r)
+        elif layer == 'LOGICAL':
+            via = r.get('via_concept_entity', '')
+            concept_logical_rels[(oc, via)].append(r)
+        elif layer == 'PHYSICAL':
+            via = r.get('via_concept_entity', '')
+            logical_physical_rels[(oc, via)].append(r)
+
+    # Layer 1: 对象节点
+    for obj in objects:
+        obj_code = obj.get('object_code', '')
+        obj_stats = stats.get(obj_code, {})
+        size = min(60, max(25, obj.get('cluster_size', 1) * 2))
+        nodes.append({
+            "id": obj_code,
+            "name": obj.get('object_name', obj_code),
+            "category": 0,
+            "symbolSize": size,
+            "value": obj_stats.get('total', 0),
+            "label": {"show": True, "fontSize": 14, "fontWeight": "bold"}
+        })
+        added_nodes.add(obj_code)
+
+        # Layer 2: 概念实体（每对象 Top N）
+        concepts = sorted(
+            obj_concept_rels.get(obj_code, []),
+            key=lambda r: -r.get('relation_strength', 0)
+        )[:max_concepts]
+
+        for cr in concepts:
+            c_name = cr.get('entity_name', '')
+            c_id = f"C:{c_name}"
+            if c_id not in added_nodes:
+                added_nodes.add(c_id)
+                nodes.append({
+                    "id": c_id,
+                    "name": c_name,
+                    "category": 1,
+                    "symbolSize": 14,
+                    "value": cr.get('relation_strength', 0.5)
+                })
+            links.append({
+                "source": obj_code,
+                "target": c_id,
+                "value": cr.get('relation_strength', 0.5),
+                "lineStyle": {"width": 2}
+            })
+
+            # Layer 3: 逻辑实体
+            if depth >= 3:
+                logicals = sorted(
+                    concept_logical_rels.get((obj_code, c_name), []),
+                    key=lambda r: -r.get('relation_strength', 0)
+                )[:max_logicals]
+
+                for lr in logicals:
+                    l_name = lr.get('entity_name', '')
+                    l_id = f"L:{l_name}"
+                    if l_id not in added_nodes:
+                        added_nodes.add(l_id)
+                        nodes.append({
+                            "id": l_id,
+                            "name": l_name,
+                            "category": 2,
+                            "symbolSize": 10,
+                            "value": lr.get('relation_strength', 0.3)
+                        })
+                    links.append({
+                        "source": c_id,
+                        "target": l_id,
+                        "value": lr.get('relation_strength', 0.3),
+                        "lineStyle": {"width": 1}
+                    })
+
+                    # Layer 4: 物理实体
+                    if depth >= 4:
+                        physicals = sorted(
+                            logical_physical_rels.get((obj_code, l_name), []),
+                            key=lambda r: -r.get('relation_strength', 0)
+                        )[:max_physicals]
+
+                        for pr in physicals:
+                            p_name = pr.get('entity_name', '')
+                            p_id = f"P:{p_name}"
+                            if p_id not in added_nodes:
+                                added_nodes.add(p_id)
+                                nodes.append({
+                                    "id": p_id,
+                                    "name": p_name,
+                                    "category": 3,
+                                    "symbolSize": 7,
+                                    "value": pr.get('relation_strength', 0.2)
+                                })
+                            links.append({
+                                "source": l_id,
+                                "target": p_id,
+                                "value": pr.get('relation_strength', 0.2),
+                                "lineStyle": {"width": 0.5, "type": "dashed"}
+                            })
+
+    return jsonify({
+        "nodes": nodes,
+        "links": links,
+        "categories": categories,
+        "depth": depth,
+        "node_count": len(nodes),
+        "link_count": len(links)
+    })
+
+
 @olm_api.route('/api/olm/granularity-report')
 def api_granularity_report():
     """颗粒度分析报告"""
@@ -1670,6 +1824,48 @@ def api_domain_stats():
         except Exception:
             pass
     return jsonify({'stats': result, 'total': len(result), 'source': 'json'})
+
+
+@olm_api.route('/api/olm/cross-domain-duplicates')
+def api_cross_domain_duplicates():
+    """检测跨域重复对象：同名对象在多个数据域中出现"""
+    import glob as glob_mod
+    from collections import defaultdict
+
+    # 收集所有域的对象
+    domain_objects = defaultdict(list)
+    json_files = glob_mod.glob(str(OUTPUTS_DIR / 'extraction_*.json'))
+    for jf in json_files:
+        try:
+            with open(jf, 'r', encoding='utf-8') as f:
+                d = json.load(f)
+            domain = d.get('data_domain', d.get('data_domain_name', ''))
+            for obj in d.get('objects', []):
+                domain_objects[obj.get('object_name', '')].append({
+                    'domain': domain,
+                    'object_code': obj.get('object_code', ''),
+                    'cluster_size': obj.get('cluster_size', 0),
+                    'sample_entities': obj.get('sample_entities', [])[:5]
+                })
+        except Exception:
+            pass
+
+    # 找到跨域重复
+    duplicates = []
+    for name, entries in domain_objects.items():
+        if len(entries) >= 2:
+            domains = [e['domain'] for e in entries]
+            if len(set(domains)) >= 2:
+                duplicates.append({
+                    'object_name': name,
+                    'occurrences': entries,
+                    'domain_count': len(set(domains))
+                })
+
+    return jsonify({
+        'duplicates': duplicates,
+        'total': len(duplicates)
+    })
 
 
 # ============================================================================
