@@ -18,6 +18,25 @@
 - 主要风险：无认证授权(高)、测试覆盖不足(高)、日志用print(中)、API无分页(中)
 - 结论：项目可进入部署验收阶段
 
+## 2026-03-16 — Agent Harness 升级 + doc→docs 重命名
+
+### 完成事项
+- **doc/ → docs/ 重命名**：本地已移动，提交并推送到远程。git 自动检测为 rename (100% similarity)
+- **CLAUDE.md 路径更新**：7 处 `doc/requirement/` → `docs/requirement-1/`，2 处 `doc/product-design.md` → `docs/product-design.md`，目录树同步更新为 docs/ 实际布局（含新增飞书版文档）
+- **task.json 重写**：从 5 个通用占位符任务升级为 11 个真实任务（T001-T050），分 4 个阶段（基础设施/功能完善/质量保障/文档交付），基于需求文档、飞书版架构设计、项目实际状态设计
+- **init.sh 增强**：新增 outputs/ JSON 回退数据检查、tests/ 模块检查、pytest 快速收集检查，检查步骤从 6 步扩展到 7 步
+- **需求评估（上一轮延续）**：1.md 17/17 全部解决，0.md 6/8 已实现（HTAP + 中台对比阻塞于甲方输入）
+
+### 远程新增文档（git pull 同步）
+- docs/系统架构设计-飞书版.md — 系统四层架构设计
+- docs/palantir-对标方案-飞书版.md — Palantir Foundry 对标
+- docs/团队分工方案-飞书版.md — 三人制分工方案
+
+### 下次优先
+- T001：环境健康检查与状态审计（harness 首次正式运行）
+
+---
+
 ## 2026-02-27 — 健康检查与仓库清理
 - Git同步：本地 main 与 origin/main 完全一致，零差异
 - 测试：146 passed, 0 failed, 3 DeprecationWarning（faiss SwigPy 相关，无影响）

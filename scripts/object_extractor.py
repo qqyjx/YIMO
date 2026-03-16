@@ -168,7 +168,7 @@ DOMAIN_CONFIG = {
 }
 
 # 小对象合并阈值（聚类实体数低于此值的对象将自动合并到最近的大对象）
-SMALL_OBJECT_THRESHOLD = 3
+SMALL_OBJECT_THRESHOLD = 5
 
 # 垃圾名称检测模式（匹配这些模式的对象名称会被强制标记为待合并）
 import re
@@ -865,8 +865,104 @@ class SemanticClusterExtractor:
         # 4. 构建聚类结果
         clusters, cluster_entity_map = self._build_cluster_results(cluster_labels)
 
+        # 5. 拆分超大聚类（占比 >50% 的聚类进行二次聚类）
+        clusters, cluster_entity_map = self._split_oversized_clusters(
+            clusters, cluster_entity_map, cluster_labels
+        )
+
         print(f"[INFO] 聚类完成，共 {len(clusters)} 个聚类")
         return clusters, cluster_entity_map
+
+    def _split_oversized_clusters(self, clusters: List[Dict],
+                                   cluster_entity_map: Dict[int, List[str]],
+                                   original_labels: np.ndarray
+                                   ) -> Tuple[List[Dict], Dict[int, List[str]]]:
+        """递归拆分占比超过 40% 的超大聚类，防止单个对象吞噬绝大多数实体。
+
+        使用 40% 阈值而非 50%，确保拆分后的子聚类也不会过度主导。
+        最多递归 3 层防止无限拆分。
+        """
+        total_entities = sum(c["size"] for c in clusters)
+        if total_entities == 0:
+            return clusters, cluster_entity_map
+
+        name_to_idx = {n: i for i, n in enumerate(self.entity_names)}
+        next_cluster_id = max(c["cluster_id"] for c in clusters) + 1
+
+        def split_recursive(cluster_list, entity_map, depth=0, max_depth=3):
+            nonlocal next_cluster_id
+            if depth >= max_depth:
+                return cluster_list, entity_map
+
+            threshold = total_entities * 0.4
+            oversized = [c for c in cluster_list if c["size"] > threshold]
+            if not oversized:
+                return cluster_list, entity_map
+
+            result_clusters = [c for c in cluster_list if c["size"] <= threshold]
+            result_map = {cid: ents for cid, ents in entity_map.items()
+                          if any(c["cluster_id"] == cid for c in result_clusters)}
+
+            for big_cluster in oversized:
+                cid = big_cluster["cluster_id"]
+                entity_list = entity_map[cid]
+                n_sub = max(3, min(5, len(entity_list) // 50))
+                print(f"[INFO] {'  ' * depth}拆分超大聚类 {cid} ({big_cluster['size']} 个实体, "
+                      f"占比 {big_cluster['size']/total_entities*100:.1f}%) → {n_sub} 个子聚类")
+
+                sub_indices = [name_to_idx[e] for e in entity_list if e in name_to_idx]
+                if len(sub_indices) < n_sub:
+                    result_clusters.append(big_cluster)
+                    result_map[cid] = entity_list
+                    continue
+
+                sub_embeddings = self.embeddings[sub_indices]
+                sub_names = [self.entity_names[i] for i in sub_indices]
+
+                sub_clustering = AgglomerativeClustering(
+                    n_clusters=n_sub, metric='cosine', linkage='average'
+                )
+                sub_labels = sub_clustering.fit_predict(sub_embeddings)
+
+                sub_map_local: Dict[int, List[str]] = defaultdict(list)
+                for idx, label in enumerate(sub_labels):
+                    sub_map_local[int(label)].append(sub_names[idx])
+
+                new_sub_clusters = []
+                for sub_id, sub_entity_list in sub_map_local.items():
+                    new_cid = next_cluster_id
+                    next_cluster_id += 1
+
+                    sub_idx_list = [name_to_idx[e] for e in sub_entity_list if e in name_to_idx]
+                    sub_emb = self.embeddings[sub_idx_list]
+                    centroid = np.mean(sub_emb, axis=0)
+                    sims = cosine_similarity([centroid], sub_emb)[0]
+                    centroid_entity = sub_entity_list[np.argmax(sims)]
+
+                    sample_size = min(20, len(sub_entity_list))
+                    sorted_idx = np.argsort(-sims)
+                    sample_entities = [sub_entity_list[i] for i in sorted_idx[:sample_size]]
+
+                    sc = {
+                        "cluster_id": new_cid,
+                        "size": len(sub_entity_list),
+                        "centroid_entity": centroid_entity,
+                        "sample_entities": sample_entities,
+                        "all_entities": sub_entity_list
+                    }
+                    new_sub_clusters.append(sc)
+                    result_map[new_cid] = sub_entity_list
+                    print(f"[INFO] {'  ' * depth}  子聚类 {new_cid}: {len(sub_entity_list)} 个实体, "
+                          f"代表: {centroid_entity}")
+
+                result_clusters.extend(new_sub_clusters)
+
+            # 递归检查新生成的子聚类是否仍然超大
+            result_clusters, result_map = split_recursive(result_clusters, result_map, depth + 1, max_depth)
+            result_clusters.sort(key=lambda x: x["size"], reverse=True)
+            return result_clusters, result_map
+
+        return split_recursive(clusters, cluster_entity_map)
 
     def _collect_unique_names(self, entities: List[EntityInfo]):
         """收集唯一的实体名称"""
@@ -2152,15 +2248,16 @@ class SemanticObjectExtractionPipeline:
         except Exception as e:
             print(f"[WARN] BA-04 桥接关联失败: {e}")
 
-        # 4.6 补充无关联的必需对象（通过概念实体名称匹配）
-        # 如果"项目"等必需对象没有任何关联，用对象名称在概念实体中搜索匹配
+        # 4.6 补充关联不足的必需对象（通过概念实体名称匹配）
+        # 如果"项目"等必需对象无关联或聚类过小（<10），用名称/关键词在概念实体中搜索补充
         for obj in objects:
             if obj.object_name not in REQUIRED_OBJECTS:
                 continue
             obj_rels = [r for r in relations if r.object_code == obj.object_code]
-            if obj_rels:
-                continue  # 已有关联，跳过
-            print(f"[INFO] 为必需对象 {obj.object_name} 补充关联（通过概念实体名称匹配）...")
+            if obj_rels and obj.cluster_size >= 10:
+                continue  # 关联充足，跳过
+            reason = "无关联" if not obj_rels else f"聚类过小(cluster_size={obj.cluster_size})"
+            print(f"[INFO] 为必需对象 {obj.object_name} 补充关联（{reason}，通过概念实体名称匹配）...")
             # 先尝试通过 biz_obj_to_concept 找
             matched_concepts = biz_obj_to_concept.get(obj.object_name, [])
             if not matched_concepts:
@@ -2222,6 +2319,11 @@ class SemanticObjectExtractionPipeline:
                                     data_domain=pe.data_domain, source_file=pe.source_file
                                 ))
                 print(f"  补充了 {new_count} 个概念实体关联及其下级逻辑/物理实体")
+                # 同步更新对象的 cluster_size 和 sample_entities（修复空壳/过小对象）
+                if obj.cluster_size < 10 and new_count > 0:
+                    obj.cluster_size = max(obj.cluster_size, len(matched_concepts))
+                    obj.sample_entities = list(set(obj.sample_entities + matched_concepts[:20]))[:20]
+                    print(f"  同步更新 {obj.object_name} 的 cluster_size={obj.cluster_size}")
             else:
                 print(f"[WARN] 未找到与 {obj.object_name} 匹配的概念实体")
 

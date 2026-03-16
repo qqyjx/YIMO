@@ -50,12 +50,24 @@ for f in "${OPTIONAL[@]}"; do
 done
 
 # 核心目录
-for d in scripts webapp mysql-local DATA; do
+for d in scripts webapp mysql-local DATA docs outputs tests; do
     if [ -d "$d" ]; then
         FILE_COUNT=$(find "$d" -type f 2>/dev/null | wc -l)
         echo "  ✓ $d/ ($FILE_COUNT files)"
     else
         echo "  - $d/ not found"
+    fi
+done
+
+# JSON 回退数据源检查
+echo "  --- JSON fallback data ---"
+for domain in shupeidian jicai; do
+    JSON="outputs/extraction_${domain}.json"
+    if [ -f "$JSON" ]; then
+        SIZE=$(du -h "$JSON" | cut -f1)
+        echo "  ✓ $JSON ($SIZE)"
+    else
+        echo "  ⚠ $JSON MISSING (API JSON fallback unavailable for $domain)"
     fi
 done
 echo ""
@@ -100,8 +112,24 @@ else
 fi
 echo ""
 
-# --- 5. TODO 扫描 ---
-echo "[5/6] Scanning for TODOs..."
+# --- 5. 测试快检 ---
+echo "[5/7] Quick test check..."
+if [ -d "tests" ]; then
+    TEST_COUNT=$(find tests/ -name "test_*.py" -type f 2>/dev/null | wc -l)
+    echo "  Test modules: $TEST_COUNT"
+    if command -v python3 &>/dev/null && python3 -c "import pytest" 2>/dev/null; then
+        RESULT=$(python3 -m pytest tests/ --co -q 2>/dev/null | tail -1)
+        echo "  Collected: $RESULT"
+    else
+        echo "  ⚠ pytest not available, skip collection check"
+    fi
+else
+    echo "  - tests/ not found"
+fi
+echo ""
+
+# --- 6. TODO 扫描 ---
+echo "[6/7] Scanning for TODOs..."
 TODO_COUNT=$(grep -rc "TODO\|FIXME\|HACK\|XXX" scripts/ webapp/ --include="*.py" 2>/dev/null | awk -F: '{sum += $2} END {print sum+0}')
 echo "  TODOs/FIXMEs: $TODO_COUNT"
 if [ "$TODO_COUNT" -gt 0 ]; then
@@ -109,8 +137,8 @@ if [ "$TODO_COUNT" -gt 0 ]; then
 fi
 echo ""
 
-# --- 6. 数据状态 ---
-echo "[6/6] Data status..."
+# --- 7. 数据状态 ---
+echo "[7/7] Data status..."
 if [ -d DATA ]; then
     DATA_FILES=$(find DATA/ -type f 2>/dev/null | wc -l)
     echo "  DATA/ files: $DATA_FILES"

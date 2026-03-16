@@ -21,7 +21,7 @@ YIMO extracts abstract "objects" from these entities and builds association rela
 
 ### Client Requirements (Key)
 
-需求来源两个文件：`doc/requirement/0.md`（核心需求愿景）和 `doc/requirement/1.md`（甲方澄清，当前执行标准）。
+需求来源两个文件：`docs/requirement-1/0.md`（核心需求愿景）和 `docs/requirement-1/1.md`（甲方澄清，当前执行标准）。
 
 **当前阶段核心需求（1.md 甲方澄清，优先级最高）：**
 
@@ -124,16 +124,15 @@ YIMO/
 │   └── plan/                      # Project roadmap
 │       └── roadmap.mmd/.pdf/.html/.tex
 │
-├── doc/                            # Project documentation
-│   ├── implementation_plan.md     # Implementation plan for phases
-│   ├── test-coverage-analysis.md  # Test coverage analysis report
-│   ├── plan/plan.xlsx             # Project planning spreadsheet
-│   └── requirement/               # Client requirements
-│       ├── 0.md                   # Core requirements (穿透式监管, 对象管理器)
-│       └── 1.md                   # Client clarifications (三层架构 = DA-01/02/03)
-│
-├── docs/                           # Academic documentation
-│   └── paper_outline_计算机学报.md # Paper outline for journal submission
+├── docs/                           # Project documentation
+│   ├── requirement-1/             # Client requirements
+│   │   ├── 0.md                   # Core requirements (穿透式监管, 对象管理器)
+│   │   └── 1.md                   # Client clarifications (三层架构 = DA-01/02/03)
+│   ├── product-design.md          # Product design (9 chapters, Palantir comparison)
+│   ├── 系统架构设计-飞书版.md       # System architecture (Feishu format)
+│   ├── palantir-对标方案-飞书版.md  # Palantir comparison (Feishu format)
+│   ├── 团队分工方案-飞书版.md       # Team organization (Feishu format)
+│   └── plan/                      # Project planning spreadsheets
 │
 ├── bat/                            # Windows SSH tunnel utilities
 │   ├── mysql_tunnel_4090_start.bat
@@ -395,7 +394,7 @@ CREATE TABLE object_entity_relations (
 - SQL initialization: `mysql-local/bootstrap.sql`
 - Configuration templates: `.env.example` files
 - Extraction outputs: `outputs/` directory (JSON files)
-- Client requirements: `doc/requirement/` directory
+- Client requirements: `docs/requirement-1/` directory
 
 ### Error Handling
 
@@ -680,7 +679,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
    - User-facing strings and documentation use Chinese
    - Data content and attribute names are in Chinese
    - Comments in many files are in Chinese
-   - Client requirement documents (`doc/requirement/`) are in Chinese
+   - Client requirement documents (`docs/requirement-1/`) are in Chinese
 
 2. **Database Port**: Default is 3307 (not 3306) to avoid WSL2 conflicts
 
@@ -702,7 +701,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 8. **Multi-Domain Architecture**: Data is organized per-domain under `DATA/`. The webapp auto-discovers domains via `/api/domains`. New domains can be added by creating a new subdirectory with Excel files following the DA-01/02/03 sheet naming convention.
 
-9. **Client Requirements**: Stored in `doc/requirement/0.md` (core requirements) and `doc/requirement/1.md` (clarifications). The client is 南方电网 (China Southern Power Grid).
+9. **Client Requirements**: Stored in `docs/requirement-1/0.md` (core requirements) and `docs/requirement-1/1.md` (clarifications). The client is 南方电网 (China Southern Power Grid).
 
 10. **Frontend Style**: v10.0 dashboard style should be preserved. Old "统一本体" (unified ontology) features were removed per client request; current focus is purely on object extraction + three-tier association.
 
@@ -726,7 +725,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 | 测试套件 | `tests/` | 1557行 | 146个测试函数, 4个测试模块 |
 | 输配电域结果 | `outputs/extraction_shupeidian.json` | 6.7MB | 10个对象, 11928条关联（待重新抽取去除垃圾对象） |
 | 计财域结果 | `outputs/extraction_jicai.json` | 734KB | 12个对象, 1294条关联（待重新抽取去除垃圾对象） |
-| 产品设计文档 | `doc/product-design.md` | 447行 | 9章+2附录, 产品化对标Palantir |
+| 产品设计文档 | `docs/product-design.md` | 447行 | 9章+2附录, 产品化对标Palantir |
 
 ### 已满足需求（当前阶段核心需求 from 1.md）— 9/9 全部满足
 
@@ -756,7 +755,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 | DeepSeek LLM自动检测 | ✅ 已实现 | 自动检测 `DEEPSEEK_API_KEY` 环境变量启用LLM命名, `--no-llm` 强制禁用 |
 | 三层架构知识图谱 | ✅ 已实现 | `/api/olm/graph-data-three-tier` (depth=2/3/4) + 前端ECharts力导向图面板 |
 | 跨域重复对象检测 | ✅ 已实现 | `/api/olm/cross-domain-duplicates` 扫描所有域JSON检测同名对象 |
-| 产品化设计文档 | ✅ 已实现 | `doc/product-design.md` (447行, 9章+2附录, 对标Palantir Foundry) |
+| 产品化设计文档 | ✅ 已实现 | `docs/product-design.md` (447行, 9章+2附录, 对标Palantir Foundry) |
 
 ### 已实现需求（0.md 愿景需求，Phase 2-6 新增）— 6/6 全部实现
 

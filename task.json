@@ -1,20 +1,16 @@
 {
   "metadata": {
     "project": "YIMO",
-    "venue": null,
-    "title": "YIMO - Object Extraction & Three-Tier Architecture Association System",
-    "deadline": null,
-    "page_limit": null,
-    "compile_cmd": null,
+    "title": "YIMO - 对象抽取与三层架构关联系统 (南方电网)",
     "created": "2026-02-16",
+    "updated": "2026-03-16",
     "last_session": null
   },
   "phases": [
-    { "id": "P1", "name": "assessment", "label": "环境验证" },
-    { "id": "P2", "name": "development", "label": "功能开发" },
-    { "id": "P3", "name": "testing", "label": "测试" },
-    { "id": "P4", "name": "review", "label": "代码审查" },
-    { "id": "P5", "name": "documentation", "label": "文档与部署" }
+    { "id": "P1", "name": "infrastructure", "label": "基础设施" },
+    { "id": "P2", "name": "feature", "label": "核心功能完善" },
+    { "id": "P3", "name": "quality", "label": "质量保障" },
+    { "id": "P4", "name": "delivery", "label": "文档交付" }
   ],
   "tasks": [
     {
@@ -22,17 +18,20 @@
       "phase": "P1",
       "category": "assessment",
       "priority": 1,
-      "title": "环境验证与代码审计",
-      "description": "验证开发环境（Python, Flask, MySQL, SBERT），审计代码状态。",
+      "title": "环境健康检查与状态审计",
+      "description": "验证开发环境完整性，审计代码和数据当前状态，确认所有核心功能可用。",
       "steps": [
-        "检查 Python 依赖（requirements.txt）",
-        "检查 MySQL 数据库连接和 schema",
-        "检查 SBERT 模型可用性",
-        "检查 webapp 和 scripts 各模块功能状态"
+        "运行 init.sh 验证环境（Python/MySQL/SBERT/项目结构）",
+        "运行 pytest tests/ 确认 146 个测试全部通过",
+        "启动 webapp（bash start.sh）验证 /health 端点",
+        "检查两域 JSON 输出文件完整性（extraction_shupeidian.json + extraction_jicai.json）",
+        "记录当前代码量化指标到 progress log"
       ],
       "verification": [
-        "环境可正常运行",
-        "当前功能状态已记录"
+        "init.sh 全部 ✓ 无 ✗",
+        "pytest 146 passed, 0 failed",
+        "curl localhost:5000/health 返回 200",
+        "两域 JSON 文件存在且非空"
       ],
       "status": "pending",
       "blocked_by": [],
@@ -43,19 +42,24 @@
     {
       "id": "T010",
       "phase": "P2",
-      "category": "development",
+      "category": "security",
       "priority": 10,
-      "title": "功能完善（按需细化）",
-      "description": "根据审计结果完善核心功能模块。",
+      "title": "API 认证授权（南网内网部署必需）",
+      "description": "为所有 44 个 API 端点添加基于 Token 的认证机制，支持角色权限控制。南方电网内网部署要求所有接口不可公开访问。",
       "steps": [
-        "根据 T001 结果确定优先功能",
-        "完善 EAV 数据导入流程",
-        "完善语义聚类和对象提取",
-        "完善 Flask Web 界面"
+        "设计认证方案（JWT Token / API Key，选择最简可用方案）",
+        "实现认证中间件（Flask before_request）",
+        "为所有 olm_api.py 端点添加 @auth_required 装饰器",
+        "实现用户管理 API（创建/删除/列出 Token）",
+        "添加 bootstrap.sql 中的用户表",
+        "更新前端 10.0.html 的 fetch() 调用携带 Token",
+        "编写认证相关测试"
       ],
       "verification": [
-        "核心功能正常运行",
-        "Web 界面可访问"
+        "无 Token 访问任何 /api/olm/* 端点返回 401",
+        "携带有效 Token 访问返回正常数据",
+        "前端登录后所有面板正常工作",
+        "新增测试全部通过"
       ],
       "status": "pending",
       "blocked_by": ["T001"],
@@ -64,21 +68,153 @@
       "notes": ""
     },
     {
-      "id": "T020",
-      "phase": "P3",
-      "category": "testing",
-      "priority": 20,
-      "title": "功能测试",
-      "description": "测试核心工作流：导入 → 聚类 → 提取 → 展示。",
+      "id": "T011",
+      "phase": "P2",
+      "category": "performance",
+      "priority": 11,
+      "title": "API 分页机制（大数据量性能保障）",
+      "description": "为返回列表数据的 API 端点添加分页支持。输配电域有 12000+ 关联记录，无分页会导致响应缓慢。",
       "steps": [
-        "测试 Excel/CSV 数据导入",
-        "测试 SBERT 语义去重",
-        "测试对象提取和关联",
-        "测试 Web API 端点"
+        "设计统一分页参数（page/page_size/total/has_next）",
+        "实现分页工具函数（SQL LIMIT OFFSET + JSON 切片）",
+        "为 extracted-objects、object-relations、alerts、governance 等列表端点添加分页",
+        "更新前端表格组件支持分页控件",
+        "编写分页测试"
       ],
       "verification": [
-        "核心工作流通过",
-        "API 端点正常响应"
+        "GET /api/olm/extracted-objects?page=1&page_size=10 返回分页数据",
+        "响应中包含 total/page/page_size/has_next 字段",
+        "前端表格显示分页控件",
+        "大数据量响应时间 < 500ms"
+      ],
+      "status": "pending",
+      "blocked_by": ["T001"],
+      "completed_at": null,
+      "session_id": null,
+      "notes": ""
+    },
+    {
+      "id": "T012",
+      "phase": "P2",
+      "category": "feature",
+      "priority": 12,
+      "title": "增量数据同步（Excel 变更检测+增量导入）",
+      "description": "当前数据导入为全量覆盖。实现增量导入：检测 Excel 文件变更，仅导入新增/修改的实体，保留历史数据。",
+      "steps": [
+        "设计文件指纹机制（SHA256 hash + 修改时间）",
+        "在 eav_datasets 表增加 file_hash 列",
+        "实现差异检测：对比当前 Excel 与已导入数据的差异",
+        "实现增量导入：仅插入新实体，更新修改实体，标记删除实体",
+        "添加 /api/olm/sync-status 端点查看同步状态",
+        "编写增量导入测试"
+      ],
+      "verification": [
+        "相同文件重复导入不产生重复数据",
+        "修改 Excel 后导入仅更新变更部分",
+        "/api/olm/sync-status 返回各域同步状态",
+        "增量导入速度显著快于全量"
+      ],
+      "status": "pending",
+      "blocked_by": ["T001"],
+      "completed_at": null,
+      "session_id": null,
+      "notes": ""
+    },
+    {
+      "id": "T013",
+      "phase": "P2",
+      "category": "security",
+      "priority": 13,
+      "title": "审计日志系统（操作追踪）",
+      "description": "记录所有写操作（创建/更新/删除对象、执行抽取、触发预警处理等）的操作日志，支持按时间/用户/操作类型查询。",
+      "steps": [
+        "在 bootstrap.sql 中添加 audit_log 表",
+        "实现审计日志中间件（记录 POST/PUT/DELETE 请求）",
+        "在关键业务操作中插入审计记录",
+        "实现 /api/olm/audit-logs 查询端点",
+        "前端添加审计日志查看面板"
+      ],
+      "verification": [
+        "创建/修改/删除对象后 audit_log 表有对应记录",
+        "/api/olm/audit-logs 端点可按时间范围和操作类型过滤",
+        "前端面板可展示审计日志"
+      ],
+      "status": "pending",
+      "blocked_by": ["T010"],
+      "completed_at": null,
+      "session_id": null,
+      "notes": ""
+    },
+    {
+      "id": "T020",
+      "phase": "P2",
+      "category": "algorithm",
+      "priority": 20,
+      "title": "对象抽取算法持续优化（基于甲方反馈）",
+      "description": "根据甲方后续反馈持续优化抽取算法。当前已完成递归超大聚类拆分、小对象阈值调整、cluster_size 同步等修复。此任务为开放式，接收新反馈时激活。",
+      "steps": [
+        "收集甲方新一轮反馈",
+        "分析反馈中的算法改进需求",
+        "实现改进并重新抽取两域数据",
+        "验证改进效果（颗粒度分布、关联覆盖率）",
+        "更新 outputs/ 中的 JSON 文件"
+      ],
+      "verification": [
+        "甲方反馈的每个问题都有对应修复",
+        "两域抽取结果无空壳对象、无超大聚类",
+        "颗粒度报告中最大对象占比 < 40%"
+      ],
+      "status": "pending",
+      "blocked_by": ["T001"],
+      "completed_at": null,
+      "session_id": null,
+      "notes": "开放式任务，按甲方反馈节奏推进。已完成修复：递归拆分(40%阈值)、SMALL_OBJECT_THRESHOLD=5、cluster_size同步。"
+    },
+    {
+      "id": "T030",
+      "phase": "P3",
+      "category": "testing",
+      "priority": 30,
+      "title": "集成测试与端到端测试补充",
+      "description": "当前 146 个测试以单元测试为主。补充集成测试（Excel→抽取→DB→API→前端）和端到端测试。",
+      "steps": [
+        "设计集成测试场景（完整数据流）",
+        "实现 Excel 导入→对象抽取→数据库写入→API 查询的集成测试",
+        "实现前端关键路径的端到端测试（Playwright 或 requests 模拟）",
+        "添加 CI 友好的测试运行脚本",
+        "确保测试在无 MySQL 环境下也能运行（JSON 回退路径）"
+      ],
+      "verification": [
+        "集成测试覆盖完整数据流",
+        "端到端测试覆盖前端关键面板",
+        "所有新增测试在 CI 环境通过"
+      ],
+      "status": "pending",
+      "blocked_by": ["T010", "T011"],
+      "completed_at": null,
+      "session_id": null,
+      "notes": ""
+    },
+    {
+      "id": "T031",
+      "phase": "P3",
+      "category": "security",
+      "priority": 31,
+      "title": "安全审计（OWASP Top 10）",
+      "description": "对所有 API 端点进行安全审计，检查 SQL 注入、XSS、CSRF 等常见漏洞。当前已使用参数化查询，但需系统性审计。",
+      "steps": [
+        "审计所有 SQL 查询是否使用参数化（pymysql %s 占位符）",
+        "检查 HTML 模板是否有 XSS 风险（Jinja2 自动转义）",
+        "检查文件上传/下载端点安全性",
+        "检查 CORS 配置",
+        "检查敏感信息泄露（错误堆栈、数据库凭据）",
+        "编写安全测试用例"
+      ],
+      "verification": [
+        "无 SQL 注入风险（所有查询参数化）",
+        "无 XSS 风险（所有用户输入转义）",
+        "错误响应不泄露敏感信息",
+        "安全测试全部通过"
       ],
       "status": "pending",
       "blocked_by": ["T010"],
@@ -89,18 +225,45 @@
     {
       "id": "T040",
       "phase": "P4",
-      "category": "review",
+      "category": "documentation",
       "priority": 40,
-      "title": "代码审查",
-      "description": "代码质量和安全性审查。",
+      "title": "API 接口文档（OpenAPI/Swagger）",
+      "description": "为 44 个 API 端点生成标准化接口文档，支持在线浏览和测试。",
       "steps": [
-        "代码风格一致性",
-        "安全性检查（SQL 注入、XSS 等）",
-        "性能优化建议"
+        "选择文档方案（Flask-RESTX / flasgger / 手写 OpenAPI YAML）",
+        "为每个端点编写请求/响应 schema",
+        "添加 /api/docs Swagger UI 端点",
+        "验证所有端点文档完整性"
       ],
       "verification": [
-        "无安全问题",
-        "代码质量达标"
+        "访问 /api/docs 可浏览所有端点",
+        "每个端点有请求参数和响应示例",
+        "可在 Swagger UI 中直接测试 API"
+      ],
+      "status": "pending",
+      "blocked_by": ["T011"],
+      "completed_at": null,
+      "session_id": null,
+      "notes": ""
+    },
+    {
+      "id": "T041",
+      "phase": "P4",
+      "category": "documentation",
+      "priority": 41,
+      "title": "部署文档更新（南网环境适配）",
+      "description": "根据南方电网内网环境要求更新部署文档，包括离线部署方案（无外网时 DeepSeek 回退、SBERT 模型预下载）。",
+      "steps": [
+        "编写南网内网部署指南（离线安装 Python 依赖）",
+        "编写 SBERT 模型离线部署方案（预下载 + 本地路径配置）",
+        "编写 DeepSeek 不可用时的回退说明（simple_extractor.py）",
+        "更新 README.md 部署章节",
+        "编写运维手册（日常维护、故障排查、数据备份）"
+      ],
+      "verification": [
+        "按文档步骤可在全新环境完成部署",
+        "离线环境部署方案可行",
+        "运维手册覆盖常见故障场景"
       ],
       "status": "pending",
       "blocked_by": ["T010"],
@@ -110,22 +273,25 @@
     },
     {
       "id": "T050",
-      "phase": "P5",
-      "category": "documentation",
+      "phase": "P4",
+      "category": "delivery",
       "priority": 50,
-      "title": "文档完善与部署准备",
-      "description": "完善 API 文档，确保部署流程完整。",
+      "title": "甲方验收演示准备",
+      "description": "准备甲方验收所需的演示环境、演示脚本和交付材料。",
       "steps": [
-        "完善 CLAUDE.md 中的 API 文档",
-        "确保 start_web.sh / stop_web.sh 正常",
-        "确保 MySQL 初始化脚本可用"
+        "准备演示数据（确保两域数据完整、预警/溯源/治理有示例数据）",
+        "编写演示脚本（按功能模块的操作步骤）",
+        "录制演示视频或准备幻灯片",
+        "整理交付物清单（代码+文档+数据+部署包）",
+        "进行内部演练"
       ],
       "verification": [
-        "文档完整",
-        "部署流程可复现"
+        "演示脚本覆盖全部核心功能",
+        "演示环境一键启动无报错",
+        "交付物清单完整"
       ],
       "status": "pending",
-      "blocked_by": ["T040"],
+      "blocked_by": ["T030", "T040"],
       "completed_at": null,
       "session_id": null,
       "notes": ""

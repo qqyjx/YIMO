@@ -1386,11 +1386,12 @@ def api_run_extraction():
         domains = data.get('domains', ['shupeidian'])
         excel_files_map = data.get('excel_files', {})  # 每个域对应的文件列表
 
-        # 导入抽取模块
-        from object_extractor import SemanticObjectExtractionPipeline
-
-        # 获取项目根目录
+        # 导入抽取模块（scripts/ 目录不在默认路径中）
         project_root = os.path.dirname(os.path.dirname(__file__))
+        scripts_dir = os.path.join(project_root, 'scripts')
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from object_extractor import SemanticObjectExtractionPipeline
         data_dir = os.path.join(project_root, 'DATA')
 
         # 配置数据库
