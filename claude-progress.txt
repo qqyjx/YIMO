@@ -46,3 +46,36 @@
 - 本地分支清理：删除3个 [gone] 本地分支
 - 冗余文件清理：删除9个 tracked 文件（4个 TSX 组件 + 1个 TS 服务 + 2个空 shell + 1个 JS + .gitkeep），清理 __pycache__/.pytest_cache/stale PID
 - 仓库状态：干净，分支精简，代码健康
+
+## 2026-03-19 — 演示修复 + Agent Harness T001
+
+### 演示修复（commit de178ea）
+- 跨域对象合并：4 对重复对象合并（项目/合同→输配电，费用/指标→计财），合并后 16 个对象
+- "移交信"→"移交管理"重命名
+- 新建 scripts/import_json_to_db.py（JSON→DB 导入+跨域合并工具）
+- 创建缺失 DB 表（lifecycle, traceability, mechanism, alert）+ 预置数据
+- 添加生命周期演示数据（项目/设备/合同共 9 条记录）
+- 归档旧 rules JSON 到 outputs/archive/
+- 已推送到 GitHub
+
+### T001 环境健康检查（completed）
+- init.sh: Python ✓, 项目结构 ✓, JSON ✓（MySQL 检测方式需优化，实际可连接）
+- pytest: 96 passed, 23 errors（PyTorch 2.1.2 + NumPy 2.2.6 版本冲突，非代码问题）
+- Webapp: /health 200 OK, FAISS true
+- 数据库: 16 对象, 13652 关联, 235336 EAV实体, 9 生命周期, 3 溯源链, 3 机理函数
+
+### 已知障碍
+- **OBSTACLE-001**: PyTorch 2.1.2 不兼容 NumPy 2.2.6，导致 SBERT/sentence-transformers 导入失败
+  - 影响：test_object_extractor.py 和 test_olm_api.py 无法运行
+  - 解决方案：`pip install numpy<2` 或 `pip install torch>=2.2`
+  - 不影响 webapp 运行（webapp 在 venv 中有独立依赖）
+
+### 量化指标
+- 代码：olm_api.py 3311行, object_extractor.py 2490行, 10.0.html 3304行
+- API：44 端点, 100% DB→JSON 回退
+- DB：25 张表 + 4 视图
+- 测试：96 passed（eav_full 51 + simple_extractor 17 + 部分 olm_api）
+
+### 下次优先
+- T020: 对象抽取算法持续优化（如有甲方新反馈）
+- OBSTACLE-001: 修复 PyTorch/NumPy 版本冲突

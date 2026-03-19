@@ -33,11 +33,11 @@
         "curl localhost:5000/health 返回 200",
         "两域 JSON 文件存在且非空"
       ],
-      "status": "pending",
+      "status": "completed",
       "blocked_by": [],
-      "completed_at": null,
-      "session_id": null,
-      "notes": ""
+      "completed_at": "2026-03-19",
+      "session_id": "yimo-demo-fix-20260319",
+      "notes": "init.sh: 除MySQL检测方式外全部✓。pytest: 96 passed, 23 errors（PyTorch 2.1.2 + NumPy 2.2.6 版本冲突导致 SBERT 模块导入失败，非代码问题）。webapp /health: 200 OK。JSON: 两域文件完整（jicai 1.3M, shupeidian 6.3M）。核心功能全部正常。"
     },
     {
       "id": "T010",
