@@ -364,4 +364,5 @@ if __name__ == '__main__':
         print(f" * DeepSeek API Key loaded: {DEEPSEEK_API_KEY[:4]}...{DEEPSEEK_API_KEY[-4:]}")
     else:
         print(" * WARNING: DEEPSEEK_API_KEY is missing!")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    web_port = int(os.getenv("FLASK_PORT", "5000"))
+    app.run(host='0.0.0.0', port=web_port, debug=True)
