@@ -155,8 +155,11 @@ graph LR
 | 功能 | 说明 |
 |------|------|
 | **对象自动抽取** | SBERT 语义聚类 + DeepSeek LLM 归纳命名，自动从三层实体中提炼业务对象 |
+| **名称可解释性** | 每个对象可查看命名理由、代表实体、置信度评分，支持在线重命名 |
 | **三层知识图谱** | ECharts 力导向图，对象→概念→逻辑→物理 四层穿透可视化 |
 | **Sankey 流向图** | 对象→概念→逻辑实体的数据流向展示 |
+| **全生命周期管理** | 5 阶段时间线（规划→设计→建设→运行→财务）+ 属性快照 + 阶段间 diff + 甘特图 |
+| **生命周期分析** | 跨对象阶段时长对比、瓶颈检测、报告导出 |
 | **穿透式溯源** | 从财务结算→项目立项→采购合同→现场施工的全链路追踪 |
 | **机理函数** | 自定义业务规则（阈值/公式/规则），如合同额度>300万走审计路径 |
 | **风险预警** | 基于机理函数自动触发预警，支持多级别预警管理 |
@@ -230,6 +233,9 @@ DATA/
 | 接口 | 方法 | 说明 |
 |------|------|------|
 | `/api/olm/object-lifecycle/<code>` | GET/POST | 对象生命周期 |
+| `/api/olm/lifecycle-stats` | GET | 生命周期阶段分布统计 |
+| `/api/olm/lifecycle-analytics` | GET | 生命周期分析（阶段时长/瓶颈检测/跨对象对比） |
+| `/api/olm/lifecycle-report/<code>` | GET | 单对象生命周期报告导出 |
 | `/api/olm/traceability-chains` | GET/POST | 穿透式溯源链 |
 | `/api/olm/trace-object/<code>` | GET | 对象溯源追踪 |
 
@@ -360,6 +366,41 @@ MYSQL_PASSWORD=eavpass123
 DEEPSEEK_API_KEY=your_api_key        # 设置后自动启用 LLM 命名
 DEEPSEEK_API_BASE=https://api.deepseek.com/v1
 ```
+
+## 更新记录
+
+### 2026-03-20 — 名称可解释性 + 生命周期管理完善
+
+**优化方向一：对象名称可解释性**
+
+| 改动 | 说明 |
+|------|------|
+| API 暴露可解释性字段 | `extraction_source`、`extraction_confidence`、`llm_reasoning`、`sample_entities`、`cluster_size` 现在通过 `/api/olm/extracted-objects` 返回 |
+| 动态生成命名理由 | 对 DB 中 `llm_reasoning` 为空的对象，API 层根据 `sample_entities` 自动生成中文命名解释 |
+| 名称解释弹窗 | 对象卡片旁新增 ℹ️ 图标，点击弹出命名方法、置信度进度条、命名理由、代表实体列表 |
+| 对象卡片样本实体 | 卡片底部显示前 3 个代表实体标签，让用户直观理解聚类内容 |
+
+**优化方向二：全生命周期管理完善**
+
+| 改动 | 说明 |
+|------|------|
+| 44 条演示数据 | 16 个对象全覆盖，每对象 2-5 个阶段，含业务属性 JSON 快照 |
+| Finance 统计卡 | 生命周期面板增加第 5 个统计卡片（财务阶段） |
+| 对象选择器 | 生命周期面板内置下拉框，无需切回对象面板选择 |
+| 阶段停留天数 | 时间线每个阶段圆点下方显示停留天数 |
+| 属性 diff | 相邻阶段间高亮显示属性变化（新增/修改/删除） |
+| ECharts 甘特图 | 时间线下方展示各阶段时长的横向甘特图 |
+| 生命周期分析 API | `GET /api/olm/lifecycle-analytics` — 阶段平均/最长时长、瓶颈检测 |
+| 跨对象对比图表 | ECharts 堆叠横向柱状图，16 个对象按阶段着色对比 |
+| 报告导出 API | `GET /api/olm/lifecycle-report/<code>` — 单对象生命周期 JSON 报告 |
+
+**修改文件清单**
+
+| 文件 | 改动量 |
+|------|--------|
+| `mysql-local/bootstrap.sql` | +44 条 lifecycle INSERT |
+| `webapp/olm_api.py` | +3 新端点 + `_generate_name_explanations()` + sample_entities 补充 |
+| `webapp/templates/10.0.html` | 时间线增强 + 甘特图 + 对象选择器 + 名称解释弹窗 + 对比图表 |
 
 ## License
 

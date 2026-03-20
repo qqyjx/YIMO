@@ -891,7 +891,12 @@
                     <div class="section-title">
                         <i class="bi bi-clock-history"></i>全生命周期管理
                     </div>
-                    <button class="btn-sm" onclick="loadLifecycle()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <select id="lifecycleObjectSelector" onchange="onLifecycleObjectSelect(this.value)" style="padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);font-size:.82rem;min-width:160px;">
+                            <option value="">-- 选择对象 --</option>
+                        </select>
+                        <button class="btn-sm" onclick="loadLifecycle()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                    </div>
                 </div>
                 <!-- 生命周期阶段统计 -->
                 <div class="stats-grid" id="lifecycleStats" style="margin-bottom:16px;">
@@ -911,10 +916,28 @@
                         <div class="stat-value" id="lcOperation">0</div>
                         <div class="stat-label">运行 Operation</div>
                     </div>
+                    <div class="stat-card" style="border-left:3px solid #ef4444;">
+                        <div class="stat-value" id="lcFinance">0</div>
+                        <div class="stat-label">财务 Finance</div>
+                    </div>
                 </div>
                 <!-- 时间线 -->
                 <div id="lifecycleTimeline" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;min-height:120px;">
                     <div class="empty-state"><i class="bi bi-clock-history"></i><p>选择一个对象查看其生命周期历史</p></div>
+                </div>
+                <!-- 甘特图 -->
+                <div id="lifecycleGantt" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;margin-top:12px;min-height:200px;display:none;">
+                </div>
+                <!-- 跨对象对比 -->
+                <div style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;margin-top:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <div style="font-weight:600;font-size:.88rem;"><i class="bi bi-bar-chart-line" style="color:var(--primary);"></i> 全部对象生命周期对比</div>
+                        <button class="btn-sm" onclick="loadLifecycleAnalytics()"><i class="bi bi-arrow-clockwise"></i> 加载</button>
+                    </div>
+                    <div id="lifecycleCompareChart" style="width:100%;height:360px;">
+                        <div class="empty-state"><i class="bi bi-bar-chart-line"></i><p>点击"加载"查看跨对象对比</p></div>
+                    </div>
+                    <div id="lifecycleBottleneck" style="margin-top:8px;font-size:.82rem;color:var(--text-sec);"></div>
                 </div>
             </section>
 
@@ -1374,30 +1397,123 @@
             return;
         }
 
-        grid.innerHTML = objs.map(obj => {
-            const iconClass = objectIcons[obj.object_code] || 'bi-box';
-            const type = obj.object_type || 'CORE';
-            const isActive = obj.object_code === selectedObjectCode;
-            return `
-            <div class="object-card type-${esc(type)} ${isActive ? 'active' : ''}"
-                 data-code="${esc(obj.object_code)}" onclick="selectObject('${esc(obj.object_code)}')">
-                <div class="obj-top">
-                    <div class="obj-icon"><i class="bi ${iconClass}"></i></div>
-                    <div class="obj-info">
-                        <div class="obj-name">${esc(obj.object_name)}</div>
-                        <div class="obj-code">${esc(obj.object_code)}</div>
-                    </div>
-                </div>
-                ${obj.description ? `<div class="obj-desc">${esc(obj.description)}</div>` : ''}
-                <div class="obj-badges">
-                    <span class="badge badge-concept">${obj.stats?.concept || 0} 概念</span>
-                    <span class="badge badge-logical">${obj.stats?.logical || 0} 逻辑</span>
-                    <span class="badge badge-physical" style="opacity:.5">物理待接入</span>
-                    ${(obj.stats?.biz_match_count || 0) > 0 ? `<span class="bridge-badge">${obj.stats.biz_match_count} 业务对象</span>` : ''}
-                    <span class="badge badge-type badge-${esc(type)}">${esc(type)}</span>
-                </div>
-            </div>`;
+        grid.innerHTML = objs.map(function(obj) {
+            var iconClass = objectIcons[obj.object_code] || 'bi-box';
+            var type = obj.object_type || 'CORE';
+            var isActive = obj.object_code === selectedObjectCode;
+            var samples = obj.sample_entities || [];
+            var samplesHtml = '';
+            if (samples.length) {
+                samplesHtml = '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">';
+                samples.slice(0,3).forEach(function(s) {
+                    samplesHtml += '<span style="font-size:.67rem;padding:1px 6px;background:#f1f5f9;border-radius:3px;color:var(--text-sec);">' + esc(s) + '</span>';
+                });
+                if (samples.length > 3) samplesHtml += '<span style="font-size:.67rem;color:var(--text-muted);">+' + (samples.length-3) + '</span>';
+                samplesHtml += '</div>';
+            }
+            return '<div class="object-card type-' + esc(type) + (isActive?' active':'') + '"'
+                + ' data-code="' + esc(obj.object_code) + '" onclick="selectObject(\'' + esc(obj.object_code) + '\')">'
+                + '<div class="obj-top">'
+                + '  <div class="obj-icon"><i class="bi ' + iconClass + '"></i></div>'
+                + '  <div class="obj-info">'
+                + '    <div class="obj-name">' + esc(obj.object_name)
+                + '      <i class="bi bi-info-circle" style="font-size:.72rem;color:var(--primary);cursor:pointer;margin-left:4px;opacity:.7;" onclick="event.stopPropagation();showNameExplanation(\'' + esc(obj.object_code) + '\')" title="查看命名解释"></i>'
+                + '    </div>'
+                + '    <div class="obj-code">' + esc(obj.object_code) + '</div>'
+                + '  </div>'
+                + '</div>'
+                + (obj.description ? '<div class="obj-desc">' + esc(obj.description) + '</div>' : '')
+                + samplesHtml
+                + '<div class="obj-badges">'
+                + '  <span class="badge badge-concept">' + (obj.stats && obj.stats.concept || 0) + ' 概念</span>'
+                + '  <span class="badge badge-logical">' + (obj.stats && obj.stats.logical || 0) + ' 逻辑</span>'
+                + '  <span class="badge badge-physical" style="opacity:.5">物理待接入</span>'
+                + ((obj.stats && obj.stats.biz_match_count || 0) > 0 ? '  <span class="bridge-badge">' + obj.stats.biz_match_count + ' 业务对象</span>' : '')
+                + '  <span class="badge badge-type badge-' + esc(type) + '">' + esc(type) + '</span>'
+                + '</div>'
+                + '</div>';
         }).join('');
+    }
+
+    // ========== Name Explanation Modal ==========
+    function showNameExplanation(code) {
+        var obj = extractedObjects.find(function(o){return o.object_code===code;});
+        if (!obj) return;
+        var samples = obj.sample_entities || [];
+        var source = obj.extraction_source || 'MANUAL';
+        var conf = parseFloat(obj.extraction_confidence || 0.7);
+        var reasoning = obj.llm_reasoning || '';
+        var clusterSize = obj.cluster_size || samples.length;
+
+        // 命名方法标签
+        var sourceLabels = {
+            'SEMANTIC_CLUSTER_RULE': '语义聚类 + 规则命名',
+            'SEMANTIC_CLUSTER_LLM': '语义聚类 + LLM命名',
+            'SEMANTIC_CLUSTER_AUTO': '语义聚类 + 自动命名',
+            'MANUAL': '手动指定',
+            'REQUIRED': '必需对象'
+        };
+        var sourceLabel = sourceLabels[source] || source;
+
+        // 置信度颜色
+        var confColor = conf >= 0.8 ? '#10b981' : (conf >= 0.5 ? '#f59e0b' : '#ef4444');
+        var confPct = Math.round(conf * 100);
+
+        var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)this.remove();">';
+        html += '<div style="background:var(--bg-card);border-radius:12px;padding:24px;max-width:520px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">';
+
+        // 标题
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
+        html += '<div style="font-size:1.05rem;font-weight:700;"><i class="bi bi-lightbulb" style="color:var(--primary);"></i> ' + esc(obj.object_name) + ' 命名解释</div>';
+        html += '<i class="bi bi-x-lg" style="cursor:pointer;font-size:1.1rem;color:var(--text-muted);" onclick="this.closest(\'div[style*=fixed]\').remove()"></i>';
+        html += '</div>';
+
+        // 命名方法
+        html += '<div style="margin-bottom:12px;">';
+        html += '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px;">命名方法</div>';
+        html += '<span style="padding:3px 10px;background:var(--primary);color:#fff;border-radius:4px;font-size:.78rem;">' + esc(sourceLabel) + '</span>';
+        html += '</div>';
+
+        // 置信度
+        html += '<div style="margin-bottom:12px;">';
+        html += '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px;">命名置信度</div>';
+        html += '<div style="display:flex;align-items:center;gap:8px;">';
+        html += '<div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;"><div style="height:100%;width:' + confPct + '%;background:' + confColor + ';border-radius:4px;"></div></div>';
+        html += '<span style="font-size:.82rem;font-weight:600;color:' + confColor + ';">' + confPct + '%</span>';
+        html += '</div></div>';
+
+        // 聚类大小
+        if (clusterSize > 0) {
+            html += '<div style="margin-bottom:12px;">';
+            html += '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px;">聚类规模</div>';
+            html += '<span style="font-size:.85rem;font-weight:600;">' + clusterSize + ' 个实体</span>';
+            html += '</div>';
+        }
+
+        // 命名理由
+        if (reasoning) {
+            html += '<div style="margin-bottom:12px;">';
+            html += '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px;">命名理由</div>';
+            html += '<div style="font-size:.82rem;color:var(--text-sec);line-height:1.6;padding:10px 12px;background:var(--bg-body);border-radius:var(--radius-sm);border-left:3px solid var(--primary);">' + esc(reasoning) + '</div>';
+            html += '</div>';
+        }
+
+        // 代表实体
+        if (samples.length) {
+            html += '<div style="margin-bottom:12px;">';
+            html += '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:6px;">代表实体 (' + samples.length + ')</div>';
+            html += '<div style="display:flex;flex-wrap:wrap;gap:5px;max-height:160px;overflow-y:auto;">';
+            samples.forEach(function(s) {
+                html += '<span style="font-size:.72rem;padding:2px 8px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:4px;color:var(--text-sec);">' + esc(s) + '</span>';
+            });
+            html += '</div></div>';
+        }
+
+        html += '</div></div>';
+
+        var div = document.createElement('div');
+        div.innerHTML = html;
+        document.body.appendChild(div.firstChild);
     }
 
     // ========== Select Object & Relations ==========
@@ -2506,9 +2622,24 @@
     }
 
     // ========== Phase 2: Lifecycle Management ==========
+    function populateLifecycleSelector() {
+        const sel = document.getElementById('lifecycleObjectSelector');
+        if (!sel || !extractedObjects.length) return;
+        const current = sel.value;
+        sel.innerHTML = '<option value="">-- 选择对象 --</option>';
+        extractedObjects.forEach(o => {
+            const selected = o.object_code === current ? ' selected' : '';
+            sel.innerHTML += '<option value="' + esc(o.object_code) + '"' + selected + '>' + esc(o.object_name) + ' (' + esc(o.object_code) + ')</option>';
+        });
+    }
+
+    function onLifecycleObjectSelect(code) {
+        if (code) { selectedObjectCode = code; loadObjectLifecycle(code); }
+    }
+
     async function loadLifecycle() {
         document.getElementById('section-lifecycle').style.display = 'block';
-        // 加载阶段统计
+        populateLifecycleSelector();
         try {
             const resp = await fetch('/api/olm/lifecycle-stats' + getDomainParam());
             if (resp.ok) {
@@ -2519,11 +2650,12 @@
                 animateNumber('lcDesign', statsMap['Design'] || 0);
                 animateNumber('lcConstruction', statsMap['Construction'] || 0);
                 animateNumber('lcOperation', statsMap['Operation'] || 0);
+                if (document.getElementById('lcFinance')) animateNumber('lcFinance', statsMap['Finance'] || 0);
             }
         } catch(e) { /* ignore */ }
-
-        // 如果选中了对象，加载该对象的生命周期
         if (selectedObjectCode) {
+            const sel = document.getElementById('lifecycleObjectSelector');
+            if (sel) sel.value = selectedObjectCode;
             loadObjectLifecycle(selectedObjectCode);
         }
     }
@@ -2531,82 +2663,246 @@
     async function loadObjectLifecycle(objectCode) {
         const container = document.getElementById('lifecycleTimeline');
         container.innerHTML = '<div style="text-align:center;padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
-
         try {
-            const resp = await fetch(`/api/olm/object-lifecycle/${encodeURIComponent(objectCode)}` + getDomainParam());
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const resp = await fetch('/api/olm/object-lifecycle/' + encodeURIComponent(objectCode) + getDomainParam());
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
             const data = await resp.json();
             renderLifecycleTimeline(data.lifecycle || [], objectCode);
         } catch(e) {
-            container.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ${esc(e.message)}</p></div>`;
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ' + esc(e.message) + '</p></div>';
         }
     }
 
+    function calcDaysBetween(d1, d2) {
+        if (!d1 || !d2) return null;
+        var t1 = new Date(d1).getTime(), t2 = new Date(d2).getTime();
+        if (isNaN(t1) || isNaN(t2)) return null;
+        return Math.round(Math.abs(t2 - t1) / 86400000);
+    }
+
+    function diffAttributes(prev, curr) {
+        if (!prev || !curr) return [];
+        var diffs = [], allKeys = new Set([].concat(Object.keys(prev), Object.keys(curr)));
+        allKeys.forEach(function(k) {
+            var pv = prev[k], cv = curr[k];
+            if (pv === undefined) diffs.push({key:k, type:'added', newVal:cv});
+            else if (cv === undefined) diffs.push({key:k, type:'removed', oldVal:pv});
+            else if (String(pv) !== String(cv)) diffs.push({key:k, type:'changed', oldVal:pv, newVal:cv});
+        });
+        return diffs;
+    }
+
     function renderLifecycleTimeline(lifecycle, objectCode) {
-        const container = document.getElementById('lifecycleTimeline');
-        const stages = ['Planning', 'Design', 'Construction', 'Operation', 'Finance'];
-        const stageLabels = {'Planning':'规划','Design':'设计','Construction':'建设','Operation':'运行','Finance':'财务'};
-        const stageColors = {'Planning':'#6366f1','Design':'#3b82f6','Construction':'#10b981','Operation':'#f59e0b','Finance':'#ef4444'};
+        var container = document.getElementById('lifecycleTimeline');
+        var ganttContainer = document.getElementById('lifecycleGantt');
+        var stages = ['Planning','Design','Construction','Operation','Finance'];
+        var stageLabels = {Planning:'规划',Design:'设计',Construction:'建设',Operation:'运行',Finance:'财务'};
+        var stageColors = {Planning:'#6366f1',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b',Finance:'#ef4444'};
+        var obj = extractedObjects.find(function(o){return o.object_code===objectCode;});
+        var objName = obj ? obj.object_name : objectCode;
+        var activeStages = new Set(lifecycle.map(function(l){return l.lifecycle_stage;}));
+        var stageRecordMap = {};
+        lifecycle.forEach(function(l){stageRecordMap[l.lifecycle_stage]=l;});
 
-        const obj = extractedObjects.find(o => o.object_code === objectCode);
-        const objName = obj ? obj.object_name : objectCode;
+        var html = '<div style="margin-bottom:16px;font-weight:600;font-size:1rem;"><i class="bi bi-clock-history" style="color:var(--primary);"></i> ' + esc(objName) + ' 的生命周期</div>';
+        html += '<div style="display:flex;align-items:flex-start;gap:0;position:relative;padding:0 20px;">';
 
-        // 构建已有阶段的集合
-        const activeStages = new Set(lifecycle.map(l => l.lifecycle_stage));
-
-        let html = `<div style="margin-bottom:16px;font-weight:600;font-size:1rem;"><i class="bi bi-clock-history" style="color:var(--primary);"></i> ${esc(objName)} 的生命周期</div>`;
-        html += '<div style="display:flex;align-items:center;gap:0;position:relative;padding:0 20px;">';
-
-        stages.forEach((stage, idx) => {
-            const active = activeStages.has(stage);
-            const record = lifecycle.find(l => l.lifecycle_stage === stage);
-            const color = active ? stageColors[stage] : '#cbd5e1';
-
-            html += `<div style="flex:1;text-align:center;position:relative;">`;
-            html += `<div style="width:36px;height:36px;border-radius:50%;background:${color};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;position:relative;z-index:1;box-shadow:${active ? '0 0 0 4px '+color+'33' : 'none'};">`;
-            html += `${idx + 1}</div>`;
-            html += `<div style="font-size:.78rem;font-weight:${active?'600':'400'};color:${active?'var(--text-main)':'var(--text-muted)'};margin-top:8px;">${esc(stageLabels[stage])}</div>`;
-            if (record && record.stage_entered_at) {
-                html += `<div style="font-size:.68rem;color:var(--text-muted);margin-top:2px;">${esc(record.stage_entered_at.split('T')[0])}</div>`;
+        stages.forEach(function(stage, idx) {
+            var active = activeStages.has(stage);
+            var record = stageRecordMap[stage];
+            var color = active ? stageColors[stage] : '#cbd5e1';
+            var daysStr = '';
+            if (record) {
+                var exitDate = record.stage_exited_at || new Date().toISOString();
+                var days = calcDaysBetween(record.stage_entered_at, exitDate);
+                if (days !== null) daysStr = record.stage_exited_at ? days+'天' : days+'天+';
             }
+            html += '<div style="flex:1;text-align:center;position:relative;">';
+            html += '<div style="width:40px;height:40px;border-radius:50%;background:'+color+';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;position:relative;z-index:1;box-shadow:'+(active?'0 0 0 4px '+color+'33':'none')+';cursor:pointer;" title="'+esc(stageLabels[stage])+'">';
+            html += (idx+1) + '</div>';
+            html += '<div style="font-size:.78rem;font-weight:'+(active?'600':'400')+';color:'+(active?'var(--text-main)':'var(--text-muted)')+';margin-top:8px;">'+esc(stageLabels[stage])+'</div>';
+            if (record && record.stage_entered_at) {
+                html += '<div style="font-size:.68rem;color:var(--text-muted);margin-top:2px;">' + esc(record.stage_entered_at.split('T')[0].substring(0,10)) + '</div>';
+            }
+            if (daysStr) html += '<div style="font-size:.7rem;color:'+color+';font-weight:600;margin-top:2px;">'+esc(daysStr)+'</div>';
             html += '</div>';
-
             if (idx < stages.length - 1) {
-                const nextActive = activeStages.has(stages[idx + 1]);
-                html += `<div style="flex:1;height:3px;background:${active && nextActive ? 'linear-gradient(90deg,'+stageColors[stage]+','+stageColors[stages[idx+1]]+')' : '#e2e8f0'};margin-top:-18px;"></div>`;
+                var nextActive = activeStages.has(stages[idx+1]);
+                var bg = (active && nextActive) ? 'linear-gradient(90deg,'+stageColors[stage]+','+stageColors[stages[idx+1]]+')' : '#e2e8f0';
+                html += '<div style="flex:1;height:3px;background:'+bg+';margin-top:-20px;"></div>';
             }
         });
-
         html += '</div>';
 
         if (!lifecycle.length) {
-            html += '<div style="text-align:center;color:var(--text-muted);margin-top:20px;font-size:.85rem;">暂无生命周期记录，可通过API添加</div>';
+            html += '<div style="text-align:center;color:var(--text-muted);margin-top:20px;font-size:.85rem;">暂无生命周期记录</div>';
+            if (ganttContainer) ganttContainer.style.display = 'none';
         } else {
-            // 展示属性快照
-            html += '<div style="margin-top:20px;">';
-            lifecycle.forEach(l => {
-                const color = stageColors[l.lifecycle_stage] || '#6366f1';
-                html += `<div style="padding:10px 14px;margin-bottom:8px;border-left:3px solid ${color};background:var(--bg-body);border-radius:0 var(--radius-sm) var(--radius-sm) 0;">`;
-                html += `<div style="font-weight:600;font-size:.85rem;">${esc(stageLabels[l.lifecycle_stage] || l.lifecycle_stage)}</div>`;
-                if (l.stage_entered_at) html += `<div style="font-size:.75rem;color:var(--text-muted);">进入: ${esc(l.stage_entered_at)}</div>`;
-                if (l.notes) html += `<div style="font-size:.78rem;color:var(--text-sec);margin-top:4px;">${esc(l.notes)}</div>`;
+            html += '<div style="margin-top:24px;">';
+            lifecycle.forEach(function(l, i) {
+                var color = stageColors[l.lifecycle_stage] || '#6366f1';
+                var days = l.stage_exited_at ? calcDaysBetween(l.stage_entered_at, l.stage_exited_at) : calcDaysBetween(l.stage_entered_at, new Date().toISOString());
+                var daysLabel = days !== null ? (l.stage_exited_at ? days+'天' : days+'天（进行中）') : '';
+
+                html += '<div style="padding:12px 16px;margin-bottom:8px;border-left:3px solid '+color+';background:var(--bg-body);border-radius:0 var(--radius-sm) var(--radius-sm) 0;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+                html += '<div style="font-weight:600;font-size:.85rem;">'+esc(stageLabels[l.lifecycle_stage]||l.lifecycle_stage)+'</div>';
+                if (daysLabel) html += '<span style="font-size:.72rem;padding:2px 8px;background:'+color+'15;color:'+color+';border-radius:10px;font-weight:600;">'+esc(daysLabel)+'</span>';
+                html += '</div>';
+                if (l.stage_entered_at) {
+                    var timeStr = l.stage_entered_at.split('T')[0];
+                    timeStr += l.stage_exited_at ? (' → '+l.stage_exited_at.split('T')[0]) : ' → 至今';
+                    html += '<div style="font-size:.73rem;color:var(--text-muted);margin-top:2px;">'+esc(timeStr)+'</div>';
+                }
+                if (l.source_system) html += '<div style="font-size:.7rem;color:var(--text-muted);margin-top:1px;">来源: '+esc(l.source_system)+'</div>';
+                if (l.notes) html += '<div style="font-size:.78rem;color:var(--text-sec);margin-top:4px;">'+esc(l.notes)+'</div>';
+
                 if (l.attributes_snapshot && typeof l.attributes_snapshot === 'object') {
-                    const attrs = l.attributes_snapshot;
-                    const keys = Object.keys(attrs).slice(0, 5);
+                    var attrs = l.attributes_snapshot;
+                    var keys = Object.keys(attrs);
                     if (keys.length) {
-                        html += '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">';
-                        keys.forEach(k => {
-                            html += `<span style="font-size:.72rem;padding:2px 8px;background:${color}15;color:${color};border-radius:4px;">${esc(k)}: ${esc(String(attrs[k]))}</span>`;
+                        html += '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;">';
+                        keys.forEach(function(k) {
+                            html += '<span style="font-size:.71rem;padding:2px 8px;background:'+color+'10;color:'+color+';border:1px solid '+color+'30;border-radius:4px;">'+esc(k)+': '+esc(String(attrs[k]))+'</span>';
                         });
                         html += '</div>';
+                    }
+                }
+
+                // 属性diff
+                if (i > 0) {
+                    var prevAttrs = lifecycle[i-1].attributes_snapshot;
+                    var currAttrs = l.attributes_snapshot;
+                    if (prevAttrs && currAttrs) {
+                        var diffs = diffAttributes(prevAttrs, currAttrs);
+                        if (diffs.length) {
+                            html += '<div style="margin-top:8px;padding:6px 10px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px dashed '+color+'40;">';
+                            html += '<div style="font-size:.7rem;color:var(--text-muted);margin-bottom:4px;">↑ 与'+esc(stageLabels[lifecycle[i-1].lifecycle_stage])+'阶段属性变化</div>';
+                            html += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+                            diffs.slice(0,6).forEach(function(d) {
+                                if (d.type==='added') html += '<span style="font-size:.68rem;padding:1px 6px;background:#dcfce7;color:#166534;border-radius:3px;">+ '+esc(d.key)+'</span>';
+                                else if (d.type==='removed') html += '<span style="font-size:.68rem;padding:1px 6px;background:#fef2f2;color:#991b1b;border-radius:3px;text-decoration:line-through;">- '+esc(d.key)+'</span>';
+                                else html += '<span style="font-size:.68rem;padding:1px 6px;background:#fef9c3;color:#854d0e;border-radius:3px;">\u25B3 '+esc(d.key)+'</span>';
+                            });
+                            html += '</div></div>';
+                        }
                     }
                 }
                 html += '</div>';
             });
             html += '</div>';
+            renderLifecycleGantt(lifecycle, objName, stageLabels, stageColors);
+        }
+        container.innerHTML = html;
+    }
+
+    function renderLifecycleGantt(lifecycle, objName, stageLabels, stageColors) {
+        var ganttContainer = document.getElementById('lifecycleGantt');
+        if (!lifecycle.length || !ganttContainer) { if(ganttContainer) ganttContainer.style.display='none'; return; }
+        ganttContainer.style.display = 'block';
+        ganttContainer.innerHTML = '<div style="font-weight:600;font-size:.88rem;margin-bottom:12px;"><i class="bi bi-bar-chart-steps" style="color:var(--primary);"></i> 阶段时长甘特图</div><div id="ganttChart" style="width:100%;height:220px;"></div>';
+        var now = new Date(), categories = [], barData = [];
+        lifecycle.forEach(function(l) {
+            var label = stageLabels[l.lifecycle_stage] || l.lifecycle_stage;
+            categories.push(label);
+            var start = new Date(l.stage_entered_at).getTime();
+            var end = l.stage_exited_at ? new Date(l.stage_exited_at).getTime() : now.getTime();
+            barData.push({ value: [categories.length-1, start, end], itemStyle: {color: stageColors[l.lifecycle_stage]||'#6366f1'} });
+        });
+        if (typeof echarts !== 'undefined') {
+            var chart = echarts.init(document.getElementById('ganttChart'));
+            chart.setOption({
+                tooltip: { formatter: function(p) {
+                    var v=p.value, s=new Date(v[1]).toLocaleDateString('zh-CN'), e=new Date(v[2]).toLocaleDateString('zh-CN');
+                    return categories[v[0]]+'<br/>'+s+' → '+e+'<br/>持续 '+Math.round((v[2]-v[1])/86400000)+' 天';
+                }},
+                grid: {left:80,right:40,top:10,bottom:30},
+                xAxis: {type:'time', axisLabel:{fontSize:10,formatter:'{yyyy}-{MM}'}, splitLine:{show:true,lineStyle:{type:'dashed',color:'#e2e8f0'}}},
+                yAxis: {type:'category', data:categories, inverse:true, axisLabel:{fontSize:11}},
+                series: [{
+                    type:'custom',
+                    renderItem: function(params,api) {
+                        var cat=api.value(0), start=api.coord([api.value(1),cat]), end=api.coord([api.value(2),cat]);
+                        var h=api.size([0,1])[1]*0.5;
+                        return {type:'rect',shape:{x:start[0],y:start[1]-h/2,width:end[0]-start[0],height:h},style:api.style()};
+                    },
+                    encode:{x:[1,2],y:0}, data:barData, itemStyle:{borderRadius:3}
+                }]
+            });
+            window.addEventListener('resize', function(){chart.resize();});
+        }
+    }
+
+    // ========== Lifecycle Analytics & Compare ==========
+    async function loadLifecycleAnalytics() {
+        var container = document.getElementById('lifecycleCompareChart');
+        container.innerHTML = '<div style="text-align:center;padding:2rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
+        try {
+            var resp = await fetch('/api/olm/lifecycle-analytics' + getDomainParam());
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            var data = await resp.json();
+            renderLifecycleCompare(data);
+        } catch(e) {
+            container.innerHTML = '<div class="empty-state"><p>加载失败: ' + esc(e.message) + '</p></div>';
+        }
+    }
+
+    function renderLifecycleCompare(data) {
+        var stageColors = {Planning:'#6366f1',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b',Finance:'#ef4444'};
+        var stageLabels = {Planning:'规划',Design:'设计',Construction:'建设',Operation:'运行',Finance:'财务'};
+        var stageOrder = ['Planning','Design','Construction','Operation','Finance'];
+        var objects = data.objects || [];
+        if (!objects.length) return;
+
+        // 准备 ECharts 堆叠横向柱状图
+        var objNames = objects.map(function(o){return o.object_name;});
+        var seriesData = {};
+        stageOrder.forEach(function(s){ seriesData[s] = []; });
+
+        objects.forEach(function(o) {
+            var stageMap = {};
+            o.stages.forEach(function(st){ stageMap[st.lifecycle_stage] = st.duration_days || 0; });
+            stageOrder.forEach(function(s){ seriesData[s].push(stageMap[s] || 0); });
+        });
+
+        var series = stageOrder.map(function(s) {
+            return {
+                name: stageLabels[s], type: 'bar', stack: 'total',
+                data: seriesData[s],
+                itemStyle: {color: stageColors[s]},
+                label: { show: false }
+            };
+        });
+
+        var container = document.getElementById('lifecycleCompareChart');
+        if (typeof echarts !== 'undefined') {
+            var chart = echarts.init(container);
+            chart.setOption({
+                tooltip: { trigger:'axis', axisPointer:{type:'shadow'}, formatter: function(params) {
+                    var html = params[0].axisValueLabel + '<br/>';
+                    var total = 0;
+                    params.forEach(function(p){ if(p.value>0){ html += p.marker + p.seriesName + ': ' + p.value + '天<br/>'; total += p.value; }});
+                    html += '<b>总计: ' + total + '天</b>';
+                    return html;
+                }},
+                legend: { data: stageOrder.map(function(s){return stageLabels[s];}), bottom: 0, textStyle:{fontSize:11} },
+                grid: { left:90, right:30, top:10, bottom:40 },
+                xAxis: { type:'value', name:'天数', axisLabel:{fontSize:10} },
+                yAxis: { type:'category', data:objNames, inverse:true, axisLabel:{fontSize:11, width:80, overflow:'truncate'} },
+                series: series
+            });
+            window.addEventListener('resize', function(){chart.resize();});
         }
 
-        container.innerHTML = html;
+        // 瓶颈提示
+        var bottleneckEl = document.getElementById('lifecycleBottleneck');
+        if (data.bottleneck && bottleneckEl) {
+            var bn = stageLabels[data.bottleneck] || data.bottleneck;
+            var stats = (data.duration_stats || []).find(function(s){return s.lifecycle_stage===data.bottleneck;});
+            if (stats) {
+                bottleneckEl.innerHTML = '<i class="bi bi-exclamation-triangle" style="color:#f59e0b;"></i> 瓶颈阶段: <b>' + esc(bn) + '</b>（平均 ' + stats.avg_days + ' 天，最长 ' + stats.max_days + ' 天）';
+            }
+        }
     }
 
     // ========== Phase 3: Traceability ==========

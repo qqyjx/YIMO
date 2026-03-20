@@ -90,6 +90,7 @@ def get_objects_from_json(domain: str = '') -> list:
         obj_code = obj.get('object_code', '')
         st = obj.get('stats') or stats_map.get(obj_code, {'concept': 0, 'logical': 0, 'physical': 0})
         st['biz_match_count'] = len(biz_matches.get(obj_code, []))
+        samples = obj.get('sample_entities', [])
         result.append({
             'object_id': idx,
             'object_code': obj_code,
@@ -98,6 +99,11 @@ def get_objects_from_json(domain: str = '') -> list:
             'object_type': obj.get('object_type', 'CORE'),
             'data_domain': domain or data.get('data_domain', 'shupeidian'),
             'description': obj.get('description', ''),
+            'extraction_source': obj.get('extraction_source', 'SEMANTIC_CLUSTER_RULE'),
+            'extraction_confidence': obj.get('extraction_confidence', 0.7),
+            'llm_reasoning': obj.get('llm_reasoning', ''),
+            'cluster_size': obj.get('cluster_size', len(samples)),
+            'sample_entities': samples,
             'stats': st
         })
 
@@ -326,14 +332,24 @@ def api_extracted_objects():
                         if row.get(key):
                             row[key] = row[key].isoformat() if hasattr(row[key], 'isoformat') else str(row[key])
 
+                    # 处理 Decimal 类型
+                    if row.get('extraction_confidence') is not None:
+                        row['extraction_confidence'] = float(row['extraction_confidence'])
+
                     # 添加统计信息
                     row['stats'] = {
                         'concept': row.pop('concept_count', 0),
                         'logical': row.pop('logical_count', 0),
-                        'physical': 0,  # 物理实体待接入生产系统
+                        'physical': 0,
                         'biz_match_count': 0
                     }
                     objects.append(row)
+
+                # 补充 sample_entities（DB中不存此字段，从JSON获取）
+                _enrich_sample_entities(objects, domain)
+
+                # 为缺少 llm_reasoning 的对象动态生成解释
+                _generate_name_explanations(objects)
 
                 return jsonify({'objects': objects, 'total': len(objects), 'domain': domain or 'all', 'source': 'database'})
         except Exception as e:
@@ -660,6 +676,29 @@ def _enrich_sample_entities(objects, domain=''):
         if not obj.get('sample_entities'):
             code = obj.get('object_code', '')
             obj['sample_entities'] = json_samples.get(code, [])
+
+
+def _generate_name_explanations(objects):
+    """为缺少 llm_reasoning 的对象动态生成名称解释"""
+    for obj in objects:
+        if obj.get('llm_reasoning'):
+            continue
+        samples = obj.get('sample_entities', [])
+        name = obj.get('object_name', '')
+        source = obj.get('extraction_source', 'MANUAL')
+        cluster_size = obj.get('cluster_size') or len(samples)
+
+        if source == 'MANUAL':
+            obj['llm_reasoning'] = f'「{name}」为系统预置核心对象，由领域专家根据电力资产管理业务模型手动定义。'
+        elif samples:
+            top_samples = ', '.join(samples[:5])
+            obj['llm_reasoning'] = (
+                f'通过语义聚类分析，该聚类包含{cluster_size}个实体，'
+                f'代表性实体包括：{top_samples}。'
+                f'基于实体语义相似性将该聚类命名为「{name}」。'
+            )
+        else:
+            obj['llm_reasoning'] = f'基于数据架构文档中的实体分布，自动聚类并命名为「{name}」。'
 
 
 def _compute_keyword_overlap(entities_a, entities_b):
@@ -2447,6 +2486,139 @@ def api_lifecycle_stats():
             print(f"[WARN] 生命周期统计失败: {e}")
 
     return jsonify({'stats': [], 'source': 'json_file'})
+
+
+@olm_api.route('/api/olm/lifecycle-analytics')
+def api_lifecycle_analytics():
+    """生命周期分析：阶段时长统计 + 跨对象对比"""
+    domain = request.args.get('domain', '')
+
+    if is_db_available():
+        try:
+            where = "WHERE h.data_domain = %s" if domain else ""
+            params = (domain,) if domain else None
+
+            # 各阶段时长统计
+            duration_query = f"""
+                SELECT h.lifecycle_stage,
+                       COUNT(*) as record_count,
+                       ROUND(AVG(DATEDIFF(COALESCE(h.stage_exited_at, NOW()), h.stage_entered_at)), 1) as avg_days,
+                       MIN(DATEDIFF(COALESCE(h.stage_exited_at, NOW()), h.stage_entered_at)) as min_days,
+                       MAX(DATEDIFF(COALESCE(h.stage_exited_at, NOW()), h.stage_entered_at)) as max_days
+                FROM object_lifecycle_history h
+                {where}
+                GROUP BY h.lifecycle_stage
+                ORDER BY FIELD(h.lifecycle_stage, 'Planning','Design','Construction','Operation','Finance')
+            """
+            duration_stats = execute_query(duration_query, params)
+
+            # 跨对象对比数据
+            compare_query = f"""
+                SELECT o.object_code, o.object_name,
+                       h.lifecycle_stage,
+                       h.stage_entered_at, h.stage_exited_at,
+                       DATEDIFF(COALESCE(h.stage_exited_at, NOW()), h.stage_entered_at) as duration_days
+                FROM object_lifecycle_history h
+                JOIN extracted_objects o ON o.object_id = h.object_id
+                {where}
+                ORDER BY o.object_name, FIELD(h.lifecycle_stage, 'Planning','Design','Construction','Operation','Finance')
+            """
+            compare_data = execute_query(compare_query, params)
+
+            if isinstance(duration_stats, list) and isinstance(compare_data, list):
+                # 处理 Decimal/datetime
+                for row in duration_stats:
+                    for k in ['avg_days', 'min_days', 'max_days']:
+                        if row.get(k) is not None:
+                            row[k] = float(row[k])
+
+                # 按对象分组
+                obj_map = {}
+                for row in compare_data:
+                    code = row['object_code']
+                    if code not in obj_map:
+                        obj_map[code] = {'object_code': code, 'object_name': row['object_name'], 'stages': []}
+                    for k in ['stage_entered_at', 'stage_exited_at']:
+                        if row.get(k):
+                            row[k] = row[k].isoformat() if hasattr(row[k], 'isoformat') else str(row[k])
+                    if row.get('duration_days') is not None:
+                        row['duration_days'] = int(row['duration_days'])
+                    obj_map[code]['stages'].append({
+                        'lifecycle_stage': row['lifecycle_stage'],
+                        'stage_entered_at': row.get('stage_entered_at'),
+                        'stage_exited_at': row.get('stage_exited_at'),
+                        'duration_days': row.get('duration_days', 0)
+                    })
+
+                # 找瓶颈阶段
+                bottleneck = max(duration_stats, key=lambda x: x.get('avg_days', 0)) if duration_stats else None
+
+                return jsonify({
+                    'duration_stats': duration_stats,
+                    'objects': list(obj_map.values()),
+                    'bottleneck': bottleneck['lifecycle_stage'] if bottleneck else None,
+                    'source': 'database'
+                })
+        except Exception as e:
+            print(f"[WARN] 生命周期分析失败: {e}")
+
+    return jsonify({'duration_stats': [], 'objects': [], 'bottleneck': None, 'source': 'json_file'})
+
+
+@olm_api.route('/api/olm/lifecycle-report/<object_code>')
+def api_lifecycle_report(object_code):
+    """生命周期报告导出"""
+    domain = request.args.get('domain', '')
+
+    if is_db_available():
+        try:
+            # 对象基本信息
+            obj_result = execute_query(
+                "SELECT * FROM extracted_objects WHERE object_code = %s LIMIT 1",
+                (object_code,))
+            if not isinstance(obj_result, list) or not obj_result:
+                return jsonify({'error': f'对象 {object_code} 不存在'}), 404
+
+            obj = obj_result[0]
+            for k in ['created_at', 'updated_at', 'verified_at']:
+                if obj.get(k):
+                    obj[k] = obj[k].isoformat() if hasattr(obj[k], 'isoformat') else str(obj[k])
+            if obj.get('extraction_confidence') is not None:
+                obj['extraction_confidence'] = float(obj['extraction_confidence'])
+
+            # 生命周期历史
+            lc_result = execute_query("""
+                SELECT * FROM object_lifecycle_history
+                WHERE object_id = %s
+                ORDER BY FIELD(lifecycle_stage, 'Planning','Design','Construction','Operation','Finance')
+            """, (obj['object_id'],))
+
+            lifecycle = []
+            if isinstance(lc_result, list):
+                for row in lc_result:
+                    for k in ['stage_entered_at', 'stage_exited_at', 'created_at']:
+                        if row.get(k):
+                            row[k] = row[k].isoformat() if hasattr(row[k], 'isoformat') else str(row[k])
+                    # 计算持续天数
+                    if row.get('stage_entered_at'):
+                        from datetime import datetime
+                        entered = datetime.fromisoformat(row['stage_entered_at'])
+                        exited = datetime.fromisoformat(row['stage_exited_at']) if row.get('stage_exited_at') else datetime.now()
+                        row['duration_days'] = (exited - entered).days
+                    lifecycle.append(row)
+
+            return jsonify({
+                'object': obj,
+                'lifecycle': lifecycle,
+                'stage_count': len(lifecycle),
+                'total_days': sum(r.get('duration_days', 0) for r in lifecycle),
+                'generated_at': datetime.now().isoformat() if lifecycle else None,
+                'source': 'database'
+            })
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    return jsonify({'error': '数据库不可用'}), 503
 
 
 # ============================================================================
