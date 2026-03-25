@@ -621,6 +621,9 @@
             <div class="nav-item" data-section="section-mechanism" onclick="scrollToSection('section-mechanism');loadMechanismFunctions();">
                 <i class="bi bi-gear-wide-connected"></i><span>机理函数</span>
             </div>
+            <div class="nav-item" data-section="section-relation-rules" onclick="scrollToSection('section-relation-rules');loadRelationRules();">
+                <i class="bi bi-diagram-3"></i><span>关系规则</span>
+            </div>
             <div class="nav-item" data-section="section-alerts" onclick="scrollToSection('section-alerts');loadAlerts();">
                 <i class="bi bi-bell"></i><span>风险预警</span>
             </div>
@@ -895,7 +898,32 @@
                         <select id="lifecycleObjectSelector" onchange="onLifecycleObjectSelect(this.value)" style="padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-card);color:var(--text-main);font-size:.82rem;min-width:160px;">
                             <option value="">-- 选择对象 --</option>
                         </select>
+                        <button class="btn-sm" onclick="showBatchAdvanceForm()" style="background:#10b981;color:white;"><i class="bi bi-fast-forward"></i> 批量推进</button>
                         <button class="btn-sm" onclick="loadLifecycle()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                    </div>
+                </div>
+                <!-- 批量推进表单 -->
+                <div id="batchAdvanceForm" style="display:none;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px;">
+                    <div style="font-weight:600;font-size:.88rem;margin-bottom:12px;"><i class="bi bi-fast-forward" style="color:#10b981;"></i> 批量推进对象阶段</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <label style="font-size:.82rem;">选择对象（多选）</label>
+                            <select id="batchObjects" multiple size="6" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;margin-top:4px;font-size:.82rem;"></select>
+                        </div>
+                        <div>
+                            <label style="font-size:.82rem;">目标阶段</label>
+                            <select id="batchTargetStage" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
+                                <option value="Planning">Planning 规划</option><option value="Design">Design 设计</option>
+                                <option value="Construction">Construction 建设</option><option value="Operation">Operation 运行</option>
+                                <option value="Finance">Finance 财务</option>
+                            </select>
+                            <label style="font-size:.82rem;margin-top:8px;display:block;">备注</label>
+                            <input id="batchNotes" placeholder="批量推进说明" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
+                            <div style="margin-top:12px;display:flex;gap:8px;">
+                                <button onclick="executeBatchAdvance()" style="padding:8px 20px;background:#10b981;color:white;border:none;border-radius:6px;cursor:pointer;">执行推进</button>
+                                <button onclick="document.getElementById('batchAdvanceForm').style.display='none'" style="padding:8px 20px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--bg-card);">取消</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <!-- 生命周期阶段统计 -->
@@ -957,6 +985,60 @@
                 </div>
                 <div id="chainDetail" style="display:none;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;"></div>
                 <div id="createChainForm" style="display:none;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;margin-top:12px;"></div>
+            </section>
+
+            <!-- Section: Relation Rules (Phase 3 新增) -->
+            <section class="section" id="section-relation-rules" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-diagram-3"></i>对象关系规则
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn-sm" onclick="showCreateRuleForm()"><i class="bi bi-plus-lg"></i> 新建规则</button>
+                        <button class="btn-sm" onclick="loadRelationRules()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                    </div>
+                </div>
+                <!-- 类别过滤 -->
+                <div class="filter-tabs" id="ruleFilterTabs">
+                    <div class="filter-tab active" onclick="filterRelationRules('ALL')">全部</div>
+                    <div class="filter-tab" onclick="filterRelationRules('PHYSICAL_FORMULA')"><span style="color:#3b82f6">●</span> 物理公式</div>
+                    <div class="filter-tab" onclick="filterRelationRules('BUSINESS_RULE')"><span style="color:#10b981">●</span> 业务规则</div>
+                    <div class="filter-tab" onclick="filterRelationRules('THRESHOLD')"><span style="color:#ef4444">●</span> 阈值约束</div>
+                    <div class="filter-tab" onclick="filterRelationRules('DERIVED_CALC')"><span style="color:#f59e0b">●</span> 派生计算</div>
+                </div>
+                <!-- 关系图谱 -->
+                <div style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px;">
+                    <div style="font-weight:600;margin-bottom:8px;font-size:.9rem;"><i class="bi bi-diagram-3" style="color:#3b82f6;"></i> 关系规则图谱</div>
+                    <div id="relationRuleGraph" style="width:100%;height:420px;"></div>
+                </div>
+                <!-- 规则列表 + 测试面板 -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
+                        <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:.85rem;">规则列表</div>
+                        <div id="relationRuleList" style="max-height:500px;overflow-y:auto;">
+                            <div class="empty-state"><i class="bi bi-diagram-3"></i><p>加载中...</p></div>
+                        </div>
+                    </div>
+                    <div style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
+                        <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:.85rem;">规则详情 / 求值测试</div>
+                        <div id="ruleDetailPanel" style="padding:20px;">
+                            <div class="empty-state" style="padding:40px 0;"><i class="bi bi-arrow-left-circle"></i><p>点击左侧规则查看详情</p></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 新建规则表单 -->
+                <div id="createRuleForm" style="display:none;margin-top:12px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;"></div>
+                <!-- 公式链面板 -->
+                <div style="margin-top:16px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:20px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <div style="font-weight:600;font-size:.88rem;"><i class="bi bi-link-45deg" style="color:#8b5cf6;"></i> 公式链（级联计算）</div>
+                        <button class="btn-sm" onclick="loadFormulaChains()"><i class="bi bi-arrow-clockwise"></i> 加载</button>
+                    </div>
+                    <div id="formulaChainList" style="min-height:60px;">
+                        <div class="empty-state" style="padding:20px 0;"><i class="bi bi-link-45deg"></i><p>点击"加载"查看公式链</p></div>
+                    </div>
+                    <div id="chainExecuteResult" style="display:none;margin-top:12px;padding:16px;background:var(--bg-body);border-radius:var(--radius-sm);border:1px solid var(--border);"></div>
+                </div>
             </section>
 
             <!-- Section: Mechanism Functions (Phase 4) -->
@@ -1436,14 +1518,24 @@
     }
 
     // ========== Name Explanation Modal ==========
-    function showNameExplanation(code) {
+    async function showNameExplanation(code) {
         var obj = extractedObjects.find(function(o){return o.object_code===code;});
         if (!obj) return;
-        var samples = obj.sample_entities || [];
-        var source = obj.extraction_source || 'MANUAL';
-        var conf = parseFloat(obj.extraction_confidence || 0.7);
-        var reasoning = obj.llm_reasoning || '';
-        var clusterSize = obj.cluster_size || samples.length;
+
+        // 从 API 获取丰富的解释数据
+        var apiData = null;
+        try {
+            var resp = await fetch('/api/olm/object-name-explanation/' + encodeURIComponent(code));
+            if (resp.ok) apiData = await resp.json();
+        } catch(e) { console.warn('API fallback', e); }
+
+        var samples = apiData ? (apiData.top_entities || []).map(e => e.entity_name) : (obj.sample_entities || []);
+        var source = apiData ? apiData.extraction_source : (obj.extraction_source || 'MANUAL');
+        var conf = apiData ? apiData.extraction_confidence : parseFloat(obj.extraction_confidence || 0.7);
+        var reasoning = apiData ? apiData.llm_reasoning : (obj.llm_reasoning || '');
+        var clusterSize = apiData ? apiData.cluster_size : (obj.cluster_size || samples.length);
+        var topKeywords = apiData ? (apiData.top_keywords || []) : [];
+        var renameHistory = apiData ? (apiData.rename_history || []) : [];
 
         // 命名方法标签
         var sourceLabels = {
@@ -1460,7 +1552,7 @@
         var confPct = Math.round(conf * 100);
 
         var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)this.remove();">';
-        html += '<div style="background:var(--bg-card);border-radius:12px;padding:24px;max-width:520px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">';
+        html += '<div style="background:var(--bg-card);border-radius:12px;padding:24px;max-width:560px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">';
 
         // 标题
         html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">';
@@ -1490,6 +1582,18 @@
             html += '</div>';
         }
 
+        // 高频关键词
+        if (topKeywords.length > 0) {
+            html += '<div style="margin-bottom:12px;">';
+            html += '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:6px;">高频关键词</div>';
+            html += '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+            topKeywords.forEach(function(kw) {
+                var sz = Math.min(1.1, 0.72 + kw.count * 0.04);
+                html += '<span style="font-size:' + sz + 'rem;padding:2px 8px;background:var(--primary);color:#fff;border-radius:12px;opacity:' + Math.min(1, 0.5 + kw.count * 0.1) + ';">' + esc(kw.word) + ' ×' + kw.count + '</span>';
+            });
+            html += '</div></div>';
+        }
+
         // 命名理由
         if (reasoning) {
             html += '<div style="margin-bottom:12px;">';
@@ -1509,11 +1613,59 @@
             html += '</div></div>';
         }
 
+        // 重命名功能
+        html += '<div style="margin-bottom:12px;padding-top:12px;border-top:1px solid var(--border);">';
+        html += '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:6px;"><i class="bi bi-pencil"></i> 重命名对象</div>';
+        html += '<div style="display:flex;gap:8px;align-items:flex-start;">';
+        html += '<div style="flex:1;">';
+        html += '<input id="renameInput_' + esc(code) + '" value="' + esc(obj.object_name) + '" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;">';
+        html += '<input id="renameReason_' + esc(code) + '" placeholder="重命名原因（可选）" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;margin-top:6px;color:var(--text-muted);">';
+        html += '</div>';
+        html += '<button onclick="doRenameObject(\'' + esc(code) + '\')" style="padding:6px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:.82rem;cursor:pointer;white-space:nowrap;">保存</button>';
+        html += '</div></div>';
+
+        // 重命名历史
+        if (renameHistory.length > 0) {
+            html += '<div style="margin-bottom:12px;">';
+            html += '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:6px;"><i class="bi bi-clock-history"></i> 重命名历史</div>';
+            html += '<div style="max-height:120px;overflow-y:auto;">';
+            renameHistory.forEach(function(h) {
+                var ts = h.created_at ? new Date(h.created_at).toLocaleString('zh-CN') : '';
+                html += '<div style="font-size:.78rem;padding:4px 8px;border-left:2px solid var(--border);margin-bottom:4px;">';
+                html += '<span style="color:var(--text-muted);">' + ts + '</span> ';
+                html += '<span style="text-decoration:line-through;color:#ef4444;">' + esc(h.old_name) + '</span>';
+                html += ' → <span style="color:#10b981;font-weight:600;">' + esc(h.new_name) + '</span>';
+                if (h.rename_reason) html += ' <span style="color:var(--text-muted);font-size:.72rem;">(' + esc(h.rename_reason) + ')</span>';
+                html += '</div>';
+            });
+            html += '</div></div>';
+        }
+
         html += '</div></div>';
 
         var div = document.createElement('div');
         div.innerHTML = html;
         document.body.appendChild(div.firstChild);
+    }
+
+    async function doRenameObject(code) {
+        var newName = document.getElementById('renameInput_' + code).value.trim();
+        var reason = document.getElementById('renameReason_' + code).value.trim();
+        if (!newName) { showToast('名称不能为空', 'error'); return; }
+        try {
+            var res = await fetch('/api/olm/objects/' + encodeURIComponent(code) + '/rename', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({new_name: newName, reason: reason})
+            });
+            var data = await res.json();
+            if (data.success) {
+                showToast('重命名成功: ' + data.old_name + ' → ' + data.new_name);
+                document.querySelector('div[style*="fixed"]').remove();
+                loadExtractedObjects(); // 刷新对象列表
+            } else {
+                showToast(data.error || '重命名失败', 'error');
+            }
+        } catch(e) { showToast('请求失败: ' + e.message, 'error'); }
     }
 
     // ========== Select Object & Relations ==========
@@ -3073,6 +3225,354 @@
         }
     }
 
+    // ========== Phase 3+: Relation Rules ==========
+    let allRelationRules = [];
+    let currentRuleFilter = 'ALL';
+    const RULE_CATEGORY_COLORS = {
+        'PHYSICAL_FORMULA': {name:'物理公式', color:'#3b82f6', icon:'bi-calculator'},
+        'BUSINESS_RULE': {name:'业务规则', color:'#10b981', icon:'bi-briefcase'},
+        'THRESHOLD': {name:'阈值约束', color:'#ef4444', icon:'bi-exclamation-triangle'},
+        'DERIVED_CALC': {name:'派生计算', color:'#f59e0b', icon:'bi-arrow-repeat'},
+        'VALIDATION': {name:'校验规则', color:'#8b5cf6', icon:'bi-check-circle'}
+    };
+    const RELATION_TYPE_LABELS = {
+        'DRIVES':'驱动', 'CONSTRAINS':'约束', 'COMPUTES':'计算', 'TRIGGERS':'触发', 'DERIVES':'派生'
+    };
+
+    async function loadRelationRules() {
+        document.getElementById('section-relation-rules').style.display = 'block';
+        try {
+            const res = await fetch('/api/olm/relation-rules');
+            const data = await res.json();
+            allRelationRules = data.rules || [];
+            renderRelationRuleList(allRelationRules);
+            loadRelationRuleGraph();
+        } catch(e) {
+            document.getElementById('relationRuleList').innerHTML = '<div class="empty-state"><p>加载失败</p></div>';
+        }
+    }
+
+    function filterRelationRules(cat) {
+        currentRuleFilter = cat;
+        document.querySelectorAll('#ruleFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+        event.target.closest('.filter-tab').classList.add('active');
+        const filtered = cat === 'ALL' ? allRelationRules : allRelationRules.filter(r => r.rule_category === cat);
+        renderRelationRuleList(filtered);
+    }
+
+    function renderRelationRuleList(rules) {
+        const container = document.getElementById('relationRuleList');
+        if (!rules.length) {
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-diagram-3"></i><p>无匹配规则</p></div>';
+            return;
+        }
+        container.innerHTML = rules.map(r => {
+            const cat = RULE_CATEGORY_COLORS[r.rule_category] || {name:r.rule_category, color:'#999', icon:'bi-question-circle'};
+            const relType = RELATION_TYPE_LABELS[r.relation_type] || r.relation_type;
+            const srcName = r.source_object_code.replace('OBJ_','');
+            const tgtName = r.target_object_code.replace('OBJ_','');
+            const severityBadge = r.severity === 'CRITICAL' ? '<span style="background:#fef2f2;color:#ef4444;padding:1px 6px;border-radius:4px;font-size:.7rem;">CRITICAL</span>'
+                : r.severity === 'WARNING' ? '<span style="background:#fffbeb;color:#f59e0b;padding:1px 6px;border-radius:4px;font-size:.7rem;">WARNING</span>' : '';
+            return `<div onclick="showRuleDetail(${r.rule_id})" style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                    <span style="background:${cat.color}15;color:${cat.color};padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600;"><i class="bi ${cat.icon}"></i> ${cat.name}</span>
+                    <span style="font-weight:600;font-size:.85rem;">${r.rule_name}</span>
+                    ${severityBadge}
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;color:#64748b;font-size:.8rem;">
+                    <span style="font-weight:500;">${srcName}</span>
+                    <span style="color:${cat.color};">→ ${relType} →</span>
+                    <span style="font-weight:500;">${tgtName}</span>
+                </div>
+                <div style="color:#94a3b8;font-size:.75rem;margin-top:2px;">${(r.description||'').substring(0,60)}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function showRuleDetail(ruleId) {
+        const rule = allRelationRules.find(r => r.rule_id === ruleId);
+        if (!rule) return;
+        const cat = RULE_CATEGORY_COLORS[rule.rule_category] || {name:rule.rule_category, color:'#999'};
+        const expr = typeof rule.expression === 'string' ? JSON.parse(rule.expression) : (rule.expression || {});
+        const stages = rule.applicable_stages || [];
+        const stagesStr = Array.isArray(stages) ? (typeof stages[0] === 'string' ? stages : JSON.parse(stages)).join(', ') : '';
+
+        // 构建变量输入表单
+        let varsHtml = '';
+        const vars = expr.variables || {};
+        if (typeof vars === 'object' && !Array.isArray(vars)) {
+            Object.entries(vars).forEach(([k, v]) => {
+                varsHtml += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <label style="min-width:120px;font-size:.82rem;font-weight:500;">${k}</label>
+                    <input type="number" id="ruleVar_${k.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g,'_')}" class="rule-var-input"
+                        placeholder="${v}" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;background:var(--bg-main);">
+                    <span style="color:#94a3b8;font-size:.75rem;">${v}</span>
+                </div>`;
+            });
+        }
+        // 对 threshold 类型也生成输入
+        if (expr.field && !varsHtml) {
+            varsHtml = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <label style="min-width:120px;font-size:.82rem;font-weight:500;">${expr.field}</label>
+                <input type="number" id="ruleVar_actual" class="rule-var-input" placeholder="实际值"
+                    style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;background:var(--bg-main);">
+            </div>`;
+            if (expr.reference_field) {
+                varsHtml += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <label style="min-width:120px;font-size:.82rem;font-weight:500;">${expr.reference_field}</label>
+                    <input type="number" id="ruleVar_threshold" class="rule-var-input" placeholder="阈值"
+                        style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;background:var(--bg-main);">
+                </div>`;
+            }
+        }
+        // 对 business_rule 类型
+        if (expr.condition && !varsHtml) {
+            const match = expr.condition.match(/(\S+)\s*[><=]+/);
+            const fieldName = match ? match[1] : '输入值';
+            varsHtml = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <label style="min-width:120px;font-size:.82rem;font-weight:500;">${fieldName}</label>
+                <input type="number" id="ruleVar_${fieldName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g,'_')}" class="rule-var-input"
+                    placeholder="输入值" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;background:var(--bg-main);">
+            </div>`;
+        }
+
+        const formulaDisplay = expr.formula || expr.condition || expr.trigger || '';
+
+        document.getElementById('ruleDetailPanel').innerHTML = `
+            <div style="margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <span style="background:${cat.color}15;color:${cat.color};padding:3px 10px;border-radius:6px;font-size:.8rem;font-weight:600;">${cat.name}</span>
+                    <span style="color:#94a3b8;font-size:.78rem;">${rule.rule_code}</span>
+                </div>
+                <h3 style="margin:0 0 4px;font-size:1.05rem;">${rule.rule_name}</h3>
+                <p style="color:#64748b;font-size:.82rem;margin:0;">${rule.description || ''}</p>
+            </div>
+            <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;">
+                <div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">公式 / 规则</div>
+                <div style="font-size:1.1rem;font-weight:600;font-family:'Geist Mono',monospace;color:${cat.color};">${formulaDisplay}</div>
+                ${expr.constraint ? `<div style="margin-top:6px;font-size:.8rem;color:#ef4444;">约束: ${expr.constraint}</div>` : ''}
+                ${expr.industry_standard ? `<div style="margin-top:4px;font-size:.75rem;color:#94a3b8;">标准: ${expr.industry_standard}</div>` : ''}
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:16px;font-size:.8rem;">
+                <div><span style="color:#94a3b8;">关系:</span> <b>${rule.source_object_code.replace('OBJ_','')} → ${rule.target_object_code.replace('OBJ_','')}</b></div>
+                <div><span style="color:#94a3b8;">类型:</span> ${RELATION_TYPE_LABELS[rule.relation_type]||rule.relation_type}</div>
+                ${stagesStr ? `<div><span style="color:#94a3b8;">适用阶段:</span> ${stagesStr}</div>` : ''}
+            </div>
+            ${varsHtml ? `
+            <div style="border-top:1px solid var(--border);padding-top:14px;">
+                <div style="font-weight:600;margin-bottom:10px;font-size:.85rem;"><i class="bi bi-play-circle" style="color:#3b82f6;"></i> 求值测试</div>
+                ${varsHtml}
+                <button onclick="evaluateRule(${rule.rule_id})" class="btn-sm" style="margin-top:8px;background:#3b82f6;color:white;border:none;padding:8px 20px;">
+                    <i class="bi bi-calculator"></i> 计算
+                </button>
+                <div id="ruleEvalResult" style="margin-top:12px;"></div>
+            </div>` : ''}
+        `;
+    }
+
+    async function evaluateRule(ruleId) {
+        const inputs = document.querySelectorAll('.rule-var-input');
+        const variables = {};
+        inputs.forEach(inp => {
+            const name = inp.id.replace('ruleVar_','').replace(/_/g,' ');
+            if (inp.value) variables[name] = parseFloat(inp.value);
+        });
+
+        const resultDiv = document.getElementById('ruleEvalResult');
+        resultDiv.innerHTML = '<div style="color:#64748b;font-size:.82rem;">计算中...</div>';
+
+        try {
+            const res = await fetch('/api/olm/relation-rules/evaluate', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({rule_id: ruleId, variables})
+            });
+            const data = await res.json();
+            if (data.success) {
+                const r = data.result;
+                if (r.type === 'formula') {
+                    const constraintHtml = r.constraint_check ? (r.constraint_check.satisfied
+                        ? '<div style="color:#10b981;margin-top:6px;">✓ 满足约束</div>'
+                        : `<div style="color:#ef4444;margin-top:6px;">✗ ${r.constraint_check.message}</div>`) : '';
+                    resultDiv.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;">
+                        <div style="font-size:.78rem;color:#64748b;">计算结果</div>
+                        <div style="font-size:1.4rem;font-weight:700;color:#059669;">${r.computed_value !== null ? r.computed_value : '无法计算'} <span style="font-size:.85rem;font-weight:400;">${r.unit || ''}</span></div>
+                        <div style="font-size:.78rem;color:#94a3b8;margin-top:4px;">${r.result_name}${r.method ? ' ('+r.method+')' : ''}</div>
+                        ${constraintHtml}
+                    </div>`;
+                } else if (r.type === 'threshold') {
+                    const bg = r.triggered ? '#fef2f2' : '#f0fdf4';
+                    const border = r.triggered ? '#fecaca' : '#bbf7d0';
+                    const color = r.triggered ? '#ef4444' : '#059669';
+                    const icon = r.triggered ? '⚠️' : '✓';
+                    resultDiv.innerHTML = `<div style="background:${bg};border:1px solid ${border};border-radius:8px;padding:14px;">
+                        <div style="font-size:1.1rem;font-weight:700;color:${color};">${icon} ${r.triggered ? '已触发预警' : '未触发'}</div>
+                        <div style="font-size:.82rem;color:#64748b;margin-top:4px;">${r.field}: ${r.actual_value} ${r.operator} ${r.threshold}</div>
+                        ${r.triggered ? `<div style="font-size:.82rem;color:#ef4444;margin-top:4px;">${r.message}</div>` : ''}
+                    </div>`;
+                } else if (r.type === 'rule') {
+                    const bg = r.triggered ? '#fffbeb' : '#f0fdf4';
+                    const border = r.triggered ? '#fde68a' : '#bbf7d0';
+                    resultDiv.innerHTML = `<div style="background:${bg};border:1px solid ${border};border-radius:8px;padding:14px;">
+                        <div style="font-size:.85rem;font-weight:600;">${r.triggered ? '条件满足' : '条件不满足'}</div>
+                        <div style="font-size:.95rem;font-weight:700;color:#1e293b;margin-top:4px;">${r.action}</div>
+                        ${r.side_effect ? `<div style="font-size:.78rem;color:#94a3b8;margin-top:4px;">副作用: ${r.side_effect}</div>` : ''}
+                    </div>`;
+                }
+            } else {
+                resultDiv.innerHTML = `<div style="color:#ef4444;font-size:.82rem;">错误: ${data.error}</div>`;
+            }
+        } catch(e) {
+            resultDiv.innerHTML = `<div style="color:#ef4444;font-size:.82rem;">请求失败: ${e.message}</div>`;
+        }
+    }
+
+    async function loadRelationRuleGraph() {
+        try {
+            const res = await fetch('/api/olm/relation-rules/graph');
+            const data = await res.json();
+            renderRelationRuleGraph(data);
+        } catch(e) {
+            console.error('加载关系规则图谱失败', e);
+        }
+    }
+
+    function renderRelationRuleGraph(data) {
+        const dom = document.getElementById('relationRuleGraph');
+        const chart = echarts.init(dom);
+        const option = {
+            tooltip: {
+                trigger: 'item',
+                formatter: function(p) {
+                    if (p.dataType === 'edge') {
+                        const d = p.data;
+                        return `<b>${d.rule_name}</b><br/>${d.source.replace('OBJ_','')} → ${d.target.replace('OBJ_','')}<br/><span style="color:${RULE_CATEGORY_COLORS[d.rule_category]?.color||'#999'}">${RULE_CATEGORY_COLORS[d.rule_category]?.name||d.rule_category}</span><br/>${d.formula||''}`;
+                    }
+                    return `<b>${p.data.name}</b>`;
+                }
+            },
+            legend: {
+                data: data.categories?.map(c => c.name) || [],
+                bottom: 0,
+                textStyle: {fontSize: 11}
+            },
+            series: [{
+                type: 'graph',
+                layout: 'force',
+                roam: true,
+                draggable: true,
+                label: {show: true, fontSize: 12, fontWeight: 'bold'},
+                edgeLabel: {show: true, fontSize: 9, formatter: p => p.data.value || '',
+                    backgroundColor: 'rgba(255,255,255,0.85)', padding: [2, 6], borderRadius: 3},
+                edgeSymbol: ['none', 'arrow'],
+                edgeSymbolSize: [0, 10],
+                force: {repulsion: 300, edgeLength: [120, 200], gravity: 0.1},
+                data: (data.nodes || []).map(n => ({
+                    ...n,
+                    itemStyle: {color: '#6366f1', borderColor: '#fff', borderWidth: 2},
+                    label: {color: '#1e293b'}
+                })),
+                links: (data.links || []).map(l => ({...l})),
+                lineStyle: {curveness: 0.2}
+            }]
+        };
+        chart.setOption(option);
+        chart.on('click', function(params) {
+            if (params.dataType === 'edge' && params.data.rule_id) {
+                showRuleDetail(params.data.rule_id);
+            }
+        });
+        window.addEventListener('resize', () => chart.resize());
+    }
+
+    function showCreateRuleForm() {
+        const form = document.getElementById('createRuleForm');
+        if (form.style.display === 'block') { form.style.display = 'none'; return; }
+        form.style.display = 'block';
+        form.innerHTML = `
+            <h3 style="margin:0 0 16px;font-size:1rem;">新建关系规则</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>
+                    <label style="font-size:.82rem;font-weight:500;">规则编码</label>
+                    <input id="newRuleCode" placeholder="RR_XXX" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:.82rem;font-weight:500;">规则名称</label>
+                    <input id="newRuleName" placeholder="规则名称" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:.82rem;font-weight:500;">源对象编码</label>
+                    <input id="newRuleSource" placeholder="OBJ_DEVICE" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:.82rem;font-weight:500;">目标对象编码</label>
+                    <input id="newRuleTarget" placeholder="OBJ_ASSET" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:.82rem;font-weight:500;">关系类型</label>
+                    <select id="newRuleRelType" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
+                        <option value="COMPUTES">COMPUTES 计算</option><option value="CONSTRAINS">CONSTRAINS 约束</option>
+                        <option value="DRIVES">DRIVES 驱动</option><option value="TRIGGERS">TRIGGERS 触发</option>
+                        <option value="DERIVES">DERIVES 派生</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:.82rem;font-weight:500;">规则类别</label>
+                    <select id="newRuleCat" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
+                        <option value="PHYSICAL_FORMULA">物理公式</option><option value="BUSINESS_RULE">业务规则</option>
+                        <option value="THRESHOLD">阈值约束</option><option value="DERIVED_CALC">派生计算</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top:12px;">
+                <label style="font-size:.82rem;font-weight:500;">规则表达式 (JSON)</label>
+                <textarea id="newRuleExpr" rows="4" placeholder='{"formula": "P = U × I", "variables": {"U": "电压(V)", "I": "电流(A)"}, "result": "功率(W)"}'
+                    style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;font-family:monospace;font-size:.82rem;"></textarea>
+            </div>
+            <div style="margin-top:12px;">
+                <label style="font-size:.82rem;font-weight:500;">描述</label>
+                <input id="newRuleDesc" placeholder="规则描述" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
+            </div>
+            <div style="margin-top:16px;display:flex;gap:8px;">
+                <button onclick="submitNewRule()" class="btn-sm" style="background:#3b82f6;color:white;border:none;padding:8px 20px;">创建</button>
+                <button onclick="document.getElementById('createRuleForm').style.display='none'" class="btn-sm">取消</button>
+            </div>
+        `;
+    }
+
+    async function submitNewRule() {
+        try {
+            let expr;
+            try { expr = JSON.parse(document.getElementById('newRuleExpr').value); }
+            catch(e) { showToast('JSON格式错误', 'error'); return; }
+
+            const res = await fetch('/api/olm/relation-rules', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    rule_code: document.getElementById('newRuleCode').value,
+                    rule_name: document.getElementById('newRuleName').value,
+                    source_object_code: document.getElementById('newRuleSource').value,
+                    target_object_code: document.getElementById('newRuleTarget').value,
+                    relation_type: document.getElementById('newRuleRelType').value,
+                    rule_category: document.getElementById('newRuleCat').value,
+                    expression: expr,
+                    description: document.getElementById('newRuleDesc').value
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('关系规则创建成功');
+                document.getElementById('createRuleForm').style.display = 'none';
+                loadRelationRules();
+            } else {
+                showToast('创建失败: ' + data.error, 'error');
+            }
+        } catch(e) {
+            showToast('创建失败: ' + e.message, 'error');
+        }
+    }
+
     // ========== Phase 4: Mechanism Functions ==========
     let allFunctions = [];
     let currentFuncFilter = 'ALL';
@@ -3575,6 +4075,143 @@
         html += '</tbody></table>';
         container.innerHTML = html;
     }
+
+    // ============================================================================
+    // Phase 2: 批量推进 + 生命周期验证
+    // ============================================================================
+
+    function showBatchAdvanceForm() {
+        var form = document.getElementById('batchAdvanceForm');
+        if (form.style.display === 'block') { form.style.display = 'none'; return; }
+        form.style.display = 'block';
+        var sel = document.getElementById('batchObjects');
+        sel.innerHTML = '';
+        extractedObjects.forEach(function(obj) {
+            var opt = document.createElement('option');
+            opt.value = obj.object_code;
+            opt.textContent = obj.object_name + ' (' + obj.object_code + ')';
+            sel.appendChild(opt);
+        });
+    }
+
+    async function executeBatchAdvance() {
+        var sel = document.getElementById('batchObjects');
+        var codes = Array.from(sel.selectedOptions).map(o => o.value);
+        var stage = document.getElementById('batchTargetStage').value;
+        var notes = document.getElementById('batchNotes').value || '批量推进';
+        if (codes.length === 0) { showToast('请选择至少一个对象', 'error'); return; }
+        try {
+            var res = await fetch('/api/olm/lifecycle-batch-advance', {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({object_codes: codes, target_stage: stage, notes: notes})
+            });
+            var data = await res.json();
+            if (data.success) {
+                showToast('批量推进完成: ' + data.succeeded + '/' + data.total + ' 成功');
+                document.getElementById('batchAdvanceForm').style.display = 'none';
+                loadLifecycle();
+            } else {
+                showToast(data.error || '推进失败', 'error');
+            }
+        } catch(e) { showToast('请求失败: ' + e.message, 'error'); }
+    }
+
+    // ============================================================================
+    // Phase 3: 公式链
+    // ============================================================================
+
+    async function loadFormulaChains() {
+        var container = document.getElementById('formulaChainList');
+        container.innerHTML = '<div style="text-align:center;padding:16px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+        try {
+            var res = await fetch('/api/olm/formula-chains');
+            var chains = await res.json();
+            if (!chains.length) {
+                container.innerHTML = '<div class="empty-state" style="padding:20px 0;"><p>暂无公式链</p></div>';
+                return;
+            }
+            var html = '';
+            chains.forEach(function(chain) {
+                html += '<div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+                html += '<div style="font-weight:600;font-size:.88rem;"><i class="bi bi-link-45deg" style="color:#8b5cf6;"></i> ' + esc(chain.chain_name) + '</div>';
+                html += '<button onclick="showChainExecuteForm(' + chain.chain_id + ')" class="btn-sm" style="background:#8b5cf6;color:white;font-size:.75rem;">执行链</button>';
+                html += '</div>';
+                if (chain.description) {
+                    html += '<div style="font-size:.82rem;color:var(--text-sec);margin-bottom:8px;">' + esc(chain.description) + '</div>';
+                }
+                // 步骤流程图
+                html += '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">';
+                (chain.steps || []).forEach(function(step, idx) {
+                    if (idx > 0) html += '<i class="bi bi-arrow-right" style="color:var(--text-muted);font-size:.72rem;"></i>';
+                    var catColor = {'PHYSICAL_FORMULA':'#3b82f6','BUSINESS_RULE':'#10b981','THRESHOLD':'#ef4444','DERIVED_CALC':'#f59e0b'}[step.rule_category] || '#999';
+                    html += '<div style="padding:4px 10px;border-radius:12px;font-size:.75rem;border:1px solid ' + catColor + ';color:' + catColor + ';">';
+                    html += '<span style="font-weight:600;">' + step.source_object_code.replace('OBJ_','') + '</span>';
+                    html += ' → <span style="font-weight:600;">' + step.target_object_code.replace('OBJ_','') + '</span>';
+                    html += '</div>';
+                });
+                html += '</div></div>';
+            });
+            container.innerHTML = html;
+        } catch(e) {
+            container.innerHTML = '<div class="empty-state" style="padding:20px 0;"><p>加载失败: ' + e.message + '</p></div>';
+        }
+    }
+
+    function showChainExecuteForm(chainId) {
+        var panel = document.getElementById('chainExecuteResult');
+        panel.style.display = 'block';
+        panel.innerHTML = `
+            <div style="font-weight:600;margin-bottom:12px;"><i class="bi bi-play-circle" style="color:#8b5cf6;"></i> 执行公式链 #${chainId}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:12px;" id="chainVarInputs">
+                <div><label style="font-size:.78rem;">U (电压V)</label><input type="number" id="cv_U" value="220" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;"></div>
+                <div><label style="font-size:.78rem;">I (电流A)</label><input type="number" id="cv_I" value="15" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;"></div>
+                <div><label style="font-size:.78rem;">原值 (元)</label><input type="number" id="cv_原值" value="500000" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;"></div>
+                <div><label style="font-size:.78rem;">残值 (元)</label><input type="number" id="cv_残值" value="25000" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;"></div>
+                <div><label style="font-size:.78rem;">折旧年限</label><input type="number" id="cv_折旧年限" value="15" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;"></div>
+                <div><label style="font-size:.78rem;">累计费用</label><input type="number" id="cv_累计费用" value="320000" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;"></div>
+                <div><label style="font-size:.78rem;">预算额度</label><input type="number" id="cv_预算额度" value="280000" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;"></div>
+            </div>
+            <button onclick="executeChain(${chainId})" style="padding:8px 20px;background:#8b5cf6;color:white;border:none;border-radius:6px;cursor:pointer;"><i class="bi bi-play-fill"></i> 执行级联计算</button>
+            <div id="chainResultBody" style="margin-top:12px;"></div>
+        `;
+    }
+
+    async function executeChain(chainId) {
+        var vars = {};
+        document.querySelectorAll('#chainVarInputs input').forEach(function(inp) {
+            var key = inp.id.replace('cv_', '');
+            if (inp.value) vars[key] = parseFloat(inp.value);
+        });
+        var body = document.getElementById('chainResultBody');
+        body.innerHTML = '<div class="spinner" style="margin:8px auto;"></div>';
+        try {
+            var res = await fetch('/api/olm/formula-chains/' + chainId + '/execute', {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({variables: vars})
+            });
+            var data = await res.json();
+            if (!data.success) { body.innerHTML = '<div style="color:#ef4444;">' + (data.error||'执行失败') + '</div>'; return; }
+
+            var html = '<div style="font-size:.82rem;color:var(--text-muted);margin-bottom:8px;">链: <strong>' + esc(data.chain_name) + '</strong> | 步骤: ' + data.total_steps + ' | 预警: <span style="color:' + (data.alerts_triggered > 0 ? '#ef4444' : '#10b981') + ';">' + data.alerts_triggered + '</span></div>';
+
+            html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+            data.steps.forEach(function(step) {
+                var borderColor = step.triggered ? '#ef4444' : (step.result_value != null ? '#10b981' : '#e2e8f0');
+                html += '<div style="padding:10px 14px;border-left:3px solid ' + borderColor + ';background:var(--bg-body);border-radius:4px;">';
+                html += '<div style="font-size:.82rem;font-weight:600;">步骤 ' + step.step_order + ': ' + esc(step.rule_name) + '</div>';
+                html += '<div style="font-size:.78rem;color:var(--text-sec);margin-top:4px;">' + esc(step.source_object || '') + ' → ' + esc(step.target_object || '') + '</div>';
+                if (step.formula) html += '<div style="font-size:.82rem;font-family:monospace;color:var(--primary);margin-top:4px;">' + esc(step.formula) + '</div>';
+                if (step.result_value != null) html += '<div style="font-size:.88rem;font-weight:700;color:#10b981;margin-top:4px;">结果: ' + step.result_value + '</div>';
+                if (step.triggered) html += '<div style="font-size:.82rem;color:#ef4444;margin-top:4px;"><i class="bi bi-exclamation-triangle"></i> ' + esc(step.message || '预警触发') + '</div>';
+                if (step.action) html += '<div style="font-size:.82rem;color:var(--text-sec);margin-top:4px;">决策: ' + esc(step.action) + '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+            body.innerHTML = html;
+        } catch(e) { body.innerHTML = '<div style="color:#ef4444;">请求失败: ' + e.message + '</div>'; }
+    }
+
     </script>
 
     <!-- 抽取域选择弹窗 -->

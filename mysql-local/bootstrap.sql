@@ -841,6 +841,395 @@ INSERT INTO `object_lifecycle_history` (`object_id`, `lifecycle_stage`, `stage_e
  'shupeidian', 'PMS', '移交后运维接管');
 
 -- ============================================================================
+-- 对象间关系规则表（Phase 3: 对象对上挂载物理公式/业务规则/阈值约束）
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `object_relation_rules` (
+    `rule_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `rule_code` VARCHAR(128) NOT NULL UNIQUE COMMENT '规则编码',
+    `rule_name` VARCHAR(256) NOT NULL COMMENT '规则名称',
+
+    -- 关系双端
+    `source_object_code` VARCHAR(128) NOT NULL COMMENT '源对象编码',
+    `target_object_code` VARCHAR(128) NOT NULL COMMENT '目标对象编码',
+    `relation_type` ENUM('DRIVES','CONSTRAINS','COMPUTES','TRIGGERS','DERIVES')
+        NOT NULL COMMENT '关系类型: 驱动/约束/计算/触发/派生',
+
+    -- 规则定义
+    `rule_category` ENUM('PHYSICAL_FORMULA','BUSINESS_RULE','THRESHOLD','VALIDATION','DERIVED_CALC')
+        NOT NULL COMMENT '规则类别',
+    `expression` JSON NOT NULL COMMENT '规则表达式(JSON格式)',
+    `description` TEXT COMMENT '规则描述',
+
+    -- 方向与强度
+    `direction` ENUM('UNIDIRECTIONAL','BIDIRECTIONAL') DEFAULT 'UNIDIRECTIONAL' COMMENT '方向',
+    `priority` INT DEFAULT 0 COMMENT '优先级(同对象对多规则时)',
+
+    -- 生命周期关联
+    `applicable_stages` JSON DEFAULT NULL COMMENT '适用的生命周期阶段列表',
+
+    -- 元数据
+    `severity` ENUM('INFO','WARNING','CRITICAL') DEFAULT 'INFO' COMMENT '严重级别',
+    `is_active` BOOLEAN DEFAULT TRUE COMMENT '是否启用',
+    `data_domain` VARCHAR(128) COMMENT '数据域',
+    `created_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+
+    INDEX `idx_rr_source` (`source_object_code`),
+    INDEX `idx_rr_target` (`target_object_code`),
+    INDEX `idx_rr_pair` (`source_object_code`, `target_object_code`),
+    INDEX `idx_rr_category` (`rule_category`, `is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='对象间关系规则表 — 在对象对上挂载物理公式、业务规则、阈值约束';
+
+-- ============================================================================
+-- 预置关系规则（8条演示数据）
+-- ============================================================================
+INSERT INTO `object_relation_rules` (`rule_code`, `rule_name`, `source_object_code`, `target_object_code`, `relation_type`, `rule_category`, `expression`, `description`, `applicable_stages`, `severity`, `data_domain`) VALUES
+
+-- 1. 物理公式：设备 → 资产（功率影响资产估值）
+('RR_POWER_ASSET', '设备功率影响资产估值', 'OBJ_DEVICE', 'OBJ_ASSET',
+ 'COMPUTES', 'PHYSICAL_FORMULA',
+ '{"formula": "P = U × I", "variables": {"U": "额定电压(V)", "I": "额定电流(A)"}, "result": "P(额定功率W)", "downstream_effect": "功率等级决定资产折旧类别"}',
+ '根据设备额定电压和电流计算功率，功率等级影响资产分类和折旧策略',
+ '["Operation", "Finance"]', 'INFO', 'shupeidian'),
+
+-- 2. 业务规则：合同 → 项目（合同金额决定审批路径）
+('RR_CONTRACT_PROJECT', '合同金额决定项目审批级别', 'OBJ_CONTRACT', 'OBJ_PROJECT',
+ 'CONSTRAINS', 'BUSINESS_RULE',
+ '{"condition": "合同金额 > 3000000", "then": "项目审批路径 = A级审批", "else": "项目审批路径 = B级审批", "unit": "元"}',
+ '合同金额超过300万元时项目需走A级审批路径，否则走B级',
+ '["Planning", "Design"]', 'WARNING', 'jicai'),
+
+-- 3. 阈值约束：费用 → 预算（费用超预算触发预警）
+('RR_COST_BUDGET', '费用超预算预警', 'OBJ_COST', 'OBJ_BUDGET',
+ 'TRIGGERS', 'THRESHOLD',
+ '{"field": "累计费用", "operator": ">", "reference_field": "预算额度", "tolerance": 0.1, "message": "费用已超预算{percent}%，需启动预算追加流程"}',
+ '当累计费用超过预算额度10%时触发预警',
+ '["Construction", "Operation", "Finance"]', 'CRITICAL', 'jicai'),
+
+-- 4. 派生计算：项目 → 指标（项目完工率）
+('RR_PROJECT_KPI', '项目完工率派生', 'OBJ_PROJECT', 'OBJ_KPI',
+ 'DERIVES', 'DERIVED_CALC',
+ '{"formula": "完工率 = 已完成里程碑 / 总里程碑 × 100", "variables": {"已完成里程碑": "INTEGER", "总里程碑": "INTEGER"}, "result": "完工率(%)", "threshold_warning": 50, "threshold_ok": 80}',
+ '根据里程碑完成数计算项目完工率，低于50%预警',
+ '["Construction", "Operation"]', 'INFO', 'jicai'),
+
+-- 5. 驱动关系：工单 → 设备（工单触发设备状态变更）
+('RR_WORKORDER_DEVICE', '工单驱动设备状态', 'OBJ_WORKORDER', 'OBJ_DEVICE',
+ 'DRIVES', 'BUSINESS_RULE',
+ '{"trigger": "工单状态 = 已完成", "action": "设备状态 = 已检修", "side_effect": "更新设备.最近检修日期 = 工单.完成日期"}',
+ '工单完成后自动更新关联设备的检修状态和日期',
+ '["Operation"]', 'INFO', 'shupeidian'),
+
+-- 6. 物理约束：设备 → 设备（变压器负载约束，自环）
+('RR_TRANSFORMER_LOAD', '变压器负载约束', 'OBJ_DEVICE', 'OBJ_DEVICE',
+ 'CONSTRAINS', 'PHYSICAL_FORMULA',
+ '{"formula": "负载率 = 实际负荷 / 额定容量 × 100", "variables": {"实际负荷": "额定负荷(kVA)", "额定容量": "额定容量(kVA)"}, "constraint": "负载率 <= 80", "unit": "%", "message": "变压器负载率{value}%超过安全阈值80%"}',
+ '监控变压器负载率，超过80%触发安全预警',
+ '["Operation"]', 'CRITICAL', 'shupeidian'),
+
+-- 7. 物理公式：资产 → 费用（折旧计算）
+('RR_ASSET_DEPRECIATION', '资产折旧费用计算', 'OBJ_ASSET', 'OBJ_COST',
+ 'COMPUTES', 'PHYSICAL_FORMULA',
+ '{"formula": "年折旧额 = (原值 - 残值) / 折旧年限", "variables": {"原值": "DECIMAL(元)", "残值": "DECIMAL(元)", "折旧年限": "INTEGER(年)"}, "result": "年折旧额(元)", "method": "直线法"}',
+ '按直线法计算资产年度折旧额，结果计入费用',
+ '["Operation", "Finance"]', 'INFO', 'jicai'),
+
+-- 8. 物理公式：设备 → 线路（线损计算）
+('RR_LINE_LOSS', '线路损耗计算', 'OBJ_DEVICE', 'OBJ_LINE',
+ 'COMPUTES', 'PHYSICAL_FORMULA',
+ '{"formula": "ΔP = I² × R × L", "variables": {"I": "电流(A)", "R": "电阻率(Ω/km)", "L": "线路长度(km)"}, "result": "线损功率(W)", "industry_standard": "GB/T 12325"}',
+ '根据电流、电阻率和线路长度计算线路损耗功率',
+ '["Operation"]', 'WARNING', 'shupeidian')
+
+ON DUPLICATE KEY UPDATE `rule_name` = VALUES(`rule_name`);
+
+-- ============================================================================
+-- 对象名称历史表（Phase 1: 重命名审计追踪）
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `object_name_history` (
+    `history_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `object_id` INT NOT NULL,
+    `old_name` VARCHAR(256) NOT NULL COMMENT '原名称',
+    `new_name` VARCHAR(256) NOT NULL COMMENT '新名称',
+    `rename_source` ENUM('MANUAL','LLM','MERGE') NOT NULL DEFAULT 'MANUAL' COMMENT '重命名来源',
+    `rename_reason` TEXT COMMENT '重命名原因',
+    `renamed_by` VARCHAR(128) DEFAULT 'system' COMMENT '操作人',
+    `created_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+    FOREIGN KEY (`object_id`) REFERENCES `extracted_objects`(`object_id`) ON DELETE CASCADE,
+    KEY `idx_onh_object_time` (`object_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='对象名称变更历史（审计追踪）';
+
+-- ============================================================================
+-- 生命周期阶段模板表（Phase 2: 阶段属性模板 + 验证规则）
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `lifecycle_stage_templates` (
+    `template_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `object_type` ENUM('CORE','DERIVED','AUXILIARY') NOT NULL COMMENT '适用的对象类型',
+    `lifecycle_stage` ENUM('Planning','Design','Construction','Operation','Finance') NOT NULL COMMENT '生命周期阶段',
+    `required_attributes` JSON NOT NULL COMMENT '必填属性列表',
+    `optional_attributes` JSON COMMENT '可选属性列表',
+    `validation_rules` JSON COMMENT '验证规则 {attr: {type, min, max, pattern}}',
+    `trigger_functions` JSON COMMENT '进入该阶段时自动触发的机理函数编码列表',
+    `description` TEXT COMMENT '阶段描述',
+    UNIQUE KEY `uk_lst_type_stage` (`object_type`, `lifecycle_stage`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='生命周期阶段模板 — 定义每阶段必填/可选属性和验证规则';
+
+-- 预置 CORE 类型 5 阶段模板
+INSERT INTO `lifecycle_stage_templates` (`object_type`, `lifecycle_stage`, `required_attributes`, `optional_attributes`, `validation_rules`, `trigger_functions`, `description`) VALUES
+('CORE', 'Planning',
+ '["项目名称", "立项日期", "预算金额", "负责人"]',
+ '["可行性报告", "审批状态", "优先级"]',
+ '{"预算金额": {"type": "number", "min": 0}, "立项日期": {"type": "date"}}',
+ NULL,
+ '规划阶段：确定项目范围、预算和时间节点'),
+('CORE', 'Design',
+ '["设计方案", "技术规格", "审批状态"]',
+ '["设计单位", "设计周期", "变更记录"]',
+ '{"审批状态": {"type": "enum", "values": ["待审批", "已审批", "驳回"]}}',
+ NULL,
+ '设计阶段：完成技术方案设计和审批'),
+('CORE', 'Construction',
+ '["施工单位", "开工日期", "计划完工日期", "施工进度"]',
+ '["质检记录", "安全检查", "变更单", "验收标准"]',
+ '{"施工进度": {"type": "number", "min": 0, "max": 100}, "开工日期": {"type": "date"}}',
+ '["MF_COST_MONITOR"]',
+ '建设阶段：施工执行和过程管理'),
+('CORE', 'Operation',
+ '["运行状态", "投运日期", "运维负责人"]',
+ '["巡检周期", "缺陷记录", "负荷数据", "检修计划"]',
+ '{"运行状态": {"type": "enum", "values": ["正常运行", "带病运行", "停运检修", "退役"]}}',
+ '["MF_LOAD_MONITOR"]',
+ '运行阶段：投运后的运维管理'),
+('CORE', 'Finance',
+ '["资产原值", "累计折旧", "净值", "折旧方式"]',
+ '["残值率", "折旧年限", "资产分类", "报废审批"]',
+ '{"资产原值": {"type": "number", "min": 0}, "累计折旧": {"type": "number", "min": 0}}',
+ '["MF_DEPRECIATION"]',
+ '财务阶段：资产价值管理和折旧计算')
+ON DUPLICATE KEY UPDATE `required_attributes` = VALUES(`required_attributes`);
+
+-- ============================================================================
+-- 补充生命周期演示数据（Phase 2: 扩充到 50+ 条）
+-- ============================================================================
+
+-- 费用对象生命周期
+INSERT INTO `object_lifecycle_history` (`object_id`, `lifecycle_stage`, `stage_entered_at`, `stage_exited_at`, `attributes_snapshot`, `data_domain`, `source_system`, `notes`) VALUES
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_COST' LIMIT 1),
+ 'Planning', '2024-01-10', '2024-02-15',
+ '{"预算编制": "已完成", "费用科目": "基建投资", "年度预算": 5000000}',
+ 'jicai', 'ERP', '年度预算编制'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_COST' LIMIT 1),
+ 'Construction', '2024-02-15', '2024-08-20',
+ '{"累计支出": 3200000, "预算执行率": "64%", "费用类别": "材料费+人工费"}',
+ 'jicai', 'ERP', '建设期费用归集'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_COST' LIMIT 1),
+ 'Finance', '2024-08-20', NULL,
+ '{"决算金额": 4800000, "审计状态": "已审计", "结余": 200000}',
+ 'jicai', 'ERP', '竣工决算'),
+
+-- 指标对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_METRIC' LIMIT 1),
+ 'Planning', '2024-01-05', '2024-03-01',
+ '{"指标体系": "已建立", "KPI数量": 15, "目标值设定": "已完成"}',
+ 'jicai', 'BI', '年度指标体系建立'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_METRIC' LIMIT 1),
+ 'Operation', '2024-03-01', NULL,
+ '{"达标率": "87%", "预警指标": 3, "超标指标": 1, "监控频率": "月度"}',
+ 'jicai', 'BI', '指标监控运行中'),
+
+-- 工单对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_TASK' LIMIT 1),
+ 'Planning', '2024-03-01', '2024-03-15',
+ '{"工单类型": "计划检修", "优先级": "高", "计划工期": 14}',
+ 'shupeidian', 'PMS', '检修计划编制'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_TASK' LIMIT 1),
+ 'Construction', '2024-03-15', '2024-03-28',
+ '{"施工班组": "检修一班", "进度": 100, "安全等级": "一级"}',
+ 'shupeidian', 'PMS', '检修执行'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_TASK' LIMIT 1),
+ 'Operation', '2024-03-28', NULL,
+ '{"验收状态": "已验收", "质量评分": 95, "遗留缺陷": 0}',
+ 'shupeidian', 'PMS', '工单已完成验收'),
+
+-- 人员对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_PERSONNEL' LIMIT 1),
+ 'Planning', '2023-01-01', '2023-06-30',
+ '{"岗位规划": "已完成", "编制数": 120, "招聘计划": 15}',
+ 'jicai', 'HR', '年度人员规划'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_PERSONNEL' LIMIT 1),
+ 'Operation', '2023-07-01', NULL,
+ '{"在岗人数": 118, "培训完成率": "92%", "持证上岗率": "100%", "流动率": "3.5%"}',
+ 'jicai', 'HR', '人员日常管理'),
+
+-- 票据对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_VOUCHER' LIMIT 1),
+ 'Planning', '2024-01-01', '2024-01-15',
+ '{"票据类型": "增值税发票", "年度预估量": 5000}',
+ 'jicai', 'ERP', '票据管理规划'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_VOUCHER' LIMIT 1),
+ 'Operation', '2024-01-15', NULL,
+ '{"已处理票据": 3200, "待处理": 150, "异常票据": 12, "合规率": "99.6%"}',
+ 'jicai', 'ERP', '票据流转中'),
+
+-- 审计对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_AUDIT' LIMIT 1),
+ 'Planning', '2024-02-01', '2024-03-01',
+ '{"审计计划": "年度内审", "审计范围": "全域", "重点领域": "合同管理、费用支出"}',
+ 'jicai', 'OA', '审计计划编制'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_AUDIT' LIMIT 1),
+ 'Construction', '2024-03-01', '2024-05-15',
+ '{"已审项目": 8, "问题发现": 23, "整改完成": 18, "审计进度": "80%"}',
+ 'jicai', 'OA', '审计执行中'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_AUDIT' LIMIT 1),
+ 'Finance', '2024-05-15', NULL,
+ '{"审计报告": "已出具", "整改率": "95.6%", "跟踪问题": 2}',
+ 'jicai', 'OA', '审计结论与跟踪'),
+
+-- 标准对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_STANDARD' LIMIT 1),
+ 'Planning', '2023-06-01', '2023-09-01',
+ '{"标准制定": "进行中", "参考标准": "GB/T 38329", "适用范围": "输配电数据标准"}',
+ 'shupeidian', 'OA', '标准制定'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_STANDARD' LIMIT 1),
+ 'Operation', '2023-09-01', NULL,
+ '{"标准状态": "已发布", "版本号": "v2.1", "覆盖域": "输配电+计财", "执行率": "88%"}',
+ 'shupeidian', 'OA', '标准执行与监督'),
+
+-- 文档对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_DOCUMENT' LIMIT 1),
+ 'Design', '2024-01-15', '2024-02-28',
+ '{"文档类型": "技术方案", "审批流程": "三级审批", "版本管理": "SVN"}',
+ 'shupeidian', 'OA', '技术文档编制'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_DOCUMENT' LIMIT 1),
+ 'Operation', '2024-02-28', NULL,
+ '{"归档状态": "已归档", "文档数": 342, "待更新": 15, "过期文档": 8}',
+ 'shupeidian', 'OA', '文档归档管理'),
+
+-- 规划对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_PLAN' LIMIT 1),
+ 'Planning', '2023-10-01', '2024-01-01',
+ '{"规划周期": "2024-2026", "投资总额": 25000000, "项目数": 12}',
+ 'jicai', 'ERP', '三年滚动规划编制'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_PLAN' LIMIT 1),
+ 'Design', '2024-01-01', '2024-03-15',
+ '{"方案评审": "已通过", "优化轮次": 3, "预算调整": "-5%"}',
+ 'jicai', 'ERP', '规划方案设计与评审'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_PLAN' LIMIT 1),
+ 'Operation', '2024-03-15', NULL,
+ '{"执行进度": "42%", "已启动项目": 5, "延期项目": 1, "预算执行率": "38%"}',
+ 'jicai', 'ERP', '规划执行与跟踪'),
+
+-- 团队对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_TEAM' LIMIT 1),
+ 'Planning', '2023-12-01', '2024-01-15',
+ '{"组织架构": "已调整", "新增岗位": 3, "团队规模": 25}',
+ 'shupeidian', 'HR', '年度组织调整'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_TEAM' LIMIT 1),
+ 'Operation', '2024-01-15', NULL,
+ '{"在编人数": 24, "绩效达标率": "91%", "培训时数": 480, "项目参与数": 8}',
+ 'shupeidian', 'HR', '团队运营管理'),
+
+-- 系统对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_SYSTEM' LIMIT 1),
+ 'Design', '2023-08-01', '2023-11-01',
+ '{"系统类型": "PMS配电管理", "架构设计": "微服务", "技术选型": "Java+Vue"}',
+ 'shupeidian', 'IT', '系统架构设计'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_SYSTEM' LIMIT 1),
+ 'Construction', '2023-11-01', '2024-03-01',
+ '{"开发进度": 100, "模块数": 12, "测试用例": 856, "缺陷修复率": "98%"}',
+ 'shupeidian', 'IT', '系统开发建设'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_SYSTEM' LIMIT 1),
+ 'Operation', '2024-03-01', NULL,
+ '{"运行状态": "正常", "在线用户": 85, "日均事务": 12000, "可用率": "99.9%"}',
+ 'shupeidian', 'IT', '系统运维'),
+
+-- 移交管理对象生命周期
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_移交信' LIMIT 1),
+ 'Planning', '2024-06-01', '2024-07-15',
+ '{"移交类型": "竣工移交", "移交清单": "编制中", "接收单位": "运维部"}',
+ 'shupeidian', 'PMS', '移交计划编制'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_移交信' LIMIT 1),
+ 'Construction', '2024-07-15', '2024-08-30',
+ '{"已移交设备": 45, "待移交": 12, "资料完整度": "92%", "遗留问题": 3}',
+ 'shupeidian', 'PMS', '移交执行'),
+((SELECT object_id FROM extracted_objects WHERE object_code='OBJ_移交信' LIMIT 1),
+ 'Operation', '2024-08-30', NULL,
+ '{"移交完成率": "100%", "遗留问题处理": "3/3已解决", "运维接管": "已确认"}',
+ 'shupeidian', 'PMS', '移交完成确认');
+
+-- ============================================================================
+-- 公式链表（Phase 3: 对象间级联计算 A→公式→B→公式→C）
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `formula_chains` (
+    `chain_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `chain_code` VARCHAR(128) NOT NULL UNIQUE COMMENT '链编码',
+    `chain_name` VARCHAR(256) NOT NULL COMMENT '链名称',
+    `description` TEXT COMMENT '链描述',
+    `is_active` BOOLEAN DEFAULT TRUE COMMENT '是否启用',
+    `data_domain` VARCHAR(128) COMMENT '数据域',
+    `created_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='公式链 — 定义对象间级联计算路径';
+
+CREATE TABLE IF NOT EXISTS `formula_chain_steps` (
+    `step_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `chain_id` BIGINT NOT NULL,
+    `step_order` INT NOT NULL COMMENT '步骤顺序(1开始)',
+    `rule_id` BIGINT NOT NULL COMMENT 'FK → object_relation_rules.rule_id',
+    `input_mapping` JSON COMMENT '上一步输出到本步输入的映射',
+    FOREIGN KEY (`chain_id`) REFERENCES `formula_chains`(`chain_id`) ON DELETE CASCADE,
+    FOREIGN KEY (`rule_id`) REFERENCES `object_relation_rules`(`rule_id`) ON DELETE CASCADE,
+    KEY `idx_fcs_chain_order` (`chain_id`, `step_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='公式链步骤 — 每步引用一条关系规则';
+
+-- 预置公式链：设备(P=UI) → 资产(折旧) → 费用
+INSERT INTO `formula_chains` (`chain_code`, `chain_name`, `description`, `data_domain`) VALUES
+('FC_DEVICE_ASSET_COST', '设备→资产→费用 级联计算',
+ '从设备功率计算出发，经资产折旧公式，最终影响费用归集。\n步骤: 1)P=U×I计算设备功率 2)年折旧额=(原值-残值)/年限 3)折旧费用纳入资产全生命周期成本',
+ 'cross_domain');
+
+INSERT INTO `formula_chain_steps` (`chain_id`, `step_order`, `rule_id`, `input_mapping`) VALUES
+((SELECT chain_id FROM formula_chains WHERE chain_code='FC_DEVICE_ASSET_COST' LIMIT 1),
+ 1,
+ (SELECT rule_id FROM object_relation_rules WHERE rule_code='RR_POWER_ASSET' LIMIT 1),
+ '{"description": "输入设备额定电压和电流，计算功率"}'),
+((SELECT chain_id FROM formula_chains WHERE chain_code='FC_DEVICE_ASSET_COST' LIMIT 1),
+ 2,
+ (SELECT rule_id FROM object_relation_rules WHERE rule_code='RR_ASSET_DEPRECIATION' LIMIT 1),
+ '{"description": "基于功率等级确定资产分类，计算年折旧额", "P_to_category": "P>100kW→一类资产, P>10kW→二类, 其他→三类"}'),
+((SELECT chain_id FROM formula_chains WHERE chain_code='FC_DEVICE_ASSET_COST' LIMIT 1),
+ 3,
+ (SELECT rule_id FROM object_relation_rules WHERE rule_code='RR_COST_BUDGET' LIMIT 1),
+ '{"description": "折旧费用纳入预算，检查是否超预算触发预警"}');
+
+-- 预置公式链2：合同→项目→指标
+INSERT INTO `formula_chains` (`chain_code`, `chain_name`, `description`, `data_domain`) VALUES
+('FC_CONTRACT_PROJECT_KPI', '合同→项目→指标 业务链路',
+ '合同金额决定项目审批级别，项目里程碑驱动完工率指标计算',
+ 'jicai');
+
+INSERT INTO `formula_chain_steps` (`chain_id`, `step_order`, `rule_id`, `input_mapping`) VALUES
+((SELECT chain_id FROM formula_chains WHERE chain_code='FC_CONTRACT_PROJECT_KPI' LIMIT 1),
+ 1,
+ (SELECT rule_id FROM object_relation_rules WHERE rule_code='RR_CONTRACT_PROJECT' LIMIT 1),
+ '{"description": "合同金额决定项目审批路径"}'),
+((SELECT chain_id FROM formula_chains WHERE chain_code='FC_CONTRACT_PROJECT_KPI' LIMIT 1),
+ 2,
+ (SELECT rule_id FROM object_relation_rules WHERE rule_code='RR_PROJECT_KPI' LIMIT 1),
+ '{"description": "项目里程碑完成数计算完工率"}');
+
+-- ============================================================================
+-- ALTER: 机理函数关联关系规则
+-- ============================================================================
+ALTER TABLE `mechanism_functions`
+    ADD COLUMN IF NOT EXISTS `linked_rule_id` BIGINT DEFAULT NULL COMMENT 'FK → object_relation_rules.rule_id',
+    ADD KEY `idx_mf_linked_rule` (`linked_rule_id`);
+
+-- ============================================================================
 -- 完成提示
 -- ============================================================================
-SELECT '✅ YIMO 对象抽取与三层架构关联 Schema 初始化完成（含生命周期、溯源链路、机理函数、预警表、治理看板视图、去重决策表、生命周期演示数据）!' AS message;
+SELECT '✅ YIMO Schema 初始化完成（含全部6阶段: 生命周期模板+名称历史+公式链+关系规则关联）!' AS message;

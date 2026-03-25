@@ -679,7 +679,7 @@ def _enrich_sample_entities(objects, domain=''):
 
 
 def _generate_name_explanations(objects):
-    """为缺少 llm_reasoning 的对象动态生成名称解释"""
+    """为缺少 llm_reasoning 的对象动态生成名称解释（含关键词频率统计）"""
     for obj in objects:
         if obj.get('llm_reasoning'):
             continue
@@ -692,8 +692,19 @@ def _generate_name_explanations(objects):
             obj['llm_reasoning'] = f'「{name}」为系统预置核心对象，由领域专家根据电力资产管理业务模型手动定义。'
         elif samples:
             top_samples = ', '.join(samples[:5])
+            # 关键词频率统计：对象名在实体名中出现的次数
+            keyword_count = sum(1 for s in samples if name and name in s)
+            keyword_info = ''
+            if keyword_count > 0 and name:
+                keyword_info = f'关键词「{name}」在实体中出现{keyword_count}次，'
+            # 计算置信度
+            confidence = min(0.95, 0.5 + (keyword_count / max(cluster_size, 1)) * 0.5)
+            if source == 'SEMANTIC_CLUSTER_LLM':
+                confidence = max(confidence, 0.8)
+            obj['extraction_confidence'] = round(confidence, 2)
             obj['llm_reasoning'] = (
-                f'通过语义聚类分析，该聚类包含{cluster_size}个实体，'
+                f'通过语义聚类分析，该聚类包含{cluster_size}个实体。'
+                f'{keyword_info}'
                 f'代表性实体包括：{top_samples}。'
                 f'基于实体语义相似性将该聚类命名为「{name}」。'
             )
@@ -2430,7 +2441,9 @@ def api_object_lifecycle(object_code):
 
 @olm_api.route('/api/olm/object-lifecycle/<object_code>', methods=['POST'])
 def api_create_lifecycle(object_code):
-    """新增生命周期阶段记录"""
+    """新增生命周期阶段记录（含状态机约束）"""
+    STAGE_ORDER = ['Planning', 'Design', 'Construction', 'Operation', 'Finance']
+
     if not is_db_available():
         return jsonify({'success': False, 'error': '数据库不可用'}), 503
 
@@ -2441,6 +2454,38 @@ def api_create_lifecycle(object_code):
             return jsonify({'success': False, 'error': '对象不存在'}), 404
 
         object_id = obj[0]['object_id']
+        new_stage = data.get('lifecycle_stage', 'Planning')
+
+        if new_stage not in STAGE_ORDER:
+            return jsonify({'success': False, 'error': f'无效阶段: {new_stage}，允许值: {STAGE_ORDER}'}), 400
+
+        # 状态机约束：查询当前最新阶段
+        current = execute_query("""
+            SELECT lifecycle_stage, history_id FROM object_lifecycle_history
+            WHERE object_id = %s ORDER BY stage_entered_at DESC LIMIT 1
+        """, (object_id,))
+
+        if isinstance(current, list) and current:
+            cur_stage = current[0]['lifecycle_stage']
+            cur_idx = STAGE_ORDER.index(cur_stage) if cur_stage in STAGE_ORDER else -1
+            new_idx = STAGE_ORDER.index(new_stage)
+
+            # 禁止跳阶段（跳过中间阶段）
+            if new_idx > cur_idx + 1:
+                skipped = STAGE_ORDER[cur_idx + 1:new_idx]
+                return jsonify({'success': False, 'error': f'不能从 {cur_stage} 直接跳到 {new_stage}，需先经过: {", ".join(skipped)}'}), 400
+
+            # 允许回退但需要 notes
+            if new_idx < cur_idx and not data.get('notes'):
+                return jsonify({'success': False, 'error': f'从 {cur_stage} 回退到 {new_stage} 需在 notes 中说明理由'}), 400
+
+            # 自动关闭上一阶段
+            entered_at = data.get('stage_entered_at', datetime.now().isoformat())
+            execute_query("""
+                UPDATE object_lifecycle_history SET stage_exited_at = %s
+                WHERE history_id = %s AND stage_exited_at IS NULL
+            """, (entered_at, current[0]['history_id']), fetch=False)
+
         attrs_json = json.dumps(data.get('attributes_snapshot', {}), ensure_ascii=False) if data.get('attributes_snapshot') else None
 
         result = execute_query("""
@@ -2449,7 +2494,7 @@ def api_create_lifecycle(object_code):
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, (
             object_id,
-            data.get('lifecycle_stage', 'Planning'),
+            new_stage,
             data.get('stage_entered_at', datetime.now().isoformat()),
             attrs_json,
             data.get('data_domain', ''),
@@ -2457,7 +2502,7 @@ def api_create_lifecycle(object_code):
             data.get('notes', '')
         ), fetch=False)
 
-        return jsonify({'success': True, 'history_id': result})
+        return jsonify({'success': True, 'history_id': result, 'stage': new_stage})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -3482,3 +3527,1062 @@ def api_governance_domain_comparison():
         'consistency_rate': round(consistent_count / len(all_codes) * 100, 1) if all_codes else 0,
         'source': 'database' if is_db_available() else 'json_file'
     })
+
+
+# ============================================================================
+# 对象间关系规则 API（Phase 3）
+# ============================================================================
+
+@olm_api.route('/api/olm/relation-rules')
+def api_relation_rules():
+    """列出所有关系规则（支持按 source/target/category 过滤）"""
+    source = request.args.get('source')
+    target = request.args.get('target')
+    category = request.args.get('category')
+    active_only = request.args.get('active_only', 'true').lower() == 'true'
+
+    if not is_db_available():
+        return jsonify({'rules': [], 'total': 0, 'source': 'unavailable', 'message': '数据库不可用'})
+
+    try:
+        query = "SELECT * FROM object_relation_rules WHERE 1=1"
+        params = []
+        if source:
+            query += " AND source_object_code = %s"
+            params.append(source)
+        if target:
+            query += " AND target_object_code = %s"
+            params.append(target)
+        if category:
+            query += " AND rule_category = %s"
+            params.append(category)
+        if active_only:
+            query += " AND is_active = TRUE"
+        query += " ORDER BY rule_id"
+
+        rules = execute_query(query, tuple(params) if params else None)
+        if isinstance(rules, dict) and 'error' in rules:
+            return jsonify({'rules': [], 'total': 0, 'error': rules['error']})
+
+        for r in rules:
+            if isinstance(r.get('expression'), str):
+                try:
+                    r['expression'] = json.loads(r['expression'])
+                except json.JSONDecodeError:
+                    pass
+            if isinstance(r.get('applicable_stages'), str):
+                try:
+                    r['applicable_stages'] = json.loads(r['applicable_stages'])
+                except json.JSONDecodeError:
+                    pass
+
+        return jsonify({'rules': rules, 'total': len(rules), 'source': 'database'})
+    except Exception as e:
+        return jsonify({'rules': [], 'total': 0, 'error': str(e)})
+
+
+@olm_api.route('/api/olm/relation-rules', methods=['POST'])
+def api_create_relation_rule():
+    """创建关系规则"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        data = request.get_json(force=True)
+        required = ['rule_code', 'rule_name', 'source_object_code', 'target_object_code',
+                     'relation_type', 'rule_category', 'expression']
+        for field in required:
+            if not data.get(field):
+                return jsonify({'success': False, 'error': f'缺少必填字段: {field}'}), 400
+
+        expression = data['expression']
+        if isinstance(expression, dict):
+            expression = json.dumps(expression, ensure_ascii=False)
+
+        applicable_stages = data.get('applicable_stages')
+        if isinstance(applicable_stages, list):
+            applicable_stages = json.dumps(applicable_stages, ensure_ascii=False)
+
+        execute_query("""
+            INSERT INTO object_relation_rules
+            (rule_code, rule_name, source_object_code, target_object_code, relation_type,
+             rule_category, expression, description, direction, priority,
+             applicable_stages, severity, is_active, data_domain)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            data['rule_code'], data['rule_name'],
+            data['source_object_code'], data['target_object_code'],
+            data['relation_type'], data['rule_category'],
+            expression, data.get('description', ''),
+            data.get('direction', 'UNIDIRECTIONAL'),
+            data.get('priority', 0),
+            applicable_stages,
+            data.get('severity', 'INFO'),
+            data.get('is_active', True),
+            data.get('data_domain')
+        ), fetch=False)
+
+        return jsonify({'success': True, 'message': '关系规则创建成功'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/relation-rules/<int:rule_id>', methods=['PUT'])
+def api_update_relation_rule(rule_id):
+    """更新关系规则"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        data = request.get_json(force=True)
+        allowed = ['rule_name', 'source_object_code', 'target_object_code', 'relation_type',
+                    'rule_category', 'expression', 'description', 'direction', 'priority',
+                    'applicable_stages', 'severity', 'is_active', 'data_domain']
+
+        updates = []
+        params = []
+        for field in allowed:
+            if field in data:
+                val = data[field]
+                if field == 'expression' and isinstance(val, dict):
+                    val = json.dumps(val, ensure_ascii=False)
+                if field == 'applicable_stages' and isinstance(val, list):
+                    val = json.dumps(val, ensure_ascii=False)
+                updates.append(f"`{field}` = %s")
+                params.append(val)
+
+        if not updates:
+            return jsonify({'success': False, 'error': '没有可更新的字段'}), 400
+
+        params.append(rule_id)
+        execute_query(f"UPDATE object_relation_rules SET {', '.join(updates)} WHERE rule_id = %s",
+                      tuple(params), fetch=False)
+        return jsonify({'success': True, 'message': '关系规则更新成功'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/relation-rules/<int:rule_id>', methods=['DELETE'])
+def api_delete_relation_rule(rule_id):
+    """删除关系规则"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+
+    try:
+        execute_query("DELETE FROM object_relation_rules WHERE rule_id = %s", (rule_id,), fetch=False)
+        return jsonify({'success': True, 'message': '关系规则已删除'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/relation-rules/evaluate', methods=['POST'])
+def api_evaluate_relation_rule():
+    """执行关系规则求值（输入变量值 → 返回计算结果）"""
+    try:
+        data = request.get_json(force=True)
+        rule_id = data.get('rule_id')
+        variables = data.get('variables', {})
+
+        expression = data.get('expression')
+        rule_meta = {}
+
+        if rule_id and is_db_available():
+            rows = execute_query("SELECT * FROM object_relation_rules WHERE rule_id = %s", (rule_id,))
+            if isinstance(rows, list) and rows:
+                rule = rows[0]
+                expr_raw = rule.get('expression', '{}')
+                expression = json.loads(expr_raw) if isinstance(expr_raw, str) else expr_raw
+                rule_meta = {
+                    'rule_name': rule.get('rule_name'),
+                    'source': rule.get('source_object_code'),
+                    'target': rule.get('target_object_code'),
+                    'relation_type': rule.get('relation_type'),
+                    'rule_category': rule.get('rule_category')
+                }
+
+        if not expression:
+            return jsonify({'success': False, 'error': '未找到规则定义'}), 400
+
+        result = _evaluate_relation_rule(expression, variables)
+        result['rule_meta'] = rule_meta
+        return jsonify({'success': True, 'result': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def _evaluate_relation_rule(expression: dict, variables: dict) -> dict:
+    """评估关系规则表达式（增强版，支持多种公式格式）"""
+    formula = expression.get('formula', '')
+
+    # --- PHYSICAL_FORMULA / DERIVED_CALC: 公式求值 ---
+    if formula:
+        var_defs = expression.get('variables', {})
+        result_name = expression.get('result', '结果')
+
+        # 提取数值
+        numeric_vars = {}
+        for k, v in variables.items():
+            try:
+                numeric_vars[k] = float(v)
+            except (ValueError, TypeError):
+                numeric_vars[k] = 0
+
+        computed = None
+        # I² × R × L 模式（线损，三变量含平方）
+        if '²' in formula and len(numeric_vars) == 3:
+            keys = list(numeric_vars.keys())
+            computed = numeric_vars[keys[0]] ** 2 * numeric_vars[keys[1]] * numeric_vars[keys[2]]
+        # (a - b) / c 模式（折旧公式等，三变量含减法和除法）
+        elif '-' in formula and '/' in formula and len(numeric_vars) == 3:
+            keys = list(numeric_vars.keys())
+            computed = (numeric_vars[keys[0]] - numeric_vars[keys[1]]) / numeric_vars[keys[2]] if numeric_vars[keys[2]] != 0 else None
+        # a / b × 100 模式（百分比计算，两变量）
+        elif '/' in formula and ('×' in formula or '*' in formula) and '100' in formula and len(numeric_vars) == 2:
+            vals = list(numeric_vars.values())
+            computed = vals[0] / vals[1] * 100 if vals[1] != 0 else None
+        # P = U × I（两变量乘法）
+        elif '×' in formula and len(numeric_vars) == 2:
+            vals = list(numeric_vars.values())
+            computed = vals[0] * vals[1]
+        # 通用两变量乘法
+        elif len(numeric_vars) == 2:
+            vals = list(numeric_vars.values())
+            computed = vals[0] * vals[1]
+
+        # 约束检查
+        constraint = expression.get('constraint')
+        constraint_result = None
+        if constraint and computed is not None:
+            try:
+                parts = constraint.replace('≤', '<=').replace('≥', '>=').split()
+                if len(parts) >= 3:
+                    threshold = float(parts[-1])
+                    op = parts[-2]
+                    ops = {'<=': computed <= threshold, '>=': computed >= threshold,
+                           '<': computed < threshold, '>': computed > threshold}
+                    constraint_result = {
+                        'satisfied': ops.get(op, True),
+                        'constraint': constraint,
+                        'actual': round(computed, 4),
+                        'threshold': threshold,
+                        'message': expression.get('message', '').replace('{value}', f'{computed:.1f}') if not ops.get(op, True) else '满足约束'
+                    }
+            except (ValueError, IndexError):
+                pass
+
+        return {
+            'type': 'formula',
+            'formula': formula,
+            'input_values': numeric_vars,
+            'result_name': result_name,
+            'computed_value': round(computed, 4) if computed is not None else None,
+            'unit': expression.get('unit', ''),
+            'constraint_check': constraint_result,
+            'method': expression.get('method'),
+            'industry_standard': expression.get('industry_standard')
+        }
+
+    # --- THRESHOLD: 阈值检查 ---
+    if 'field' in expression and 'operator' in expression:
+        field = expression['field']
+        operator = expression['operator']
+        ref = expression.get('reference_field')
+        tolerance = float(expression.get('tolerance', 0))
+
+        actual = float(variables.get(field, variables.get('actual', 0)))
+        threshold = float(variables.get(ref, variables.get('threshold', expression.get('value', 0))))
+        if tolerance > 0:
+            threshold = threshold * (1 + tolerance)
+
+        ops = {'>': actual > threshold, '<': actual < threshold,
+               '>=': actual >= threshold, '<=': actual <= threshold}
+        triggered = ops.get(operator, False)
+
+        return {
+            'type': 'threshold',
+            'triggered': triggered,
+            'field': field,
+            'actual_value': actual,
+            'threshold': threshold,
+            'tolerance': tolerance,
+            'operator': operator,
+            'message': expression.get('message', '') if triggered else '未触发'
+        }
+
+    # --- BUSINESS_RULE: 条件分支 ---
+    condition = expression.get('condition', expression.get('trigger', ''))
+    if condition:
+        triggered = False
+        for field, value in variables.items():
+            if field in condition:
+                try:
+                    parts = condition.split()
+                    for i, p in enumerate(parts):
+                        if p in ('>', '<', '>=', '<=', '=', '=='):
+                            threshold = float(parts[i + 1])
+                            actual = float(value)
+                            op = p if p != '=' else '=='
+                            ops = {'>': actual > threshold, '<': actual < threshold,
+                                   '>=': actual >= threshold, '<=': actual <= threshold,
+                                   '==': actual == threshold}
+                            triggered = ops.get(op, False)
+                            break
+                except (ValueError, IndexError):
+                    pass
+
+        then_action = expression.get('then', expression.get('action', ''))
+        else_action = expression.get('else', '')
+
+        return {
+            'type': 'rule',
+            'triggered': triggered,
+            'condition': condition,
+            'action': then_action if triggered else else_action,
+            'side_effect': expression.get('side_effect')
+        }
+
+    return {'type': 'unknown', 'error': '无法识别的规则表达式格式'}
+
+
+@olm_api.route('/api/olm/relation-rules/graph')
+def api_relation_rules_graph():
+    """返回关系规则图谱数据（ECharts 力导向图格式）"""
+    if not is_db_available():
+        return jsonify({'nodes': [], 'links': [], 'categories': [], 'source': 'unavailable'})
+
+    try:
+        rules = execute_query("SELECT * FROM object_relation_rules WHERE is_active = TRUE")
+        if isinstance(rules, dict) and 'error' in rules:
+            return jsonify({'nodes': [], 'links': [], 'error': rules['error']})
+
+        objects = execute_query("SELECT object_code, object_name, data_domain FROM extracted_objects")
+        obj_map = {}
+        if isinstance(objects, list):
+            for o in objects:
+                obj_map[o['object_code']] = o.get('object_name', o['object_code'])
+
+        # 收集涉及的对象
+        involved = set()
+        for r in rules:
+            involved.add(r['source_object_code'])
+            involved.add(r['target_object_code'])
+
+        # 构建节点
+        nodes = []
+        for code in involved:
+            nodes.append({
+                'id': code,
+                'name': obj_map.get(code, code.replace('OBJ_', '')),
+                'symbolSize': 40,
+                'category': 0
+            })
+
+        # 类别配色
+        category_colors = {
+            'PHYSICAL_FORMULA': {'name': '物理公式', 'color': '#3b82f6'},
+            'BUSINESS_RULE': {'name': '业务规则', 'color': '#10b981'},
+            'THRESHOLD': {'name': '阈值约束', 'color': '#ef4444'},
+            'DERIVED_CALC': {'name': '派生计算', 'color': '#f59e0b'},
+            'VALIDATION': {'name': '校验规则', 'color': '#8b5cf6'}
+        }
+
+        # 构建边
+        links = []
+        for r in rules:
+            cat = r.get('rule_category', 'BUSINESS_RULE')
+            expr_raw = r.get('expression', '{}')
+            expr = json.loads(expr_raw) if isinstance(expr_raw, str) else expr_raw
+            formula_text = expr.get('formula', expr.get('condition', expr.get('trigger', '')))
+
+            links.append({
+                'source': r['source_object_code'],
+                'target': r['target_object_code'],
+                'value': r['rule_name'],
+                'rule_id': r['rule_id'],
+                'rule_code': r['rule_code'],
+                'rule_name': r['rule_name'],
+                'relation_type': r.get('relation_type', ''),
+                'rule_category': cat,
+                'formula': formula_text,
+                'description': r.get('description', ''),
+                'severity': r.get('severity', 'INFO'),
+                'lineStyle': {
+                    'color': category_colors.get(cat, {}).get('color', '#999'),
+                    'width': 3 if r.get('severity') == 'CRITICAL' else 2,
+                    'type': 'dashed' if cat == 'THRESHOLD' else 'solid'
+                }
+            })
+
+        categories = [{'name': v['name'], 'itemStyle': {'color': v['color']}}
+                      for v in category_colors.values()]
+
+        return jsonify({
+            'nodes': nodes,
+            'links': links,
+            'categories': categories,
+            'category_colors': category_colors,
+            'total_rules': len(rules),
+            'total_objects': len(nodes),
+            'source': 'database'
+        })
+    except Exception as e:
+        return jsonify({'nodes': [], 'links': [], 'error': str(e)})
+
+
+# ============================================================================
+# Phase 1: 对象名称可解释性 API
+# ============================================================================
+
+@olm_api.route('/api/olm/object-name-explanation/<object_code>')
+def api_object_name_explanation(object_code):
+    """获取对象命名的详细解释（含 Top-N 代表实体、聚类统计、重命名历史）"""
+    if not is_db_available():
+        return jsonify({'error': '数据库不可用'}), 503
+    try:
+        obj = execute_query(
+            "SELECT * FROM extracted_objects WHERE object_code = %s", (object_code,))
+        if not obj or isinstance(obj, dict):
+            return jsonify({'error': '对象不存在'}), 404
+        obj = obj[0]
+        oid = obj['object_id']
+
+        # Top-N 代表实体（按关联强度降序）
+        top_entities = execute_query("""
+            SELECT entity_name, entity_layer, relation_strength, match_method
+            FROM object_entity_relations
+            WHERE object_id = %s ORDER BY relation_strength DESC LIMIT 15
+        """, (oid,))
+        if isinstance(top_entities, dict):
+            top_entities = []
+
+        # 聚类统计
+        stats = execute_query("""
+            SELECT entity_layer, COUNT(*) as cnt,
+                   ROUND(AVG(relation_strength), 4) as avg_strength
+            FROM object_entity_relations WHERE object_id = %s
+            GROUP BY entity_layer
+        """, (oid,))
+        if isinstance(stats, dict):
+            stats = []
+
+        # 重命名历史
+        history = execute_query("""
+            SELECT old_name, new_name, rename_source, rename_reason, renamed_by, created_at
+            FROM object_name_history WHERE object_id = %s ORDER BY created_at DESC
+        """, (oid,))
+        if isinstance(history, dict):
+            history = []
+
+        # 关键词频率分析（从代表实体中提取高频词）
+        entity_names = [e['entity_name'] for e in top_entities if e.get('entity_name')]
+        word_freq = {}
+        for name in entity_names:
+            for seg in name.replace('信息', ' 信息').replace('管理', ' 管理').replace('数据', ' 数据').split():
+                seg = seg.strip()
+                if len(seg) >= 2:
+                    word_freq[seg] = word_freq.get(seg, 0) + 1
+        top_keywords = sorted(word_freq.items(), key=lambda x: -x[1])[:10]
+
+        # 动态生成命名理由（如果 llm_reasoning 为空）
+        reasoning = obj.get('llm_reasoning') or ''
+        if not reasoning:
+            total_rels = sum(s.get('cnt', 0) for s in stats)
+            kw_text = '、'.join(f'「{k}」({v}次)' for k, v in top_keywords[:5])
+            reasoning = (f"通过语义聚类分析，该聚类包含 {total_rels} 个实体关联。"
+                        f"高频关键词: {kw_text}。"
+                        f"代表性实体: {', '.join(entity_names[:5])}。"
+                        f"基于关键词频率和语义聚合将该聚类命名为「{obj['object_name']}」。")
+
+        return jsonify({
+            'object_code': object_code,
+            'object_name': obj['object_name'],
+            'extraction_source': obj.get('extraction_source', ''),
+            'extraction_confidence': float(obj.get('extraction_confidence', 0)),
+            'llm_reasoning': reasoning,
+            'top_entities': top_entities,
+            'layer_stats': stats,
+            'top_keywords': [{'word': k, 'count': v} for k, v in top_keywords],
+            'rename_history': history,
+            'cluster_size': obj.get('cluster_size', sum(s.get('cnt', 0) for s in stats)),
+            'source': 'database'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/objects/<object_code>/rename', methods=['POST'])
+def api_rename_object(object_code):
+    """重命名对象（含审计追踪）"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+    try:
+        data = request.get_json(force=True)
+        new_name = data.get('new_name', '').strip()
+        reason = data.get('reason', '').strip()
+        if not new_name:
+            return jsonify({'success': False, 'error': '新名称不能为空'}), 400
+
+        obj = execute_query(
+            "SELECT object_id, object_name FROM extracted_objects WHERE object_code = %s",
+            (object_code,))
+        if not obj or isinstance(obj, dict):
+            return jsonify({'success': False, 'error': '对象不存在'}), 404
+        obj = obj[0]
+        old_name = obj['object_name']
+        if old_name == new_name:
+            return jsonify({'success': False, 'error': '新旧名称相同'}), 400
+
+        # 插入历史记录
+        execute_query("""
+            INSERT INTO object_name_history (object_id, old_name, new_name, rename_source, rename_reason, renamed_by)
+            VALUES (%s, %s, %s, 'MANUAL', %s, %s)
+        """, (obj['object_id'], old_name, new_name, reason or f'手动重命名: {old_name} → {new_name}',
+              data.get('renamed_by', 'user')), fetch=False)
+
+        # 更新对象名称
+        execute_query(
+            "UPDATE extracted_objects SET object_name = %s WHERE object_code = %s",
+            (new_name, object_code), fetch=False)
+
+        return jsonify({'success': True, 'old_name': old_name, 'new_name': new_name})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/objects/<object_code>/name-history')
+def api_object_name_history(object_code):
+    """查询对象重命名历史"""
+    if not is_db_available():
+        return jsonify([])
+    try:
+        obj = execute_query(
+            "SELECT object_id FROM extracted_objects WHERE object_code = %s", (object_code,))
+        if not obj or isinstance(obj, dict):
+            return jsonify([])
+        history = execute_query("""
+            SELECT old_name, new_name, rename_source, rename_reason, renamed_by, created_at
+            FROM object_name_history WHERE object_id = %s ORDER BY created_at DESC
+        """, (obj[0]['object_id'],))
+        return jsonify(history if isinstance(history, list) else [])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================================
+# Phase 2: 生命周期管理增强 API
+# ============================================================================
+
+@olm_api.route('/api/olm/lifecycle-templates')
+def api_lifecycle_templates():
+    """列出生命周期阶段模板"""
+    obj_type = request.args.get('object_type', '')
+    if not is_db_available():
+        return jsonify([])
+    try:
+        sql = "SELECT * FROM lifecycle_stage_templates"
+        params = []
+        if obj_type:
+            sql += " WHERE object_type = %s"
+            params.append(obj_type)
+        sql += " ORDER BY FIELD(lifecycle_stage, 'Planning','Design','Construction','Operation','Finance')"
+        result = execute_query(sql, params or None)
+        if isinstance(result, dict):
+            return jsonify([])
+        # Parse JSON fields
+        for r in result:
+            for field in ('required_attributes', 'optional_attributes', 'validation_rules', 'trigger_functions'):
+                if isinstance(r.get(field), str):
+                    try:
+                        r[field] = json.loads(r[field])
+                    except Exception:
+                        pass
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/lifecycle-templates', methods=['POST'])
+def api_create_lifecycle_template():
+    """创建或更新生命周期阶段模板"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+    try:
+        data = request.get_json(force=True)
+        obj_type = data.get('object_type', 'CORE')
+        stage = data.get('lifecycle_stage')
+        if not stage:
+            return jsonify({'success': False, 'error': '缺少 lifecycle_stage'}), 400
+
+        result = execute_query("""
+            INSERT INTO lifecycle_stage_templates
+            (object_type, lifecycle_stage, required_attributes, optional_attributes,
+             validation_rules, trigger_functions, description)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                required_attributes = VALUES(required_attributes),
+                optional_attributes = VALUES(optional_attributes),
+                validation_rules = VALUES(validation_rules),
+                trigger_functions = VALUES(trigger_functions),
+                description = VALUES(description)
+        """, (
+            obj_type, stage,
+            json.dumps(data.get('required_attributes', []), ensure_ascii=False),
+            json.dumps(data.get('optional_attributes', []), ensure_ascii=False) if data.get('optional_attributes') else None,
+            json.dumps(data.get('validation_rules', {}), ensure_ascii=False) if data.get('validation_rules') else None,
+            json.dumps(data.get('trigger_functions', []), ensure_ascii=False) if data.get('trigger_functions') else None,
+            data.get('description', '')
+        ), fetch=False)
+
+        return jsonify({'success': True, 'object_type': obj_type, 'stage': stage})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/object-lifecycle/<object_code>/validate', methods=['POST'])
+def api_validate_lifecycle(object_code):
+    """验证对象是否满足当前阶段的模板要求"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+    try:
+        # 查对象及其类型
+        obj = execute_query("""
+            SELECT o.object_id, o.object_type FROM extracted_objects o
+            WHERE o.object_code = %s
+        """, (object_code,))
+        if not obj or isinstance(obj, dict):
+            return jsonify({'success': False, 'error': '对象不存在'}), 404
+        obj = obj[0]
+
+        # 查当前阶段
+        current = execute_query("""
+            SELECT lifecycle_stage, attributes_snapshot FROM object_lifecycle_history
+            WHERE object_id = %s ORDER BY stage_entered_at DESC LIMIT 1
+        """, (obj['object_id'],))
+        if not current or isinstance(current, dict) or not current:
+            return jsonify({'success': False, 'error': '对象无生命周期记录'}), 404
+        cur_stage = current[0]['lifecycle_stage']
+        snapshot = current[0].get('attributes_snapshot')
+        if isinstance(snapshot, str):
+            try:
+                snapshot = json.loads(snapshot)
+            except Exception:
+                snapshot = {}
+        if not snapshot:
+            snapshot = {}
+
+        # 查模板
+        tmpl = execute_query("""
+            SELECT required_attributes, optional_attributes, validation_rules
+            FROM lifecycle_stage_templates
+            WHERE object_type = %s AND lifecycle_stage = %s
+        """, (obj['object_type'], cur_stage))
+
+        if not tmpl or isinstance(tmpl, dict):
+            return jsonify({
+                'passed': True, 'stage': cur_stage,
+                'message': '该阶段无模板定义，跳过验证'
+            })
+        tmpl = tmpl[0]
+        required = tmpl['required_attributes']
+        if isinstance(required, str):
+            required = json.loads(required)
+
+        # 检查必填属性
+        missing = [attr for attr in required if attr not in snapshot]
+        passed = len(missing) == 0
+        filled = [attr for attr in required if attr in snapshot]
+
+        return jsonify({
+            'passed': passed,
+            'stage': cur_stage,
+            'object_code': object_code,
+            'object_type': obj['object_type'],
+            'required_total': len(required),
+            'filled': filled,
+            'missing': missing,
+            'completion_pct': round(len(filled) / max(len(required), 1) * 100, 1),
+            'attributes_snapshot': snapshot
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/lifecycle-batch-advance', methods=['POST'])
+def api_lifecycle_batch_advance():
+    """批量推进多对象到下一阶段"""
+    STAGE_ORDER = ['Planning', 'Design', 'Construction', 'Operation', 'Finance']
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+    try:
+        data = request.get_json(force=True)
+        object_codes = data.get('object_codes', [])
+        target_stage = data.get('target_stage')
+        attrs = data.get('attributes_snapshot', {})
+        notes = data.get('notes', '批量推进')
+
+        if not object_codes or not target_stage:
+            return jsonify({'success': False, 'error': '缺少 object_codes 或 target_stage'}), 400
+        if target_stage not in STAGE_ORDER:
+            return jsonify({'success': False, 'error': f'无效阶段: {target_stage}'}), 400
+
+        results = []
+        for code in object_codes:
+            obj = execute_query(
+                "SELECT object_id FROM extracted_objects WHERE object_code = %s", (code,))
+            if not obj or isinstance(obj, dict):
+                results.append({'object_code': code, 'success': False, 'error': '对象不存在'})
+                continue
+            oid = obj[0]['object_id']
+
+            # 查当前阶段
+            current = execute_query("""
+                SELECT lifecycle_stage, history_id FROM object_lifecycle_history
+                WHERE object_id = %s ORDER BY stage_entered_at DESC LIMIT 1
+            """, (oid,))
+
+            now_str = datetime.now().isoformat()
+            if isinstance(current, list) and current:
+                cur_stage = current[0]['lifecycle_stage']
+                cur_idx = STAGE_ORDER.index(cur_stage) if cur_stage in STAGE_ORDER else -1
+                new_idx = STAGE_ORDER.index(target_stage)
+                if new_idx > cur_idx + 1:
+                    results.append({'object_code': code, 'success': False,
+                                   'error': f'不能从 {cur_stage} 跳到 {target_stage}'})
+                    continue
+                # 关闭当前阶段
+                execute_query("""
+                    UPDATE object_lifecycle_history SET stage_exited_at = %s
+                    WHERE history_id = %s AND stage_exited_at IS NULL
+                """, (now_str, current[0]['history_id']), fetch=False)
+
+            attrs_json = json.dumps(attrs, ensure_ascii=False) if attrs else None
+            hid = execute_query("""
+                INSERT INTO object_lifecycle_history
+                (object_id, lifecycle_stage, stage_entered_at, attributes_snapshot, notes)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (oid, target_stage, now_str, attrs_json, notes), fetch=False)
+            results.append({'object_code': code, 'success': True, 'history_id': hid, 'stage': target_stage})
+
+        succeeded = sum(1 for r in results if r.get('success'))
+        return jsonify({
+            'success': True,
+            'total': len(object_codes),
+            'succeeded': succeeded,
+            'failed': len(object_codes) - succeeded,
+            'results': results
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================================
+# Phase 3: 公式链 + EAV 集成 API
+# ============================================================================
+
+@olm_api.route('/api/olm/formula-chains')
+def api_list_formula_chains():
+    """列出公式链（含步骤和关联规则详情）"""
+    if not is_db_available():
+        return jsonify([])
+    try:
+        chains = execute_query("SELECT * FROM formula_chains ORDER BY chain_id")
+        if isinstance(chains, dict):
+            return jsonify([])
+        for chain in chains:
+            steps = execute_query("""
+                SELECT s.step_id, s.step_order, s.rule_id, s.input_mapping,
+                       r.rule_code, r.rule_name, r.source_object_code, r.target_object_code,
+                       r.rule_category, r.expression, r.relation_type
+                FROM formula_chain_steps s
+                JOIN object_relation_rules r ON r.rule_id = s.rule_id
+                WHERE s.chain_id = %s ORDER BY s.step_order
+            """, (chain['chain_id'],))
+            if isinstance(steps, dict):
+                steps = []
+            for st in steps:
+                for field in ('expression', 'input_mapping'):
+                    if isinstance(st.get(field), str):
+                        try:
+                            st[field] = json.loads(st[field])
+                        except Exception:
+                            pass
+            chain['steps'] = steps
+        return jsonify(chains)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/formula-chains', methods=['POST'])
+def api_create_formula_chain():
+    """创建公式链"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+    try:
+        data = request.get_json(force=True)
+        chain_code = data.get('chain_code', '').strip()
+        chain_name = data.get('chain_name', '').strip()
+        if not chain_code or not chain_name:
+            return jsonify({'success': False, 'error': '缺少 chain_code 或 chain_name'}), 400
+
+        chain_id = execute_query("""
+            INSERT INTO formula_chains (chain_code, chain_name, description, data_domain)
+            VALUES (%s, %s, %s, %s)
+        """, (chain_code, chain_name, data.get('description', ''),
+              data.get('data_domain', '')), fetch=False)
+
+        # 插入步骤
+        steps = data.get('steps', [])
+        for step in steps:
+            execute_query("""
+                INSERT INTO formula_chain_steps (chain_id, step_order, rule_id, input_mapping)
+                VALUES (%s, %s, %s, %s)
+            """, (chain_id, step.get('step_order', 1), step.get('rule_id'),
+                  json.dumps(step.get('input_mapping', {}), ensure_ascii=False)), fetch=False)
+
+        return jsonify({'success': True, 'chain_id': chain_id, 'steps_count': len(steps)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/formula-chains/<int:chain_id>/execute', methods=['POST'])
+def api_execute_formula_chain(chain_id):
+    """执行公式链（级联求值）"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+    try:
+        data = request.get_json(force=True) or {}
+        variables = data.get('variables', {})
+
+        chain = execute_query("SELECT * FROM formula_chains WHERE chain_id = %s", (chain_id,))
+        if not chain or isinstance(chain, dict):
+            return jsonify({'success': False, 'error': '公式链不存在'}), 404
+        chain = chain[0]
+
+        steps = execute_query("""
+            SELECT s.step_order, s.rule_id, s.input_mapping,
+                   r.rule_code, r.rule_name, r.rule_category, r.expression,
+                   r.source_object_code, r.target_object_code
+            FROM formula_chain_steps s
+            JOIN object_relation_rules r ON r.rule_id = s.rule_id
+            WHERE s.chain_id = %s ORDER BY s.step_order
+        """, (chain_id,))
+        if isinstance(steps, dict):
+            return jsonify({'success': False, 'error': '无法加载链步骤'}), 500
+
+        step_results = []
+        carry_vars = dict(variables)  # 级联传递的变量
+
+        for step in steps:
+            expr = step['expression']
+            if isinstance(expr, str):
+                try:
+                    expr = json.loads(expr)
+                except Exception:
+                    expr = {}
+
+            # 执行求值
+            result = _evaluate_relation_rule(step['rule_category'], expr, carry_vars)
+            result['step_order'] = step['step_order']
+            result['rule_code'] = step['rule_code']
+            result['rule_name'] = step['rule_name']
+            result['source_object'] = step['source_object_code']
+            result['target_object'] = step['target_object_code']
+
+            # 将输出传入下一步
+            if 'result_value' in result:
+                carry_vars[f"step{step['step_order']}_result"] = result['result_value']
+            if 'result_name' in result and result.get('result_value') is not None:
+                carry_vars[result['result_name']] = result['result_value']
+
+            step_results.append(result)
+
+        alerts_triggered = [r for r in step_results if r.get('triggered')]
+        return jsonify({
+            'success': True,
+            'chain_code': chain['chain_code'],
+            'chain_name': chain['chain_name'],
+            'steps': step_results,
+            'final_variables': carry_vars,
+            'alerts_triggered': len(alerts_triggered),
+            'total_steps': len(steps)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def _evaluate_relation_rule(category, expression, variables):
+    """通用关系规则求值引擎"""
+    try:
+        if category == 'PHYSICAL_FORMULA':
+            formula = expression.get('formula', '')
+            var_defs = expression.get('variables', {})
+            result_name = expression.get('result', '')
+
+            # 简单公式求值
+            result_value = None
+            if '×' in formula or '*' in formula:
+                operands = []
+                for var_name in var_defs:
+                    val = variables.get(var_name)
+                    if val is not None:
+                        operands.append(float(val))
+                if operands:
+                    result_value = 1
+                    for op in operands:
+                        result_value *= op
+            elif '/' in formula and '-' in formula:
+                # (a - b) / c pattern
+                vals = [variables.get(k) for k in var_defs]
+                if all(v is not None for v in vals):
+                    vals = [float(v) for v in vals]
+                    if len(vals) >= 3 and vals[2] != 0:
+                        result_value = (vals[0] - vals[1]) / vals[2]
+                    elif len(vals) == 2 and vals[1] != 0:
+                        result_value = vals[0] / vals[1]
+            elif '²' in formula:
+                # I² × R × L pattern
+                vals = [float(variables.get(k, 0)) for k in var_defs]
+                if len(vals) >= 3:
+                    result_value = vals[0] ** 2 * vals[1] * vals[2]
+
+            return {
+                'type': 'PHYSICAL_FORMULA',
+                'formula': formula,
+                'input_values': {k: variables.get(k) for k in var_defs},
+                'result_name': result_name.split('(')[0] if result_name else 'result',
+                'result_value': round(result_value, 4) if result_value is not None else None,
+                'triggered': False
+            }
+
+        elif category == 'BUSINESS_RULE':
+            condition = expression.get('condition', '')
+            then_val = expression.get('then', '')
+            else_val = expression.get('else', '')
+            trigger = expression.get('trigger', '')
+
+            # 简单条件评估
+            triggered = False
+            if condition and '>' in condition:
+                parts = condition.split('>')
+                if len(parts) == 2:
+                    field = parts[0].strip()
+                    threshold = float(parts[1].strip().replace('万', '0000').replace(',', ''))
+                    actual = float(variables.get(field, 0))
+                    triggered = actual > threshold
+
+            return {
+                'type': 'BUSINESS_RULE',
+                'condition': condition or trigger,
+                'triggered': triggered,
+                'action': then_val if triggered else else_val,
+                'result_value': 1 if triggered else 0
+            }
+
+        elif category == 'THRESHOLD':
+            field = expression.get('field', '')
+            operator = expression.get('operator', '>')
+            ref_field = expression.get('reference_field', '')
+            tolerance = float(expression.get('tolerance', 0))
+            actual = float(variables.get(field, 0))
+            reference = float(variables.get(ref_field, 0))
+
+            ops = {'>': actual > reference * (1 + tolerance),
+                   '<': actual < reference * (1 - tolerance),
+                   '>=': actual >= reference, '<=': actual <= reference}
+            triggered = ops.get(operator, False)
+            pct = round((actual / reference - 1) * 100, 1) if reference else 0
+
+            return {
+                'type': 'THRESHOLD',
+                'field': field,
+                'actual': actual,
+                'reference': reference,
+                'tolerance': tolerance,
+                'triggered': triggered,
+                'percent_over': pct,
+                'message': expression.get('message', '').replace('{percent}', str(abs(pct))),
+                'result_value': actual
+            }
+
+        elif category == 'DERIVED_CALC':
+            var_defs = expression.get('variables', {})
+            result_name = expression.get('result', '')
+            vals = [float(variables.get(k, 0)) for k in var_defs]
+            result_value = None
+            if len(vals) >= 2 and vals[1] != 0:
+                result_value = round(vals[0] / vals[1] * 100, 1)
+            return {
+                'type': 'DERIVED_CALC',
+                'formula': expression.get('formula', ''),
+                'input_values': {k: variables.get(k) for k in var_defs},
+                'result_name': result_name,
+                'result_value': result_value,
+                'triggered': False
+            }
+
+        return {'type': category, 'error': '未知规则类别'}
+    except Exception as e:
+        return {'type': category, 'error': str(e)}
+
+
+@olm_api.route('/api/olm/relation-rules/evaluate-with-eav', methods=['POST'])
+def api_evaluate_rule_with_eav():
+    """用 EAV 真实数据求值关系规则"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+    try:
+        data = request.get_json(force=True)
+        rule_id = data.get('rule_id')
+        entity_id = data.get('entity_id')
+
+        rule = execute_query("SELECT * FROM object_relation_rules WHERE rule_id = %s", (rule_id,))
+        if not rule or isinstance(rule, dict):
+            return jsonify({'success': False, 'error': '规则不存在'}), 404
+        rule = rule[0]
+        expr = rule['expression']
+        if isinstance(expr, str):
+            expr = json.loads(expr)
+
+        # 从 EAV 获取变量值
+        eav_values = {}
+        if entity_id:
+            rows = execute_query("""
+                SELECT a.attr_name, v.value_text, v.value_number
+                FROM eav_values v
+                JOIN eav_attributes a ON a.attr_id = v.attr_id
+                WHERE v.entity_id = %s
+            """, (entity_id,))
+            if isinstance(rows, list):
+                for row in rows:
+                    val = row.get('value_number') if row.get('value_number') is not None else row.get('value_text')
+                    eav_values[row['attr_name']] = val
+
+        # 合并手动输入的变量
+        manual_vars = data.get('variables', {})
+        merged = {**eav_values, **manual_vars}
+
+        result = _evaluate_relation_rule(rule['rule_category'], expr, merged)
+        result['rule_code'] = rule['rule_code']
+        result['rule_name'] = rule['rule_name']
+        result['eav_values'] = eav_values
+        result['merged_variables'] = merged
+
+        return jsonify({'success': True, **result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/mechanism-functions/<int:func_id>/link-rule', methods=['POST'])
+def api_link_mechanism_to_rule(func_id):
+    """关联机理函数与关系规则"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+    try:
+        data = request.get_json(force=True)
+        rule_id = data.get('rule_id')
+        execute_query(
+            "UPDATE mechanism_functions SET linked_rule_id = %s WHERE func_id = %s",
+            (rule_id, func_id), fetch=False)
+        return jsonify({'success': True, 'func_id': func_id, 'linked_rule_id': rule_id})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
