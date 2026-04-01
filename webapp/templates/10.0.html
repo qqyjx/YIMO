@@ -114,6 +114,31 @@
         }
         .sidebar-footer span { color: #64748b; }
 
+        /* TP/AP 工作负载面板 */
+        .workload-panel {
+            padding: .75rem 1rem; border-top: 1px solid rgba(255,255,255,.06);
+            font-size: .72rem;
+        }
+        .workload-panel .wl-title {
+            font-size: .7rem; font-weight: 600; color: #94a3b8; text-transform: uppercase;
+            letter-spacing: .05em; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;
+        }
+        .workload-panel .wl-title .wl-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: wl-pulse 2s infinite; }
+        @keyframes wl-pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+        .workload-panel .wl-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 6px; background: #1e293b; }
+        .workload-panel .wl-bar-tp { background: #3b82f6; transition: width .3s; }
+        .workload-panel .wl-bar-ap { background: #f59e0b; transition: width .3s; }
+        .workload-panel .wl-stats { display: flex; justify-content: space-between; color: #64748b; font-size: .68rem; margin-bottom: 6px; }
+        .workload-panel .wl-stats .tp-label { color: #3b82f6; }
+        .workload-panel .wl-stats .ap-label { color: #f59e0b; }
+        .workload-panel .wl-log { max-height: 120px; overflow-y: auto; font-family: 'Geist Mono', monospace; font-size: .65rem; line-height: 1.6; }
+        .workload-panel .wl-log-item { display: flex; gap: 4px; color: #64748b; }
+        .workload-panel .wl-log-item .wl-tag { font-weight: 700; min-width: 20px; text-align: center; }
+        .workload-panel .wl-log-item .wl-tag-tp { color: #3b82f6; }
+        .workload-panel .wl-log-item .wl-tag-ap { color: #f59e0b; }
+        .workload-panel .wl-log-item .wl-time { color: #475569; }
+        .workload-panel .wl-log-item .wl-ms { color: #94a3b8; margin-left: auto; }
+
         /* ========== Main Content ========== */
         .main { margin-left: var(--sidebar-w); min-height: 100vh; }
 
@@ -635,6 +660,19 @@
         <div class="sidebar-section">数据域</div>
         <div class="sidebar-domains" id="sidebarDomains">
             <div style="padding:.5rem; color:#64748b; font-size:.78rem;">加载中...</div>
+        </div>
+
+        <!-- TP/AP 工作负载实时面板 -->
+        <div class="workload-panel" id="workloadPanel">
+            <div class="wl-title"><span class="wl-dot"></span> HTAP 工作负载</div>
+            <div class="wl-bar"><div class="wl-bar-tp" id="wlBarTp" style="width:50%"></div><div class="wl-bar-ap" id="wlBarAp" style="width:50%"></div></div>
+            <div class="wl-stats">
+                <span><span class="tp-label">TP</span> <span id="wlTpCount">0</span></span>
+                <span><span class="tp-label" id="wlTpAvg">0ms</span></span>
+                <span><span class="ap-label">AP</span> <span id="wlApCount">0</span></span>
+                <span><span class="ap-label" id="wlApAvg">0ms</span></span>
+            </div>
+            <div class="wl-log" id="wlLog"></div>
         </div>
 
         <div class="sidebar-footer">
@@ -1188,6 +1226,72 @@
         d.textContent = str ?? '';
         return d.innerHTML;
     }
+
+    // ========== TP/AP 工作负载追踪 ==========
+    const _wlLog = [];  // 本地操作日志
+    const _WL_MAX = 30;
+
+    // 包装 fetch，自动追踪 TP/AP 类型
+    const _origFetch = window.fetch;
+    window.fetch = async function(url, opts) {
+        if (typeof url !== 'string' || !url.startsWith('/api/olm/') || url.includes('workload-stats')) {
+            return _origFetch.call(this, url, opts);
+        }
+        const t0 = performance.now();
+        const resp = await _origFetch.call(this, url, opts);
+        const ms = Math.round(performance.now() - t0);
+        const wtype = resp.headers.get('X-Workload-Type') || ((opts && opts.method && opts.method !== 'GET') ? 'TP' : 'AP');
+        const desc = (opts && opts.method ? opts.method : 'GET') + ' ' + url.replace('/api/olm/', '');
+        const now = new Date();
+        const ts = now.toTimeString().slice(0,8);
+        _wlLog.unshift({type: wtype, desc: desc.length > 45 ? desc.slice(0,42)+'...' : desc, ms, ts});
+        if (_wlLog.length > _WL_MAX) _wlLog.length = _WL_MAX;
+        _updateWorkloadUI();
+        return resp;
+    };
+
+    function _updateWorkloadUI() {
+        const tp = _wlLog.filter(e => e.type === 'TP').length;
+        const ap = _wlLog.filter(e => e.type === 'AP').length;
+        const total = tp + ap || 1;
+        const tpPct = Math.round(tp / total * 100);
+        const apPct = 100 - tpPct;
+        const el = id => document.getElementById(id);
+        if (el('wlBarTp')) el('wlBarTp').style.width = tpPct + '%';
+        if (el('wlBarAp')) el('wlBarAp').style.width = apPct + '%';
+        if (el('wlTpCount')) el('wlTpCount').textContent = tp;
+        if (el('wlApCount')) el('wlApCount').textContent = ap;
+        const tpMs = _wlLog.filter(e=>e.type==='TP');
+        const apMs = _wlLog.filter(e=>e.type==='AP');
+        if (el('wlTpAvg')) el('wlTpAvg').textContent = tpMs.length ? Math.round(tpMs.reduce((s,e)=>s+e.ms,0)/tpMs.length) + 'ms' : '0ms';
+        if (el('wlApAvg')) el('wlApAvg').textContent = apMs.length ? Math.round(apMs.reduce((s,e)=>s+e.ms,0)/apMs.length) + 'ms' : '0ms';
+        const logEl = el('wlLog');
+        if (logEl) {
+            logEl.innerHTML = _wlLog.slice(0, 12).map(e =>
+                '<div class="wl-log-item">' +
+                '<span class="wl-tag wl-tag-' + e.type.toLowerCase() + '">' + e.type + '</span>' +
+                '<span class="wl-time">' + e.ts + '</span>' +
+                '<span>' + esc(e.desc) + '</span>' +
+                '<span class="wl-ms">' + e.ms + 'ms</span>' +
+                '</div>'
+            ).join('');
+        }
+    }
+
+    // 启动时从服务端加载历史数据
+    (async function _loadWorkloadHistory() {
+        try {
+            const r = await _origFetch('/api/olm/workload-stats');
+            const d = await r.json();
+            if (d.success && d.recent_ops) {
+                d.recent_ops.reverse().forEach(op => {
+                    _wlLog.unshift(op);
+                });
+                if (_wlLog.length > _WL_MAX) _wlLog.length = _WL_MAX;
+                _updateWorkloadUI();
+            }
+        } catch(e) { /* 忽略 */ }
+    })();
 
     // ========== Global State ==========
     let extractedObjects = [];

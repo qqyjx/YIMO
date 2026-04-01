@@ -16,6 +16,9 @@ Object Extraction & Three-Tier Architecture Association API
 import os
 import sys
 import json
+import time
+import threading
+from collections import deque
 from datetime import datetime
 from pathlib import Path
 from flask import Blueprint, request, jsonify, render_template, Response
@@ -32,6 +35,121 @@ olm_api = Blueprint('olm_api', __name__)
 
 # JSON 数据文件目录
 OUTPUTS_DIR = Path(os.path.dirname(os.path.dirname(__file__))) / 'outputs'
+
+
+# ============================================================================
+# TP/AP 工作负载追踪器（内存计数器，用于 HTAP 融合可视化）
+# ============================================================================
+
+# API 端点 → 工作负载类型映射
+_WORKLOAD_MAP = {
+    # TP（事务处理）: 写入操作
+    'POST /api/olm/objects': 'TP',
+    'PUT /api/olm/objects': 'TP',
+    'DELETE /api/olm/objects': 'TP',
+    'POST /api/olm/object-lifecycle': 'TP',
+    'POST /api/olm/lifecycle-batch-advance': 'TP',
+    'POST /api/olm/relation-rules': 'TP',
+    'PUT /api/olm/relation-rules': 'TP',
+    'DELETE /api/olm/relation-rules': 'TP',
+    'POST /api/olm/relation-rules/evaluate': 'TP',
+    'POST /api/olm/relation-rules/evaluate-with-eav': 'TP',
+    'POST /api/olm/formula-chains': 'TP',
+    'POST /api/olm/mechanism-functions': 'TP',
+    'PUT /api/olm/mechanism-functions': 'TP',
+    'DELETE /api/olm/mechanism-functions': 'TP',
+    'POST /api/olm/mechanism-functions/evaluate': 'TP',
+    'POST /api/olm/alerts': 'TP',
+    'POST /api/olm/alerts/resolve': 'TP',
+    'POST /api/olm/alerts/run-check': 'TP',
+    'POST /api/olm/traceability-chains': 'TP',
+    'POST /api/olm/merge-objects': 'TP',
+    'POST /api/olm/dedup-objects': 'TP',
+    'POST /api/olm/bulk-merge-small': 'TP',
+    'POST /api/olm/run-extraction': 'TP',
+    'POST /api/olm/lifecycle-templates': 'TP',
+    # AP（分析处理）: 聚合查询
+    'GET /api/olm/governance/metrics': 'AP',
+    'GET /api/olm/governance/completeness': 'AP',
+    'GET /api/olm/governance/defects': 'AP',
+    'GET /api/olm/governance/domain-comparison': 'AP',
+    'GET /api/olm/lifecycle-stats': 'AP',
+    'GET /api/olm/graph-data-three-tier': 'AP',
+    'GET /api/olm/graph-data-global': 'AP',
+    'GET /api/olm/sankey-data': 'AP',
+    'GET /api/olm/relation-rules/graph': 'AP',
+    'GET /api/olm/relation-stats': 'AP',
+    'GET /api/olm/domain-stats': 'AP',
+    'GET /api/olm/granularity-report': 'AP',
+    'GET /api/olm/cross-domain-duplicates': 'AP',
+    'GET /api/olm/summary': 'AP',
+    'GET /api/olm/stats': 'AP',
+    'GET /api/olm/formula-chains': 'AP',
+    'GET /api/olm/lifecycle-templates': 'AP',
+}
+
+_workload_lock = threading.Lock()
+_workload_log = deque(maxlen=50)  # 最近 50 条操作记录
+_workload_counters = {'TP': 0, 'AP': 0, 'tp_total_ms': 0.0, 'ap_total_ms': 0.0}
+
+
+def _classify_workload(method: str, path: str) -> str:
+    """根据 HTTP 方法和路径分类工作负载类型"""
+    key = f"{method} {path}"
+    # 精确匹配
+    if key in _WORKLOAD_MAP:
+        return _WORKLOAD_MAP[key]
+    # 前缀匹配（处理带路径参数的端点）
+    for pattern, wtype in _WORKLOAD_MAP.items():
+        pm, pp = pattern.split(' ', 1)
+        if method == pm and path.startswith(pp):
+            return wtype
+    # 默认：POST/PUT/DELETE → TP, GET → AP
+    if method in ('POST', 'PUT', 'DELETE'):
+        return 'TP'
+    return 'AP'
+
+
+@olm_api.before_request
+def _record_request_start():
+    """记录请求开始时间"""
+    request._workload_start = time.time()
+
+
+@olm_api.after_request
+def _record_workload(response):
+    """记录工作负载并添加 X-Workload-Type header"""
+    if not request.path.startswith('/api/olm/'):
+        return response
+    # 跳过 workload-stats 自身
+    if request.path == '/api/olm/workload-stats':
+        return response
+
+    elapsed_ms = (time.time() - getattr(request, '_workload_start', time.time())) * 1000
+    wtype = _classify_workload(request.method, request.path)
+    response.headers['X-Workload-Type'] = wtype
+
+    # 生成简短描述
+    desc = f"{request.method} {request.path.replace('/api/olm/', '')}"
+    if len(desc) > 60:
+        desc = desc[:57] + '...'
+
+    entry = {
+        'type': wtype,
+        'method': request.method,
+        'path': request.path,
+        'desc': desc,
+        'ms': round(elapsed_ms, 1),
+        'status': response.status_code,
+        'ts': datetime.now().strftime('%H:%M:%S'),
+    }
+
+    with _workload_lock:
+        _workload_log.append(entry)
+        _workload_counters[wtype] += 1
+        _workload_counters[f'{wtype.lower()}_total_ms'] += elapsed_ms
+
+    return response
 
 
 # ============================================================================
@@ -4586,3 +4704,27 @@ def api_link_mechanism_to_rule(func_id):
         return jsonify({'success': True, 'func_id': func_id, 'linked_rule_id': rule_id})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================================
+# TP/AP 工作负载统计端点（HTAP 融合可视化）
+# ============================================================================
+
+@olm_api.route('/api/olm/workload-stats')
+def api_workload_stats():
+    """返回 TP/AP 工作负载统计 — 用于 HTAP 融合演示"""
+    with _workload_lock:
+        tp = _workload_counters['TP']
+        ap = _workload_counters['AP']
+        total = tp + ap
+        return jsonify({
+            'success': True,
+            'tp_count': tp,
+            'ap_count': ap,
+            'total_count': total,
+            'tp_ratio': round(tp / total * 100, 1) if total > 0 else 0,
+            'ap_ratio': round(ap / total * 100, 1) if total > 0 else 0,
+            'tp_avg_ms': round(_workload_counters['tp_total_ms'] / tp, 1) if tp > 0 else 0,
+            'ap_avg_ms': round(_workload_counters['ap_total_ms'] / ap, 1) if ap > 0 else 0,
+            'recent_ops': list(_workload_log),
+        })
