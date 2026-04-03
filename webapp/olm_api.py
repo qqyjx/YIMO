@@ -2620,7 +2620,54 @@ def api_create_lifecycle(object_code):
             data.get('notes', '')
         ), fetch=False)
 
-        return jsonify({'success': True, 'history_id': result, 'stage': new_stage})
+        # Auto-trigger: 查询阶段模板的 trigger_functions，自动求值机理函数
+        triggered_alerts = []
+        try:
+            obj_type = execute_query(
+                "SELECT object_type FROM extracted_objects WHERE object_id = %s", (object_id,))
+            if obj_type and not isinstance(obj_type, dict):
+                tmpl = execute_query("""
+                    SELECT trigger_functions FROM lifecycle_stage_templates
+                    WHERE object_type = %s AND lifecycle_stage = %s
+                """, (obj_type[0]['object_type'], new_stage))
+                if tmpl and not isinstance(tmpl, dict) and tmpl[0].get('trigger_functions'):
+                    func_codes = tmpl[0]['trigger_functions']
+                    if isinstance(func_codes, str):
+                        func_codes = json.loads(func_codes)
+                    for fc in (func_codes or []):
+                        mf = execute_query(
+                            "SELECT * FROM mechanism_functions WHERE func_code = %s AND is_active = 1", (fc,))
+                        if not mf or isinstance(mf, dict):
+                            continue
+                        mf = mf[0]
+                        expr = mf.get('expression', '{}')
+                        if isinstance(expr, str):
+                            expr = json.loads(expr)
+                        snapshot = data.get('attributes_snapshot', {})
+                        eval_result = _evaluate_expression(expr, snapshot)
+                        if eval_result.get('triggered'):
+                            execute_query("""
+                                INSERT INTO alert_records
+                                (func_id, alert_level, alert_title, alert_detail, related_object_id, trigger_value, threshold_value)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """, (
+                                mf['func_id'], mf.get('severity', 'WARNING'),
+                                f"生命周期触发: {mf.get('func_name', fc)}",
+                                eval_result.get('message', ''),
+                                object_id,
+                                str(eval_result.get('actual_value', '')),
+                                str(eval_result.get('threshold', ''))
+                            ), fetch=False)
+                            triggered_alerts.append({
+                                'func_code': fc,
+                                'func_name': mf.get('func_name', fc),
+                                'severity': mf.get('severity', 'WARNING'),
+                                'message': eval_result.get('message', '')
+                            })
+        except Exception as trigger_err:
+            triggered_alerts.append({'error': str(trigger_err)})
+
+        return jsonify({'success': True, 'history_id': result, 'stage': new_stage, 'triggered_alerts': triggered_alerts})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -4256,7 +4303,7 @@ def api_create_lifecycle_template():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@olm_api.route('/api/olm/object-lifecycle/<object_code>/validate', methods=['POST'])
+@olm_api.route('/api/olm/object-lifecycle/<object_code>/validate', methods=['GET', 'POST'])
 def api_validate_lifecycle(object_code):
     """验证对象是否满足当前阶段的模板要求"""
     if not is_db_available():

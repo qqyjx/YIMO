@@ -2976,7 +2976,9 @@
             html += '<div style="flex:1;text-align:center;position:relative;">';
             html += '<div style="width:40px;height:40px;border-radius:50%;background:'+color+';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;position:relative;z-index:1;box-shadow:'+(active?'0 0 0 4px '+color+'33':'none')+';cursor:pointer;" title="'+esc(stageLabels[stage])+'">';
             html += (idx+1) + '</div>';
-            html += '<div style="font-size:.78rem;font-weight:'+(active?'600':'400')+';color:'+(active?'var(--text-main)':'var(--text-muted)')+';margin-top:8px;">'+esc(stageLabels[stage])+'</div>';
+            // 验证徽章占位（异步填充）
+            html += '<span id="lcBadge_'+stage+'" style="display:inline-block;margin-top:2px;min-height:18px;"></span>';
+            html += '<div style="font-size:.78rem;font-weight:'+(active?'600':'400')+';color:'+(active?'var(--text-main)':'var(--text-muted)')+';margin-top:4px;">'+esc(stageLabels[stage])+'</div>';
             if (record && record.stage_entered_at) {
                 html += '<div style="font-size:.68rem;color:var(--text-muted);margin-top:2px;">' + esc(record.stage_entered_at.split('T')[0].substring(0,10)) + '</div>';
             }
@@ -3050,6 +3052,30 @@
             renderLifecycleGantt(lifecycle, objName, stageLabels, stageColors);
         }
         container.innerHTML = html;
+
+        // 异步加载验证徽章（当前阶段）
+        if (lifecycle.length) {
+            fetch('/api/olm/object-lifecycle/' + encodeURIComponent(objectCode) + '/validate')
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(v) {
+                    if (!v || !v.stage) return;
+                    var badge = document.getElementById('lcBadge_' + v.stage);
+                    if (!badge) return;
+                    var pct = v.completion_pct || 0;
+                    var badgeColor, badgeText, tooltip;
+                    if (v.passed) {
+                        badgeColor = '#10b981'; badgeText = '✓'; tooltip = '属性完整';
+                    } else if (pct >= 50) {
+                        badgeColor = '#f59e0b'; badgeText = Math.round(pct) + '%';
+                        tooltip = '缺少: ' + (v.missing || []).join(', ');
+                    } else {
+                        badgeColor = '#ef4444'; badgeText = Math.round(pct) + '%';
+                        tooltip = '缺少: ' + (v.missing || []).join(', ');
+                    }
+                    badge.innerHTML = '<span title="' + esc(tooltip) + '" style="display:inline-block;font-size:.62rem;padding:1px 6px;border-radius:8px;background:' + badgeColor + '20;color:' + badgeColor + ';font-weight:700;cursor:help;border:1px solid ' + badgeColor + '40;">' + badgeText + '</span>';
+                })
+                .catch(function() {});
+        }
     }
 
     function renderLifecycleGantt(lifecycle, objName, stageLabels, stageColors) {
