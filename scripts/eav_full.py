@@ -192,7 +192,7 @@ def ensure_schema(cursor, table_prefix="eav", charset="utf8mb4", collation="utf8
         `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
         `name` VARCHAR(191) NOT NULL,
         `source_file` VARCHAR(1024),
-        `lifecycle_stage` VARCHAR(50) DEFAULT 'Finance' COMMENT '生命周期阶段: Planning/Design/Construction/Operation/Finance',
+        `lifecycle_stage` VARCHAR(50) DEFAULT 'Operation' COMMENT '生命周期阶段: Planning/Design/Construction/Operation（统一4阶段）',
         `stage_metadata` JSON COMMENT '阶段相关元数据',
         `imported_at` DATETIME(6) NOT NULL,
         UNIQUE KEY `uniq_name` (`name`),
@@ -251,9 +251,9 @@ def ensure_schema(cursor, table_prefix="eav", charset="utf8mb4", collation="utf8
     """)
 
 # 有效的生命周期阶段
-VALID_LIFECYCLE_STAGES = ['Planning', 'Design', 'Construction', 'Operation', 'Finance']
+VALID_LIFECYCLE_STAGES = ['Planning', 'Design', 'Construction', 'Operation']
 
-def upsert_dataset(cursor, table_prefix, name, source_file, lifecycle_stage='Finance', stage_metadata=None, data_domain=None)->int:
+def upsert_dataset(cursor, table_prefix, name, source_file, lifecycle_stage='Operation', stage_metadata=None, data_domain=None)->int:
     """创建或更新数据集，支持生命周期阶段标记和数据域"""
     import json
     stage_meta_json = json.dumps(stage_metadata) if stage_metadata else None
@@ -430,8 +430,8 @@ def main():
     ap.add_argument("--incremental", action="store_true", default=False, help="增量导入模式：基于行哈希跳过未变更数据（默认关闭）")
     ap.add_argument("--force-update", action="store_true", default=False, help="增量模式下强制更新所有已存在记录（默认关闭）")
     # 生命周期阶段参数
-    ap.add_argument("--stage", default="Finance", choices=VALID_LIFECYCLE_STAGES,
-                    help="生命周期阶段: Planning/Design/Construction/Operation/Finance（默认 Finance）")
+    ap.add_argument("--stage", default="Operation", choices=VALID_LIFECYCLE_STAGES,
+                    help="生命周期阶段: Planning/Design/Construction/Operation（默认 Operation）")
     ap.add_argument("--stage-date", default=None, help="阶段日期（如 2026-01-09，用于时序校验）")
     ap.add_argument("--stage-source", default=None, help="阶段数据来源系统（如 SAP/ERP/MES）")
     ap.add_argument("--data-domain", default=None, help="数据域编码（如 jicai/shupeidian）")

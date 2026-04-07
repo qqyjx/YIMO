@@ -344,7 +344,7 @@ TABLE_PREFIX=eav
 
 | Table | Purpose |
 |-------|---------|
-| `object_lifecycle_history` | Object lifecycle stage history (Planning→Finance) |
+| `object_lifecycle_history` | Object lifecycle stage history (统一4阶段: Planning→Design→Construction→Operation) |
 | `traceability_chains` | Traceability chain definitions |
 | `traceability_chain_nodes` | Chain node details (linked to objects & entities) |
 
@@ -761,7 +761,7 @@ bash init.sh  # Checks Python, project structure, DB, SBERT, git, data files
 
 | Phase | 需求 | 状态 | 实现位置 | 前端面板 |
 |-------|------|------|----------|----------|
-| P2 | 全生命周期管理 | ✅ 已实现 | `object_lifecycle_history` 表 + 3个API端点 | 5阶段时间线(Planning→Design→Construction→Operation→Finance) + 属性快照 |
+| P2 | 全生命周期管理 | ✅ 已实现 | `object_lifecycle_history` 表 + 3个API端点 + scripts/seed_lifecycle.py | 统一4阶段时间线(Planning→Design→Construction→Operation), 16对象×4阶段=64条记录, 属性快照 |
 | P3 | 穿透式业务溯源 | ✅ 已实现 | `traceability_chains` + `traceability_chain_nodes` 表 + 4个API端点 | 链路卡片列表 + 节点流程图 + 新建表单 |
 | P4 | 机理函数（业务规则+物理公式） | ✅ 已实现 | `mechanism_functions` 表 + 6个API端点 + 表达式求值引擎 + 3个预置函数 | 函数表格 + 测试面板(3类型:THRESHOLD/FORMULA/RULE) |
 | P5 | 穿透式预警与辅助决策 | ✅ 已实现 | `alert_records` 表 + 4个API端点 + 规则检查引擎(遍历EAV数据) | 4个预警统计卡片 + 预警列表 + 处理按钮 |

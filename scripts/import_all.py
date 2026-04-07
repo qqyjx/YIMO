@@ -5,7 +5,7 @@
 支持生命周期阶段标记（YIMO 对象抽取与三层架构关联系统）。
 
 用法:
-  python scripts/import_all.py --dir ./data --stage Finance
+  python scripts/import_all.py --dir ./data --stage Operation
   python scripts/import_all.py --dir ./design_docs --stage Design
 """
 import argparse
@@ -18,7 +18,7 @@ DATA_DIR_DEFAULT = ROOT / 'data'
 EAV_SCRIPT = ROOT / 'scripts' / 'eav_full.py'
 
 # 有效的生命周期阶段
-VALID_STAGES = ['Planning', 'Design', 'Construction', 'Operation', 'Finance']
+VALID_STAGES = ['Planning', 'Design', 'Construction', 'Operation']
 
 
 def main():
@@ -31,8 +31,8 @@ def main():
     ap.add_argument('--password', default='eavpass123')
     ap.add_argument('--table-prefix', default='eav')
     # 生命周期阶段参数
-    ap.add_argument('--stage', default='Finance', choices=VALID_STAGES,
-                    help='生命周期阶段: Planning/Design/Construction/Operation/Finance')
+    ap.add_argument('--stage', default='Operation', choices=VALID_STAGES,
+                    help='生命周期阶段: Planning/Design/Construction/Operation')
     ap.add_argument('--stage-date', default=None, help='阶段日期（如 2026-01-09）')
     ap.add_argument('--stage-source', default=None, help='数据来源系统')
     ap.add_argument('--data-domain', default=None, help='数据域编码（如 jicai/shupeidian）')

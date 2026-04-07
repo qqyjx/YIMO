@@ -2560,7 +2560,7 @@ def api_object_lifecycle(object_code):
 @olm_api.route('/api/olm/object-lifecycle/<object_code>', methods=['POST'])
 def api_create_lifecycle(object_code):
     """新增生命周期阶段记录（含状态机约束）"""
-    STAGE_ORDER = ['Planning', 'Design', 'Construction', 'Operation', 'Finance']
+    STAGE_ORDER = ['Planning', 'Design', 'Construction', 'Operation']
 
     if not is_db_available():
         return jsonify({'success': False, 'error': '数据库不可用'}), 503
@@ -2687,7 +2687,7 @@ def api_lifecycle_stats():
             if domain:
                 query += " WHERE h.data_domain = %s"
                 params.append(domain)
-            query += " GROUP BY h.lifecycle_stage ORDER BY FIELD(h.lifecycle_stage, 'Planning','Design','Construction','Operation','Finance')"
+            query += " GROUP BY h.lifecycle_stage ORDER BY FIELD(h.lifecycle_stage, 'Planning','Design','Construction','Operation')"
 
             result = execute_query(query, tuple(params) if params else None)
             if isinstance(result, list):
@@ -2718,7 +2718,7 @@ def api_lifecycle_analytics():
                 FROM object_lifecycle_history h
                 {where}
                 GROUP BY h.lifecycle_stage
-                ORDER BY FIELD(h.lifecycle_stage, 'Planning','Design','Construction','Operation','Finance')
+                ORDER BY FIELD(h.lifecycle_stage, 'Planning','Design','Construction','Operation')
             """
             duration_stats = execute_query(duration_query, params)
 
@@ -2731,7 +2731,7 @@ def api_lifecycle_analytics():
                 FROM object_lifecycle_history h
                 JOIN extracted_objects o ON o.object_id = h.object_id
                 {where}
-                ORDER BY o.object_name, FIELD(h.lifecycle_stage, 'Planning','Design','Construction','Operation','Finance')
+                ORDER BY o.object_name, FIELD(h.lifecycle_stage, 'Planning','Design','Construction','Operation')
             """
             compare_data = execute_query(compare_query, params)
 
@@ -2800,7 +2800,7 @@ def api_lifecycle_report(object_code):
             lc_result = execute_query("""
                 SELECT * FROM object_lifecycle_history
                 WHERE object_id = %s
-                ORDER BY FIELD(lifecycle_stage, 'Planning','Design','Construction','Operation','Finance')
+                ORDER BY FIELD(lifecycle_stage, 'Planning','Design','Construction','Operation')
             """, (obj['object_id'],))
 
             lifecycle = []
@@ -4249,7 +4249,7 @@ def api_lifecycle_templates():
         if obj_type:
             sql += " WHERE object_type = %s"
             params.append(obj_type)
-        sql += " ORDER BY FIELD(lifecycle_stage, 'Planning','Design','Construction','Operation','Finance')"
+        sql += " ORDER BY FIELD(lifecycle_stage, 'Planning','Design','Construction','Operation')"
         result = execute_query(sql, params or None)
         if isinstance(result, dict):
             return jsonify([])
@@ -4375,7 +4375,7 @@ def api_validate_lifecycle(object_code):
 @olm_api.route('/api/olm/lifecycle-batch-advance', methods=['POST'])
 def api_lifecycle_batch_advance():
     """批量推进多对象到下一阶段"""
-    STAGE_ORDER = ['Planning', 'Design', 'Construction', 'Operation', 'Finance']
+    STAGE_ORDER = ['Planning', 'Design', 'Construction', 'Operation']
     if not is_db_available():
         return jsonify({'success': False, 'error': '数据库不可用'}), 503
     try:

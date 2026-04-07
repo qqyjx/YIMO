@@ -68,7 +68,7 @@
             font-size: .75rem; color: #64748b; margin-top: .15rem; letter-spacing: .02em;
         }
 
-        .sidebar-nav { padding: .75rem 0; flex-shrink: 0; }
+        .sidebar-nav { padding: .75rem 0; flex: 1; min-height: 0; overflow-y: auto; }
         .nav-item {
             display: flex; align-items: center; gap: .65rem;
             padding: .6rem 1.25rem;
@@ -953,7 +953,6 @@
                             <select id="batchTargetStage" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
                                 <option value="Planning">Planning 规划</option><option value="Design">Design 设计</option>
                                 <option value="Construction">Construction 建设</option><option value="Operation">Operation 运行</option>
-                                <option value="Finance">Finance 财务</option>
                             </select>
                             <label style="font-size:.82rem;margin-top:8px;display:block;">备注</label>
                             <input id="batchNotes" placeholder="批量推进说明" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-top:4px;">
@@ -981,10 +980,6 @@
                     <div class="stat-card" style="border-left:3px solid #f59e0b;">
                         <div class="stat-value" id="lcOperation">0</div>
                         <div class="stat-label">运行 Operation</div>
-                    </div>
-                    <div class="stat-card" style="border-left:3px solid #ef4444;">
-                        <div class="stat-value" id="lcFinance">0</div>
-                        <div class="stat-label">财务 Finance</div>
                     </div>
                 </div>
                 <!-- 时间线 -->
@@ -2906,7 +2901,6 @@
                 animateNumber('lcDesign', statsMap['Design'] || 0);
                 animateNumber('lcConstruction', statsMap['Construction'] || 0);
                 animateNumber('lcOperation', statsMap['Operation'] || 0);
-                if (document.getElementById('lcFinance')) animateNumber('lcFinance', statsMap['Finance'] || 0);
             }
         } catch(e) { /* ignore */ }
         if (selectedObjectCode) {
@@ -2951,9 +2945,9 @@
     function renderLifecycleTimeline(lifecycle, objectCode) {
         var container = document.getElementById('lifecycleTimeline');
         var ganttContainer = document.getElementById('lifecycleGantt');
-        var stages = ['Planning','Design','Construction','Operation','Finance'];
-        var stageLabels = {Planning:'规划',Design:'设计',Construction:'建设',Operation:'运行',Finance:'财务'};
-        var stageColors = {Planning:'#6366f1',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b',Finance:'#ef4444'};
+        var stages = ['Planning','Design','Construction','Operation'];
+        var stageLabels = {Planning:'规划',Design:'设计',Construction:'建设',Operation:'运行'};
+        var stageColors = {Planning:'#6366f1',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b'};
         var obj = extractedObjects.find(function(o){return o.object_code===objectCode;});
         var objName = obj ? obj.object_name : objectCode;
         var activeStages = new Set(lifecycle.map(function(l){return l.lifecycle_stage;}));
@@ -3130,9 +3124,9 @@
     }
 
     function renderLifecycleCompare(data) {
-        var stageColors = {Planning:'#6366f1',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b',Finance:'#ef4444'};
-        var stageLabels = {Planning:'规划',Design:'设计',Construction:'建设',Operation:'运行',Finance:'财务'};
-        var stageOrder = ['Planning','Design','Construction','Operation','Finance'];
+        var stageColors = {Planning:'#6366f1',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b'};
+        var stageLabels = {Planning:'规划',Design:'设计',Construction:'建设',Operation:'运行'};
+        var stageOrder = ['Planning','Design','Construction','Operation'];
         var objects = data.objects || [];
         if (!objects.length) return;
 
