@@ -114,30 +114,7 @@
         }
         .sidebar-footer span { color: #64748b; }
 
-        /* TP/AP 工作负载面板 */
-        .workload-panel {
-            padding: .75rem 1rem; border-top: 1px solid rgba(255,255,255,.06);
-            font-size: .72rem;
-        }
-        .workload-panel .wl-title {
-            font-size: .7rem; font-weight: 600; color: #94a3b8; text-transform: uppercase;
-            letter-spacing: .05em; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;
-        }
-        .workload-panel .wl-title .wl-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: wl-pulse 2s infinite; }
         @keyframes wl-pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
-        .workload-panel .wl-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 6px; background: #1e293b; }
-        .workload-panel .wl-bar-tp { background: #3b82f6; transition: width .3s; }
-        .workload-panel .wl-bar-ap { background: #f59e0b; transition: width .3s; }
-        .workload-panel .wl-stats { display: flex; justify-content: space-between; color: #64748b; font-size: .68rem; margin-bottom: 6px; }
-        .workload-panel .wl-stats .tp-label { color: #3b82f6; }
-        .workload-panel .wl-stats .ap-label { color: #f59e0b; }
-        .workload-panel .wl-log { max-height: 120px; overflow-y: auto; font-family: 'Geist Mono', monospace; font-size: .65rem; line-height: 1.6; }
-        .workload-panel .wl-log-item { display: flex; gap: 4px; color: #64748b; }
-        .workload-panel .wl-log-item .wl-tag { font-weight: 700; min-width: 20px; text-align: center; }
-        .workload-panel .wl-log-item .wl-tag-tp { color: #3b82f6; }
-        .workload-panel .wl-log-item .wl-tag-ap { color: #f59e0b; }
-        .workload-panel .wl-log-item .wl-time { color: #475569; }
-        .workload-panel .wl-log-item .wl-ms { color: #94a3b8; margin-left: auto; }
 
         /* ========== Main Content ========== */
         .main { margin-left: var(--sidebar-w); min-height: 100vh; }
@@ -655,24 +632,12 @@
             <div class="nav-item" data-section="section-governance" onclick="scrollToSection('section-governance');loadGovernance();">
                 <i class="bi bi-clipboard-data"></i><span>治理看板</span>
             </div>
+            <!-- HTAP 已移至右下角浮动面板 -->
         </nav>
 
         <div class="sidebar-section">数据域</div>
         <div class="sidebar-domains" id="sidebarDomains">
             <div style="padding:.5rem; color:#64748b; font-size:.78rem;">加载中...</div>
-        </div>
-
-        <!-- TP/AP 工作负载实时面板 -->
-        <div class="workload-panel" id="workloadPanel">
-            <div class="wl-title"><span class="wl-dot"></span> HTAP 工作负载</div>
-            <div class="wl-bar"><div class="wl-bar-tp" id="wlBarTp" style="width:50%"></div><div class="wl-bar-ap" id="wlBarAp" style="width:50%"></div></div>
-            <div class="wl-stats">
-                <span><span class="tp-label">TP</span> <span id="wlTpCount">0</span></span>
-                <span><span class="tp-label" id="wlTpAvg">0ms</span></span>
-                <span><span class="ap-label">AP</span> <span id="wlApCount">0</span></span>
-                <span><span class="ap-label" id="wlApAvg">0ms</span></span>
-            </div>
-            <div class="wl-log" id="wlLog"></div>
         </div>
 
         <div class="sidebar-footer">
@@ -986,6 +951,25 @@
                 <div id="lifecycleTimeline" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;min-height:120px;">
                     <div class="empty-state"><i class="bi bi-clock-history"></i><p>选择一个对象查看其生命周期历史</p></div>
                 </div>
+                <!-- 字段全景表格 -->
+                <div id="lifecycleFieldPanorama" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;margin-top:12px;display:none;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                        <div style="font-weight:600;font-size:.88rem;"><i class="bi bi-table" style="color:#3b82f6;"></i> 对象字段全景 — 各阶段属性变化</div>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <span id="fieldPanoramaCount" style="font-size:.75rem;color:var(--text-muted);"></span>
+                            <select id="fieldPanoramaFilter" onchange="filterFieldPanorama()" style="padding:3px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-body);color:var(--text-main);font-size:.78rem;">
+                                <option value="all">全部字段</option>
+                                <option value="changed">仅变更字段</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="fieldPanoramaTable" style="overflow-x:auto;max-height:400px;overflow-y:auto;"></div>
+                </div>
+                <!-- 概念实体关联分组 -->
+                <div id="lifecycleEntityGroups" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;margin-top:12px;display:none;">
+                    <div style="font-weight:600;font-size:.88rem;margin-bottom:12px;"><i class="bi bi-diagram-2" style="color:#10b981;"></i> 概念实体关联</div>
+                    <div id="entityGroupsContent"></div>
+                </div>
                 <!-- 甘特图 -->
                 <div id="lifecycleGantt" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;margin-top:12px;min-height:200px;display:none;">
                 </div>
@@ -1018,6 +1002,13 @@
                 </div>
                 <div id="chainDetail" style="display:none;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;"></div>
                 <div id="createChainForm" style="display:none;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;margin-top:12px;"></div>
+                <!-- 字段级数据溯源 -->
+                <div style="margin-top:16px;">
+                    <div style="font-weight:600;font-size:.92rem;margin-bottom:12px;"><i class="bi bi-bezier2" style="color:#f59e0b;"></i> 字段级数据溯源</div>
+                    <div id="fieldLineageList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px;">
+                        <div class="empty-state"><i class="bi bi-bezier2"></i><p>加载中...</p></div>
+                    </div>
+                </div>
             </section>
 
             <!-- Section: Relation Rules (Phase 3 新增) -->
@@ -1207,6 +1198,8 @@
                 </div>
             </section>
 
+            <!-- HTAP 已移至右下角浮动面板 -->
+
         </div>
     </div>
 
@@ -1221,6 +1214,66 @@
         d.textContent = str ?? '';
         return d.innerHTML;
     }
+
+    // ========== HTAP 浮动面板渲染 ==========
+    function renderHtapPanel() {
+        var tp = _wlLog.filter(function(e){return e.type==='TP';});
+        var ap = _wlLog.filter(function(e){return e.type==='AP';});
+        var total = tp.length + ap.length;
+        var tpPct = total > 0 ? Math.round(tp.length / total * 100) : 50;
+        var apPct = 100 - tpPct;
+        var tpAvg = tp.length ? Math.round(tp.reduce(function(s,e){return s+e.ms;},0)/tp.length) : 0;
+        var apAvg = ap.length ? Math.round(ap.reduce(function(s,e){return s+e.ms;},0)/ap.length) : 0;
+
+        el('htapTpTotal').textContent = tp.length;
+        el('htapApTotal').textContent = ap.length;
+        el('htapTpAvgMs').textContent = tpAvg + 'ms';
+        el('htapApAvgMs').textContent = apAvg + 'ms';
+        el('htapBarTp').style.width = tpPct + '%';
+        el('htapBarTp').textContent = tpPct > 10 ? 'TP ' + tpPct + '%' : '';
+        el('htapBarAp').style.width = apPct + '%';
+        el('htapBarAp').textContent = apPct > 10 ? 'AP ' + apPct + '%' : '';
+
+        // 饼图
+        var pieChart = echarts.getInstanceByDom(el('htapPieChart')) || echarts.init(el('htapPieChart'));
+        pieChart.setOption({
+            tooltip:{trigger:'item',formatter:'{b}: {c} ({d}%)'},
+            series:[{type:'pie',radius:['40%','70%'],label:{color:'#94a3b8',fontSize:11},
+                data:[{value:tp.length,name:'TP 事务',itemStyle:{color:'#3b82f6'}},{value:ap.length,name:'AP 分析',itemStyle:{color:'#f59e0b'}}]
+            }]
+        });
+
+        // 延迟柱状图
+        var latChart = echarts.getInstanceByDom(el('htapLatencyChart')) || echarts.init(el('htapLatencyChart'));
+        latChart.setOption({
+            tooltip:{trigger:'axis'},
+            xAxis:{type:'category',data:['TP 事务','AP 分析'],axisLabel:{color:'#94a3b8'}},
+            yAxis:{type:'value',name:'ms',axisLabel:{color:'#94a3b8'},nameTextStyle:{color:'#94a3b8'},splitLine:{lineStyle:{color:'rgba(255,255,255,.05)'}}},
+            series:[{type:'bar',barWidth:40,data:[{value:tpAvg,itemStyle:{color:'#3b82f6'}},{value:apAvg,itemStyle:{color:'#f59e0b'}}]}]
+        });
+
+        // 操作日志
+        var logEl = el('htapOpLog');
+        if (logEl) {
+            logEl.innerHTML = _wlLog.slice(0,30).map(function(e){
+                var tagColor = e.type === 'TP' ? '#3b82f6' : '#f59e0b';
+                return '<div style="display:flex;gap:6px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03);">'
+                    + '<span style="font-weight:700;color:'+tagColor+';min-width:22px;">'+e.type+'</span>'
+                    + '<span style="color:#475569;">'+e.ts+'</span>'
+                    + '<span style="flex:1;color:#94a3b8;">'+esc(e.desc)+'</span>'
+                    + '<span style="color:#64748b;">'+e.ms+'ms</span>'
+                    + '</div>';
+            }).join('');
+        }
+    }
+
+    function resetHtapStats() {
+        _wlLog.length = 0;
+        _workload_counters = {TP:0, AP:0, tp_total_ms:0, ap_total_ms:0};
+        renderHtapPanel();
+        showToast('HTAP 统计已重置');
+    }
+    var _workload_counters = {TP:0, AP:0, tp_total_ms:0, ap_total_ms:0};
 
     // ========== TP/AP 工作负载追踪 ==========
     const _wlLog = [];  // 本地操作日志
@@ -1246,30 +1299,15 @@
     };
 
     function _updateWorkloadUI() {
-        const tp = _wlLog.filter(e => e.type === 'TP').length;
-        const ap = _wlLog.filter(e => e.type === 'AP').length;
-        const total = tp + ap || 1;
-        const tpPct = Math.round(tp / total * 100);
-        const apPct = 100 - tpPct;
-        const el = id => document.getElementById(id);
-        if (el('wlBarTp')) el('wlBarTp').style.width = tpPct + '%';
-        if (el('wlBarAp')) el('wlBarAp').style.width = apPct + '%';
-        if (el('wlTpCount')) el('wlTpCount').textContent = tp;
-        if (el('wlApCount')) el('wlApCount').textContent = ap;
-        const tpMs = _wlLog.filter(e=>e.type==='TP');
-        const apMs = _wlLog.filter(e=>e.type==='AP');
-        if (el('wlTpAvg')) el('wlTpAvg').textContent = tpMs.length ? Math.round(tpMs.reduce((s,e)=>s+e.ms,0)/tpMs.length) + 'ms' : '0ms';
-        if (el('wlApAvg')) el('wlApAvg').textContent = apMs.length ? Math.round(apMs.reduce((s,e)=>s+e.ms,0)/apMs.length) + 'ms' : '0ms';
-        const logEl = el('wlLog');
-        if (logEl) {
-            logEl.innerHTML = _wlLog.slice(0, 12).map(e =>
-                '<div class="wl-log-item">' +
-                '<span class="wl-tag wl-tag-' + e.type.toLowerCase() + '">' + e.type + '</span>' +
-                '<span class="wl-time">' + e.ts + '</span>' +
-                '<span>' + esc(e.desc) + '</span>' +
-                '<span class="wl-ms">' + e.ms + 'ms</span>' +
-                '</div>'
-            ).join('');
+        // 更新浮动按钮上的计数
+        var tp = _wlLog.filter(function(e){return e.type==='TP';}).length;
+        var ap = _wlLog.filter(function(e){return e.type==='AP';}).length;
+        var countsEl = document.getElementById('htapFloatCounts');
+        if (countsEl) countsEl.textContent = tp + '/' + ap;
+        // 面板打开时刷新内容
+        var panel = document.getElementById('htapPanel');
+        if (panel && panel.classList.contains('open')) {
+            renderHtapPanel();
         }
     }
 
@@ -1614,6 +1652,56 @@
                 + '</div>'
                 + '</div>';
         }).join('');
+    }
+
+    // ========== 字段溯源弹窗 ==========
+    async function showFieldLineagePopup(fieldName) {
+        var objectCode = (document.getElementById('lifecycleObjectSelector') || {}).value;
+        try {
+            var resp = await fetch('/api/olm/field-lineage/trace/' + encodeURIComponent(objectCode) + '/' + encodeURIComponent(fieldName));
+            var data = await resp.json();
+            var lineage = data.lineage;
+            if (!lineage) throw new Error('无溯源数据');
+            var expr = lineage.expression || {};
+            var formula = expr.formula || '未定义';
+            var sources = expr.sources || [];
+            var result = expr.result_sample;
+
+            var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);" onclick="if(event.target===this)this.remove();">';
+            html += '<div style="background:linear-gradient(180deg,#1e293b,#0f172a);border:1px solid rgba(99,102,241,.2);border-radius:16px;padding:28px;max-width:560px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.5);">';
+            // 标题
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">';
+            html += '<div style="font-size:1rem;font-weight:700;color:#e2e8f0;"><i class="bi bi-link-45deg" style="color:#f59e0b;"></i> 字段溯源</div>';
+            html += '<i class="bi bi-x-lg" style="cursor:pointer;color:#64748b;font-size:1rem;" onclick="this.closest(\'div[style*=fixed]\').remove()"></i>';
+            html += '</div>';
+            // 目标字段
+            html += '<div style="text-align:center;margin-bottom:16px;">';
+            html += '<div style="font-size:.75rem;color:#64748b;margin-bottom:4px;">目标字段</div>';
+            html += '<div style="font-size:1.1rem;font-weight:700;color:#f59e0b;">' + esc(objectCode.replace('OBJ_','')) + '.' + esc(fieldName) + '</div>';
+            if (result !== undefined) html += '<div style="font-size:.85rem;color:#10b981;margin-top:4px;">= ' + esc(String(result)) + '</div>';
+            html += '</div>';
+            // 公式
+            html += '<div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);border-radius:10px;padding:14px;margin-bottom:16px;text-align:center;">';
+            html += '<div style="font-family:\'Geist Mono\',monospace;font-size:.88rem;color:#e2e8f0;font-weight:600;">' + esc(formula) + '</div>';
+            html += '</div>';
+            // 源字段流程
+            if (sources.length > 0) {
+                html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+                sources.forEach(function(src, i) {
+                    var opColor = src.operator === '-' ? '#ef4444' : '#10b981';
+                    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid rgba(255,255,255,.06);">';
+                    html += '<span style="width:24px;height:24px;border-radius:6px;background:'+opColor+'22;color:'+opColor+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;">' + esc(src.operator || '+') + '</span>';
+                    html += '<div style="flex:1;"><div style="font-size:.8rem;font-weight:600;color:#e2e8f0;">' + esc((src.object||'').replace('OBJ_','')) + '.' + esc(src.field) + '</div></div>';
+                    if (src.sample_value !== undefined) html += '<div style="font-size:.82rem;font-weight:600;color:#94a3b8;">' + esc(String(src.sample_value).replace(/(\d)(?=(\d{3})+$)/g,'$1,')) + '</div>';
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+            html += '</div></div>';
+            document.body.insertAdjacentHTML('beforeend', html);
+        } catch(e) {
+            showToast('未找到 "' + fieldName + '" 的溯源数据');
+        }
     }
 
     // ========== Name Explanation Modal ==========
@@ -2910,6 +2998,9 @@
         }
     }
 
+    var _currentLifecycleData = [];  // 缓存当前生命周期数据用于字段全景
+    var _currentFieldLineage = [];  // 缓存字段溯源数据
+
     async function loadObjectLifecycle(objectCode) {
         const container = document.getElementById('lifecycleTimeline');
         container.innerHTML = '<div style="text-align:center;padding:1rem;"><div class="spinner" style="margin:0 auto;"></div></div>';
@@ -2917,9 +3008,146 @@
             const resp = await fetch('/api/olm/object-lifecycle/' + encodeURIComponent(objectCode) + getDomainParam());
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
             const data = await resp.json();
-            renderLifecycleTimeline(data.lifecycle || [], objectCode);
+            _currentLifecycleData = data.lifecycle || [];
+            renderLifecycleTimeline(_currentLifecycleData, objectCode);
+            // 同时加载字段全景和溯源数据
+            loadFieldPanorama(objectCode, _currentLifecycleData);
+            loadEntityGroups(objectCode);
         } catch(e) {
             container.innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ' + esc(e.message) + '</p></div>';
+        }
+    }
+
+    async function loadFieldPanorama(objectCode, lifecycle) {
+        var panoramaDiv = document.getElementById('lifecycleFieldPanorama');
+        panoramaDiv.style.display = 'block';
+        // 加载溯源数据
+        try {
+            var lr = await fetch('/api/olm/field-lineage?object_code=' + encodeURIComponent(objectCode));
+            var ld = await lr.json();
+            _currentFieldLineage = (ld.lineage || []).map(function(l){ return l.target_field_name; });
+        } catch(e) { _currentFieldLineage = []; }
+        renderFieldPanorama(lifecycle, objectCode);
+    }
+
+    function renderFieldPanorama(lifecycle, objectCode) {
+        var tableDiv = document.getElementById('fieldPanoramaTable');
+        var countEl = document.getElementById('fieldPanoramaCount');
+        var filterVal = (document.getElementById('fieldPanoramaFilter') || {}).value || 'all';
+        var stages = ['Planning','Design','Construction','Operation'];
+        var stageLabels = {Planning:'规划',Design:'设计',Construction:'建设',Operation:'运行'};
+        var stageColors = {Planning:'#6366f1',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b'};
+
+        // 收集所有阶段的全部字段
+        var stageMap = {};
+        lifecycle.forEach(function(l){ stageMap[l.lifecycle_stage] = l.attributes_snapshot || {}; });
+        var allKeys = new Set();
+        stages.forEach(function(s){ if(stageMap[s]) Object.keys(stageMap[s]).forEach(function(k){ allKeys.add(k); }); });
+        var keys = Array.from(allKeys).sort();
+
+        // 过滤：仅变更字段
+        if (filterVal === 'changed') {
+            keys = keys.filter(function(k) {
+                var vals = stages.map(function(s){ return stageMap[s] ? String(stageMap[s][k] ?? '') : ''; });
+                var unique = new Set(vals.filter(function(v){return v !== '';}));
+                return unique.size > 1;
+            });
+        }
+        if (countEl) countEl.textContent = keys.length + ' 个字段';
+
+        if (keys.length === 0) {
+            tableDiv.innerHTML = '<div class="empty-state" style="padding:1rem;"><i class="bi bi-table"></i><p>无字段数据</p></div>';
+            return;
+        }
+
+        var html = '<table style="width:100%;border-collapse:collapse;font-size:.78rem;">';
+        html += '<thead><tr style="position:sticky;top:0;background:var(--bg-card);z-index:1;">';
+        html += '<th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);font-weight:600;color:var(--text-main);min-width:140px;">字段名</th>';
+        stages.forEach(function(s) {
+            var hasData = !!stageMap[s];
+            html += '<th style="text-align:center;padding:8px 10px;border-bottom:2px solid var(--border);font-weight:600;min-width:100px;">'
+                + '<span style="color:'+stageColors[s]+';display:inline-flex;align-items:center;gap:4px;">'
+                + '<span style="width:8px;height:8px;border-radius:50%;background:'+stageColors[s]+';display:inline-block;"></span>'
+                + stageLabels[s]
+                + '</span>'
+                + (hasData ? '' : ' <span style="font-size:.65rem;color:var(--text-muted);">(无)</span>')
+                + '</th>';
+        });
+        html += '</tr></thead><tbody>';
+
+        keys.forEach(function(k, idx) {
+            var prevVal = null;
+            var hasLineage = _currentFieldLineage.indexOf(k) !== -1;
+            html += '<tr style="border-bottom:1px solid rgba(255,255,255,.04);'+(idx%2===0?'':'background:rgba(255,255,255,.015);')+'">';
+            html += '<td style="padding:6px 10px;font-weight:500;color:var(--text-main);white-space:nowrap;">'
+                + esc(k)
+                + (hasLineage ? ' <i class="bi bi-link-45deg" style="color:#f59e0b;cursor:pointer;font-size:.75rem;" onclick="showFieldLineagePopup(\''+esc(k)+'\')" title="查看溯源公式"></i>' : '')
+                + '</td>';
+            stages.forEach(function(s) {
+                var snap = stageMap[s];
+                var val = snap ? snap[k] : undefined;
+                var display = val !== undefined ? String(val) : '—';
+                var bgStyle = '';
+                if (val !== undefined && prevVal === undefined && prevVal !== null) {
+                    bgStyle = 'background:rgba(59,130,246,.1);'; // 蓝底=新增
+                } else if (val !== undefined && prevVal !== undefined && prevVal !== null && String(val) !== String(prevVal)) {
+                    bgStyle = 'background:rgba(245,158,11,.1);'; // 黄底=修改
+                }
+                prevVal = val;
+                var textColor = val === undefined ? '#475569' : 'var(--text-sec)';
+                html += '<td style="padding:6px 10px;text-align:center;color:'+textColor+';font-size:.76rem;'+bgStyle+'">' + esc(display) + '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div style="margin-top:8px;display:flex;gap:16px;font-size:.7rem;color:var(--text-muted);">'
+            + '<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(59,130,246,.15);vertical-align:middle;"></span> 新增</span>'
+            + '<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(245,158,11,.15);vertical-align:middle;"></span> 变更</span>'
+            + '<span><i class="bi bi-link-45deg" style="color:#f59e0b;font-size:.75rem;"></i> 有溯源公式</span>'
+            + '</div>';
+        tableDiv.innerHTML = html;
+    }
+
+    function filterFieldPanorama() {
+        var objectCode = (document.getElementById('lifecycleObjectSelector') || {}).value;
+        if (objectCode && _currentLifecycleData.length) {
+            renderFieldPanorama(_currentLifecycleData, objectCode);
+        }
+    }
+
+    async function loadEntityGroups(objectCode) {
+        var container = document.getElementById('lifecycleEntityGroups');
+        var content = document.getElementById('entityGroupsContent');
+        try {
+            var resp = await fetch('/api/olm/object-fields/' + encodeURIComponent(objectCode));
+            var data = await resp.json();
+            if (data.total_fields > 0) {
+                container.style.display = 'block';
+                var html = '<div style="font-size:.78rem;color:var(--text-muted);margin-bottom:10px;">共 '+data.total_fields+' 个概念实体</div>';
+                html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+                var groups = data.fields_by_group || {};
+                Object.keys(groups).sort().forEach(function(grp) {
+                    var fields = groups[grp];
+                    html += '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 14px;min-width:200px;max-width:320px;">';
+                    html += '<div style="font-weight:600;font-size:.78rem;color:var(--text-main);margin-bottom:6px;">'
+                        + '<i class="bi bi-folder2" style="color:#10b981;"></i> '
+                        + esc(grp) + ' <span style="color:var(--text-muted);font-weight:400;">('+fields.length+')</span></div>';
+                    html += '<div style="display:flex;flex-wrap:wrap;gap:3px;">';
+                    fields.slice(0, 8).forEach(function(f) {
+                        html += '<span style="font-size:.68rem;padding:2px 7px;background:rgba(99,102,241,.08);border-radius:4px;color:#94a3b8;">' + esc(f.name.replace('信息','').trim()) + '</span>';
+                    });
+                    if (fields.length > 8) {
+                        html += '<span style="font-size:.68rem;padding:2px 7px;color:#64748b;">+' + (fields.length-8) + '</span>';
+                    }
+                    html += '</div></div>';
+                });
+                html += '</div>';
+                content.innerHTML = html;
+            } else {
+                container.style.display = 'none';
+            }
+        } catch(e) {
+            container.style.display = 'none';
         }
     }
 
@@ -3044,6 +3272,65 @@
             });
             html += '</div>';
             renderLifecycleGantt(lifecycle, objName, stageLabels, stageColors);
+
+            // 字段全览表格：横向对比各阶段的所有字段
+            var allKeys = {};
+            lifecycle.forEach(function(l) {
+                if (l.attributes_snapshot && typeof l.attributes_snapshot === 'object') {
+                    Object.keys(l.attributes_snapshot).forEach(function(k) { allKeys[k] = true; });
+                }
+            });
+            var fieldNames = Object.keys(allKeys);
+            if (fieldNames.length > 0) {
+                html += '<div style="margin-top:20px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;overflow-x:auto;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+                html += '<div style="font-weight:600;font-size:.88rem;"><i class="bi bi-table" style="color:var(--primary);"></i> 字段全览（全生命周期属性变化）</div>';
+                html += '<span style="font-size:.72rem;color:var(--text-muted);">共 '+fieldNames.length+' 个字段</span>';
+                html += '</div>';
+                html += '<table style="width:100%;border-collapse:collapse;font-size:.78rem;">';
+                html += '<thead><tr><th style="text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);font-weight:600;color:var(--text-main);white-space:nowrap;position:sticky;left:0;background:var(--bg-card);z-index:1;">字段名</th>';
+                stages.forEach(function(s) {
+                    var color = stageColors[s];
+                    var active = activeStages.has(s);
+                    html += '<th style="text-align:center;padding:8px 10px;border-bottom:2px solid '+color+';font-weight:600;color:'+(active?color:'var(--text-muted)')+';white-space:nowrap;min-width:120px;">'+esc(stageLabels[s])+'</th>';
+                });
+                html += '</tr></thead><tbody>';
+
+                fieldNames.forEach(function(field, fi) {
+                    var prevVal = null;
+                    html += '<tr style="border-bottom:1px solid var(--border);'+(fi%2===0?'background:rgba(255,255,255,.02);':'')+';">';
+                    html += '<td style="padding:6px 10px;white-space:nowrap;font-weight:500;color:var(--text-main);position:sticky;left:0;background:'+(fi%2===0?'rgba(255,255,255,.02)':'var(--bg-card)')+';z-index:1;">'+esc(field)+'</td>';
+                    stages.forEach(function(s) {
+                        var record = stageRecordMap[s];
+                        var val = null;
+                        if (record && record.attributes_snapshot && record.attributes_snapshot[field] !== undefined) {
+                            val = record.attributes_snapshot[field];
+                        }
+                        var valStr = val !== null ? String(val) : '';
+                        var bg = '';
+                        var txtColor = 'var(--text-sec)';
+                        if (val === null || val === undefined) {
+                            valStr = '—';
+                            txtColor = 'var(--text-muted)';
+                            bg = '';
+                        } else if (prevVal === null || prevVal === undefined) {
+                            bg = 'background:rgba(59,130,246,.08);';  // 蓝底=新增
+                        } else if (String(prevVal) !== String(val)) {
+                            bg = 'background:rgba(245,158,11,.08);';  // 黄底=修改
+                            txtColor = '#b45309';
+                        }
+                        prevVal = val;
+                        html += '<td style="padding:6px 10px;text-align:center;color:'+txtColor+';'+bg+'font-size:.76rem;">'+esc(valStr)+'</td>';
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+                html += '<div style="margin-top:8px;display:flex;gap:12px;font-size:.68rem;color:var(--text-muted);">';
+                html += '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(59,130,246,.15);border-radius:2px;margin-right:3px;vertical-align:middle;"></span>蓝底=新增</span>';
+                html += '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(245,158,11,.15);border-radius:2px;margin-right:3px;vertical-align:middle;"></span>黄底=修改</span>';
+                html += '<span>— = 该阶段不存在</span>';
+                html += '</div></div>';
+            }
         }
         container.innerHTML = html;
 
@@ -3195,6 +3482,69 @@
         } catch(e) {
             container.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败: ${esc(e.message)}</p></div>`;
         }
+        // 加载字段级血缘
+        loadFieldLineage();
+    }
+
+    async function loadFieldLineage() {
+        const container = document.getElementById('fieldLineageList');
+        if (!container) return;
+        try {
+            const resp = await fetch('/api/olm/field-lineage');
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            renderFieldLineage(data.lineage || []);
+        } catch(e) {
+            container.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>字段血缘加载失败: ${esc(e.message)}</p></div>`;
+        }
+    }
+
+    function renderFieldLineage(lineages) {
+        const container = document.getElementById('fieldLineageList');
+        if (!lineages.length) {
+            container.innerHTML = '<div class="empty-state"><i class="bi bi-bezier2"></i><p>暂无字段血缘数据</p></div>';
+            return;
+        }
+        const objNames = {};
+        extractedObjects.forEach(function(o) { objNames[o.object_code] = o.object_name; });
+        const opColors = {'+':'#10b981', '-':'#ef4444', '/':'#3b82f6', '×100%':'#f59e0b'};
+
+        container.innerHTML = lineages.map(function(fl) {
+            var expr = fl.expression || {};
+            var sources = expr.sources || [];
+            var formula = expr.formula || '';
+            var resultSample = expr.result_sample || '';
+            var targetName = objNames[fl.target_object_code] || fl.target_object_code;
+
+            // 构建流程图
+            var flowHtml = '<div style="display:flex;flex-direction:column;gap:4px;margin:10px 0;">';
+            sources.forEach(function(s, i) {
+                var srcName = objNames[s.object] || s.object;
+                var opColor = opColors[s.operator] || '#94a3b8';
+                flowHtml += '<div style="display:flex;align-items:center;gap:6px;">';
+                flowHtml += '<div style="flex:1;padding:4px 8px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:4px;font-size:.72rem;text-align:center;">';
+                flowHtml += '<span style="color:var(--text-muted);">' + esc(srcName) + '.</span><span style="font-weight:600;color:var(--text-main);">' + esc(s.field) + '</span>';
+                if (s.sample_value !== undefined) flowHtml += '<div style="font-size:.65rem;color:var(--text-muted);">' + esc(String(s.sample_value)) + '</div>';
+                flowHtml += '</div>';
+                flowHtml += '<span style="font-weight:700;color:' + opColor + ';font-size:.9rem;min-width:24px;text-align:center;">' + esc(s.operator) + '</span>';
+                if (i === sources.length - 1) {
+                    flowHtml += '<div style="font-size:1rem;color:var(--text-muted);">→</div>';
+                    flowHtml += '<div style="padding:4px 8px;background:rgba(245,158,11,.1);border:2px solid rgba(245,158,11,.3);border-radius:4px;font-size:.72rem;text-align:center;">';
+                    flowHtml += '<span style="color:var(--text-muted);">' + esc(targetName) + '.</span><span style="font-weight:700;color:#f59e0b;">' + esc(fl.target_field_name) + '</span>';
+                    if (resultSample) flowHtml += '<div style="font-size:.68rem;font-weight:600;color:#f59e0b;">' + esc(String(resultSample)) + '</div>';
+                    flowHtml += '</div>';
+                }
+                flowHtml += '</div>';
+            });
+            flowHtml += '</div>';
+
+            return '<div style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:14px 16px;border-left:3px solid #f59e0b;">'
+                + '<div style="font-weight:600;font-size:.85rem;margin-bottom:4px;"><i class="bi bi-bezier2" style="color:#f59e0b;"></i> ' + esc(fl.lineage_name) + '</div>'
+                + '<div style="font-size:.72rem;color:var(--text-muted);margin-bottom:6px;padding:4px 8px;background:var(--bg-body);border-radius:4px;font-family:\'Geist Mono\',monospace;">' + esc(formula) + '</div>'
+                + flowHtml
+                + (fl.description ? '<div style="font-size:.7rem;color:var(--text-muted);margin-top:6px;">' + esc(fl.description) + '</div>' : '')
+                + '</div>';
+        }).join('');
     }
 
     function renderChainList(chains) {
@@ -4357,5 +4707,105 @@
             </div>
         </div>
     </div>
+<!-- ========== HTAP 浮动活动页签 ========== -->
+<style>
+    #htapFloat { position:fixed; bottom:24px; right:24px; z-index:1000; font-family:inherit; }
+    #htapFloat .htap-toggle {
+        width:56px; height:56px; border-radius:16px; border:none; cursor:pointer;
+        background:linear-gradient(135deg,#1e293b 0%,#334155 100%);
+        box-shadow:0 4px 24px rgba(0,0,0,.25), 0 0 0 1px rgba(99,102,241,.2);
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        transition:all .2s; color:#e2e8f0; gap:1px;
+    }
+    #htapFloat .htap-toggle:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(99,102,241,.3), 0 0 0 1px rgba(99,102,241,.4); }
+    #htapFloat .htap-toggle i { font-size:1.1rem; color:#f59e0b; }
+    #htapFloat .htap-toggle .htap-counts { font-size:.6rem; font-weight:700; letter-spacing:.5px; color:#94a3b8; }
+    #htapFloat .htap-panel {
+        position:absolute; bottom:68px; right:0; width:380px;
+        background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);
+        border:1px solid rgba(99,102,241,.15); border-radius:16px;
+        box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden;
+        transform:scale(.95) translateY(10px); opacity:0; pointer-events:none;
+        transition:all .25s cubic-bezier(.4,0,.2,1);
+    }
+    #htapFloat .htap-panel.open { transform:scale(1) translateY(0); opacity:1; pointer-events:auto; }
+    #htapFloat .htap-header {
+        padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+        border-bottom:1px solid rgba(255,255,255,.06);
+        background:rgba(99,102,241,.06);
+    }
+    #htapFloat .htap-header h4 { margin:0; font-size:.85rem; color:#e2e8f0; font-weight:600; display:flex; align-items:center; gap:6px; }
+    #htapFloat .htap-header .htap-close { background:none; border:none; color:#64748b; cursor:pointer; font-size:1rem; padding:2px; border-radius:4px; }
+    #htapFloat .htap-header .htap-close:hover { color:#e2e8f0; background:rgba(255,255,255,.08); }
+    #htapFloat .htap-body { padding:14px 16px; max-height:480px; overflow-y:auto; }
+    #htapFloat .htap-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+    #htapFloat .htap-stat {
+        padding:10px 12px; border-radius:10px; background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.06);
+    }
+    #htapFloat .htap-stat .val { font-size:1.2rem; font-weight:700; line-height:1.2; }
+    #htapFloat .htap-stat .lbl { font-size:.68rem; color:#64748b; margin-top:2px; }
+    #htapFloat .htap-bar-wrap {
+        height:20px; border-radius:10px; overflow:hidden; background:rgba(255,255,255,.06);
+        display:flex; margin-bottom:12px;
+    }
+    #htapFloat .htap-bar-wrap div { transition:width .5s; display:flex; align-items:center; justify-content:center; font-size:.65rem; font-weight:600; color:#fff; }
+    #htapFloat .htap-charts { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+    #htapFloat .htap-chart-box {
+        background:rgba(255,255,255,.03); border-radius:10px; padding:10px;
+        border:1px solid rgba(255,255,255,.05);
+    }
+    #htapFloat .htap-chart-box .chart-title { font-size:.72rem; color:#94a3b8; margin-bottom:6px; font-weight:600; }
+    #htapFloat .htap-log { max-height:160px; overflow-y:auto; }
+    #htapFloat .htap-log-item {
+        display:flex; gap:6px; padding:3px 0; border-bottom:1px solid rgba(255,255,255,.03);
+        font-size:.68rem; font-family:'Geist Mono',monospace; line-height:1.6;
+    }
+</style>
+<div id="htapFloat">
+    <button class="htap-toggle" onclick="toggleHtapPanel()" title="HTAP 工作负载监控">
+        <i class="bi bi-lightning-charge-fill"></i>
+        <span class="htap-counts" id="htapFloatCounts">0/0</span>
+    </button>
+    <div class="htap-panel" id="htapPanel">
+        <div class="htap-header">
+            <h4><i class="bi bi-lightning-charge-fill" style="color:#f59e0b;"></i> HTAP 实时监控</h4>
+            <div style="display:flex;gap:4px;">
+                <button class="htap-close" onclick="resetHtapStats()" title="重置统计"><i class="bi bi-arrow-counterclockwise"></i></button>
+                <button class="htap-close" onclick="toggleHtapPanel()" title="收起"><i class="bi bi-chevron-down"></i></button>
+            </div>
+        </div>
+        <div class="htap-body">
+            <div class="htap-stats">
+                <div class="htap-stat"><div class="val" style="color:#3b82f6;" id="htapTpTotal">0</div><div class="lbl">TP 事务处理</div></div>
+                <div class="htap-stat"><div class="val" style="color:#f59e0b;" id="htapApTotal">0</div><div class="lbl">AP 分析处理</div></div>
+                <div class="htap-stat"><div class="val" style="color:#10b981;" id="htapTpAvgMs">0ms</div><div class="lbl">TP 平均延迟</div></div>
+                <div class="htap-stat"><div class="val" style="color:#8b5cf6;" id="htapApAvgMs">0ms</div><div class="lbl">AP 平均延迟</div></div>
+            </div>
+            <div class="htap-bar-wrap">
+                <div id="htapBarTp" style="background:linear-gradient(90deg,#3b82f6,#60a5fa);width:50%;"></div>
+                <div id="htapBarAp" style="background:linear-gradient(90deg,#f59e0b,#fbbf24);width:50%;"></div>
+            </div>
+            <div class="htap-charts">
+                <div class="htap-chart-box"><div class="chart-title"><i class="bi bi-pie-chart-fill" style="color:#6366f1;"></i> 负载分布</div><div id="htapPieChart" style="width:100%;height:160px;"></div></div>
+                <div class="htap-chart-box"><div class="chart-title"><i class="bi bi-graph-up" style="color:#10b981;"></i> 延迟对比</div><div id="htapLatencyChart" style="width:100%;height:160px;"></div></div>
+            </div>
+            <div style="font-size:.72rem;color:#94a3b8;font-weight:600;margin-bottom:6px;"><i class="bi bi-journal-text" style="color:#6366f1;"></i> 最近操作</div>
+            <div class="htap-log" id="htapOpLog"></div>
+        </div>
+    </div>
+</div>
+<script>
+    function toggleHtapPanel() {
+        var panel = document.getElementById('htapPanel');
+        var isOpen = panel.classList.contains('open');
+        if (isOpen) {
+            panel.classList.remove('open');
+        } else {
+            panel.classList.add('open');
+            renderHtapPanel();
+        }
+    }
+</script>
 </body>
 </html>

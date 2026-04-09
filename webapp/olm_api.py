@@ -74,6 +74,7 @@ _WORKLOAD_MAP = {
     'GET /api/olm/governance/defects': 'AP',
     'GET /api/olm/governance/domain-comparison': 'AP',
     'GET /api/olm/lifecycle-stats': 'AP',
+    'GET /api/olm/field-lineage': 'AP',
     'GET /api/olm/graph-data-three-tier': 'AP',
     'GET /api/olm/graph-data-global': 'AP',
     'GET /api/olm/sankey-data': 'AP',
@@ -4751,6 +4752,131 @@ def api_link_mechanism_to_rule(func_id):
         return jsonify({'success': True, 'func_id': func_id, 'linked_rule_id': rule_id})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================================
+# 对象字段全景端点（Object Fields Panorama）
+# ============================================================================
+
+@olm_api.route('/api/olm/object-fields/<object_code>')
+def api_object_fields(object_code):
+    """获取对象的全部概念层实体（字段列表），按 data_subdomain 分组"""
+    if is_db_available():
+        try:
+            query = """
+                SELECT r.entity_name, r.entity_code, r.relation_strength,
+                       r.data_subdomain, r.data_domain, r.source_file
+                FROM object_entity_relations r
+                JOIN extracted_objects o ON o.object_id = r.object_id
+                WHERE o.object_code = %s AND r.entity_layer = 'CONCEPT'
+                ORDER BY r.data_subdomain, r.entity_name
+            """
+            rows = execute_query(query, (object_code,))
+            if isinstance(rows, list):
+                groups = {}
+                for r in rows:
+                    grp = r.get('data_subdomain') or '其他'
+                    if grp not in groups:
+                        groups[grp] = []
+                    groups[grp].append({
+                        'name': r['entity_name'],
+                        'code': r.get('entity_code', ''),
+                        'strength': float(r.get('relation_strength', 0) or 0),
+                        'source_file': r.get('source_file', '')
+                    })
+                return jsonify({
+                    'object_code': object_code,
+                    'total_fields': len(rows),
+                    'fields_by_group': {k: v for k, v in sorted(groups.items())},
+                    'source': 'database'
+                })
+        except Exception as e:
+            print(f"[WARN] 对象字段查询失败: {e}")
+    # JSON fallback
+    return jsonify({'object_code': object_code, 'total_fields': 0, 'fields_by_group': {}, 'source': 'json_file'})
+
+
+# ============================================================================
+# 字段级血缘关系端点（Field Lineage）
+# ============================================================================
+
+@olm_api.route('/api/olm/field-lineage')
+def api_field_lineage():
+    """列出所有字段血缘关系（支持按 object_code 过滤）"""
+    object_code = request.args.get('object_code', '')
+    if is_db_available():
+        try:
+            query = "SELECT * FROM field_lineage WHERE is_active = TRUE"
+            params = []
+            if object_code:
+                query += " AND target_object_code = %s"
+                params.append(object_code)
+            query += " ORDER BY lineage_code"
+            result = execute_query(query, tuple(params) if params else None)
+            if isinstance(result, list):
+                for row in result:
+                    if row.get('expression') and isinstance(row['expression'], str):
+                        try:
+                            row['expression'] = json.loads(row['expression'])
+                        except Exception:
+                            pass
+                    if row.get('created_at') and hasattr(row['created_at'], 'isoformat'):
+                        row['created_at'] = row['created_at'].isoformat()
+                return jsonify({'lineage': result, 'total': len(result), 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 字段血缘查询失败: {e}")
+    return jsonify({'lineage': [], 'total': 0, 'source': 'json_file'})
+
+
+@olm_api.route('/api/olm/field-lineage', methods=['POST'])
+def api_create_field_lineage():
+    """创建字段血缘记录"""
+    if not is_db_available():
+        return jsonify({'success': False, 'error': '数据库不可用'}), 503
+    try:
+        data = request.get_json(force=True)
+        required = ['lineage_code', 'lineage_name', 'target_object_code', 'target_field_name', 'expression']
+        for f in required:
+            if f not in data:
+                return jsonify({'success': False, 'error': f'缺少必填字段: {f}'}), 400
+        expr = data['expression'] if isinstance(data['expression'], str) else json.dumps(data['expression'], ensure_ascii=False)
+        execute_query("""
+            INSERT INTO field_lineage (lineage_code, lineage_name, target_object_code, target_field_name,
+                expression, chain_id, rule_id, description, data_domain)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (data['lineage_code'], data['lineage_name'], data['target_object_code'],
+              data['target_field_name'], expr,
+              data.get('chain_id'), data.get('rule_id'),
+              data.get('description', ''), data.get('data_domain', '')), fetch=False)
+        return jsonify({'success': True, 'lineage_code': data['lineage_code']})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@olm_api.route('/api/olm/field-lineage/trace/<object_code>/<path:field_name>')
+def api_trace_field(object_code, field_name):
+    """追踪某个字段的完整血缘链路"""
+    if is_db_available():
+        try:
+            result = execute_query("""
+                SELECT fl.*, o.object_name as target_object_name
+                FROM field_lineage fl
+                LEFT JOIN extracted_objects o ON o.object_code = fl.target_object_code
+                WHERE fl.target_object_code = %s AND fl.target_field_name = %s AND fl.is_active = TRUE
+            """, (object_code, field_name))
+            if isinstance(result, list):
+                for row in result:
+                    if row.get('expression') and isinstance(row['expression'], str):
+                        try:
+                            row['expression'] = json.loads(row['expression'])
+                        except Exception:
+                            pass
+                    if row.get('created_at') and hasattr(row['created_at'], 'isoformat'):
+                        row['created_at'] = row['created_at'].isoformat()
+                return jsonify({'lineage': result, 'object_code': object_code, 'field_name': field_name, 'source': 'database'})
+        except Exception as e:
+            print(f"[WARN] 字段血缘追踪失败: {e}")
+    return jsonify({'lineage': [], 'object_code': object_code, 'field_name': field_name, 'source': 'json_file'})
 
 
 # ============================================================================

@@ -847,4 +847,42 @@ ALTER TABLE `mechanism_functions`
 -- ============================================================================
 -- 完成提示
 -- ============================================================================
-SELECT '✅ YIMO Schema 初始化完成（含全部6阶段: 生命周期模板+名称历史+公式链+关系规则关联）!' AS message;
+-- ============================================================================
+-- 字段级血缘关系表（Field Lineage）
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `field_lineage` (
+    `lineage_id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `lineage_code` VARCHAR(128) NOT NULL UNIQUE COMMENT '血缘编码',
+    `lineage_name` VARCHAR(256) NOT NULL COMMENT '血缘名称',
+    `target_object_code` VARCHAR(128) NOT NULL COMMENT '目标对象编码',
+    `target_field_name` VARCHAR(256) NOT NULL COMMENT '目标字段名',
+    `expression` JSON NOT NULL COMMENT '溯源表达式 {"formula":"...","sources":[...]}',
+    `chain_id` BIGINT DEFAULT NULL COMMENT '关联的溯源链（可选）',
+    `rule_id` BIGINT DEFAULT NULL COMMENT '关联的关系规则（可选）',
+    `description` TEXT COMMENT '说明',
+    `data_domain` VARCHAR(128) DEFAULT NULL,
+    `is_active` BOOLEAN DEFAULT TRUE,
+    `created_at` TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+    INDEX `idx_fl_target` (`target_object_code`, `target_field_name`),
+    INDEX `idx_fl_domain` (`data_domain`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 预置字段血缘数据（5条演示用）
+INSERT IGNORE INTO `field_lineage` (`lineage_code`, `lineage_name`, `target_object_code`, `target_field_name`, `expression`, `description`, `data_domain`) VALUES
+('FL_PROJECT_AMOUNT', '项目总金额溯源', 'OBJ_PROJECT', '项目总金额',
+ '{"formula": "项目总金额 = 合同金额 + 追加金额 + 预备金", "sources": [{"object": "OBJ_CONTRACT", "field": "合同金额", "operator": "+", "sample_value": 78600000}, {"object": "OBJ_PROJECT", "field": "追加金额", "operator": "+", "sample_value": 850000}, {"object": "OBJ_PROJECT", "field": "预备金", "operator": "+", "sample_value": 600000}], "result_sample": 80050000}',
+ '项目总金额由合同金额、追加金额和预备金三个字段汇总得出', 'shupeidian'),
+('FL_ASSET_NET', '资产净值溯源', 'OBJ_ASSET', '资产净值',
+ '{"formula": "资产净值 = 原始价值 - 累计折旧", "sources": [{"object": "OBJ_ASSET", "field": "原始价值", "operator": "+", "sample_value": 45000000}, {"object": "OBJ_COST", "field": "累计折旧", "operator": "-", "sample_value": 6750000}], "result_sample": 38250000}',
+ '资产净值等于原始价值减去累计折旧额', 'jicai'),
+('FL_DEVICE_UTIL', '设备利用率溯源', 'OBJ_DEVICE', '设备利用率',
+ '{"formula": "设备利用率 = 实际运行时间 / 计划运行时间 × 100%", "sources": [{"object": "OBJ_DEVICE", "field": "实际运行时间", "operator": "/", "sample_value": 4380}, {"object": "OBJ_DEVICE", "field": "计划运行时间", "operator": "×100%", "sample_value": 8760}], "result_sample": "50.0%"}',
+ '设备利用率按实际与计划运行时间的比值计算', 'shupeidian'),
+('FL_COST_EXEC', '费用执行率溯源', 'OBJ_COST', '费用执行率',
+ '{"formula": "费用执行率 = 已支付金额 / 预算总额 × 100%", "sources": [{"object": "OBJ_COST", "field": "已支付金额", "operator": "/", "sample_value": 26500000}, {"object": "OBJ_PROJECT", "field": "预算总额", "operator": "×100%", "sample_value": 28000000}], "result_sample": "94.6%"}',
+ '费用执行率反映预算执行进度', 'jicai'),
+('FL_CONTRACT_SETTLE', '合同结算金额溯源', 'OBJ_CONTRACT', '结算金额',
+ '{"formula": "结算金额 = 工程量确认金额 + 变更签证金额 - 扣款金额", "sources": [{"object": "OBJ_CONTRACT", "field": "工程量确认金额", "operator": "+", "sample_value": 78600000}, {"object": "OBJ_CONTRACT", "field": "变更签证金额", "operator": "+", "sample_value": 3200000}, {"object": "OBJ_COST", "field": "扣款金额", "operator": "-", "sample_value": 200000}], "result_sample": 81600000}',
+ '合同结算金额由工程量确认、变更签证和扣款三部分计算', 'shupeidian');
+
+SELECT '✅ YIMO Schema 初始化完成（含全部功能: 生命周期+名称历史+公式链+关系规则+字段血缘）!' AS message;
