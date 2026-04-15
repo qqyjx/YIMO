@@ -4,7 +4,7 @@
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white)](https://mysql.com)
 [![ECharts](https://img.shields.io/badge/ECharts-5.0-AA344D?logo=apacheecharts&logoColor=white)](https://echarts.apache.org/)
-[![Tests](https://img.shields.io/badge/Tests-146_passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-159_passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 > 智能电网数据架构对象抽取与三层架构关联可视化平台（南方电网 China Southern Power Grid）
@@ -17,41 +17,59 @@
 
 ```mermaid
 graph TB
-    subgraph 数据源
-        E1["📋 DA-01<br/>概念实体清单"]
-        E2["📋 DA-02<br/>逻辑实体清单"]
-        E3["📋 DA-03<br/>物理实体清单"]
+    subgraph L5["🖥️ AIP 智能应用层"]
+        direction LR
+        KG["🕸️ 三层知识图谱<br/>ECharts 力导向"]
+        SANKEY["📊 Sankey 流向图<br/>对象→概念→逻辑"]
+        GOV["📋 数据治理看板<br/>8项KPI指标"]
+        ALERT["⚠️ 穿透式预警<br/>多级别预警管理"]
+        RAG["🤖 RAG 智能问答<br/>FAISS + DeepSeek"]
     end
 
-    subgraph 对象抽取引擎
-        SBERT["🧠 SBERT 向量化<br/>text2vec-base-chinese 768维"]
-        CLUSTER["📊 层次聚类<br/>AgglomerativeClustering"]
-        LLM["🤖 DeepSeek LLM<br/>归纳命名"]
-        DEDUP["🔄 去重 & 合并<br/>垃圾名称过滤"]
+    subgraph L4["🎯 对象管理器 Object Manager"]
+        direction LR
+        EXPLAIN["💡 名称可解释性<br/>命名理由·置信度·代表实体"]
+        LIFECYCLE["⏳ 全生命周期<br/>Planning→Design→<br/>Construction→Operation"]
+        RULES["⚡ 关系规则引擎<br/>物理公式·业务规则·阈值约束<br/>8条预置规则"]
+        TRACE["🔗 穿透式溯源<br/>结算→立项→采购→施工<br/>3条预置链路"]
     end
 
-    subgraph 对象管理层
-        OBJ["🎯 抽取对象<br/>项目/设备/资产/合同"]
-        REL["🔗 三层关联<br/>CONCEPT→LOGICAL→PHYSICAL"]
-        LC["⏳ 生命周期<br/>Planning→Design→Construction→Operation"]
-        MF["⚡ 机理函数<br/>阈值/公式/规则"]
+    subgraph L3["🧬 Ontology 本体层（对象 + 三层关联）"]
+        direction LR
+        OBJ["🎯 抽取对象 ×16<br/>5 CORE · 2 DERIVED · 9 AUX"]
+        C["📋 概念实体 DA-01<br/>业务场景层"]
+        L["📋 逻辑实体 DA-02<br/>交互表单层"]
+        P["📋 物理实体 DA-03<br/>数据库表层"]
+        OBJ -->|"DIRECT 0.9"| C -->|"穿透"| L -->|"穿透"| P
     end
 
-    subgraph 可视化 & API
-        KG["🕸️ 知识图谱<br/>ECharts 力导向"]
-        SANKEY["📊 Sankey 流向图"]
-        GOV["📋 治理看板"]
-        API["🔌 42 REST 端点"]
+    subgraph L2["⚙️ Pipeline 数据管道层"]
+        direction LR
+        SBERT["🧠 SBERT 向量化<br/>text2vec-base-chinese<br/>768维"]
+        CLUSTER["📊 层次聚类<br/>自适应聚类数<br/>AgglomerativeClustering"]
+        LLM["🤖 DeepSeek LLM<br/>归纳命名<br/>规则回退"]
+        DEDUP["🔄 去重 & 合并<br/>垃圾名称过滤<br/>跨域合并"]
+        EAV["💾 EAV 动态存储<br/>235K+ 实体<br/>无需改表扩展"]
+        SBERT --> CLUSTER --> LLM --> DEDUP --> EAV
     end
 
-    E1 & E2 & E3 --> SBERT --> CLUSTER --> LLM --> DEDUP --> OBJ
-    OBJ --> REL --> KG & SANKEY
-    OBJ --> LC --> GOV
-    OBJ --> MF --> GOV
-    REL & LC & MF --> API
+    subgraph L1["📂 Data Source 数据源层"]
+        direction LR
+        EXCEL["📋 Excel DA-01/02/03<br/>输配电 + 计划财务"]
+        MYSQL["🗄️ MySQL 8.0<br/>Port 3307 · 19表 · 4视图"]
+        JSON["📄 JSON Fallback<br/>DB不可用时自动回退"]
+    end
+
+    L1 --> L2 --> L3 --> L4 --> L5
+
+    style L5 fill:#1e1b4b,stroke:#6366f1,color:#c7d2fe
+    style L4 fill:#172554,stroke:#3b82f6,color:#bfdbfe
+    style L3 fill:#052e16,stroke:#10b981,color:#bbf7d0
+    style L2 fill:#451a03,stroke:#f59e0b,color:#fef3c7
+    style L1 fill:#1c1917,stroke:#78716c,color:#d6d3d1
 ```
 
-> 📐 详细架构设计：[doc/系统架构设计-飞书版.md](doc/系统架构设计-飞书版.md) | 产品设计与 Palantir 对标：[doc/product-design.md](doc/product-design.md) | [doc/palantir-对标方案-飞书版.md](doc/palantir-对标方案-飞书版.md)
+> 📐 产品设计与 Palantir 对标：[docs/product/product-design-0.md](docs/product/product-design-0.md) | Palantir Foundry 解析：[docs/product/Palantir Foundry.md](docs/product/Palantir%20Foundry.md) | 甲方需求：[docs/requirement-1/](docs/requirement-1/)
 
 ## 对象抽取算法
 
@@ -138,7 +156,7 @@ graph TB
 graph LR
     EXCEL["📋 Excel 文件<br/>DA-01/02/03"] -->|"eav_full.py"| EAV[("💾 EAV 表<br/>MySQL 3307")]
     EXCEL -->|"object_extractor.py"| JSON["📄 extraction_*.json"]
-    JSON --> API["🔌 42 REST 端点<br/>olm_api.py"]
+    JSON --> API["🔌 44+ REST 端点<br/>olm_api.py"]
     EAV --> API
     API --> UI["🖥️ v10.0 仪表盘"]
     UI --> G1["🕸️ 三层知识图谱"]
@@ -280,15 +298,21 @@ YIMO/
 │   └── eav_semantic_dedupe.py     # SBERT 语义去重
 ├── webapp/
 │   ├── app.py                     # Flask 应用（RAG, DeepSeek 代理）
-│   ├── olm_api.py                 # REST API（42+ 端点）
+│   ├── olm_api.py                 # REST API（44+ 端点）
 │   └── templates/10.0.html        # v10.0 全功能仪表盘
-├── tests/                         # pytest 测试套件（146 测试）
+├── tests/                         # pytest 测试套件（159 测试）
 ├── DATA/                          # 数据域目录（Excel 文件）
 ├── outputs/                       # 抽取结果 JSON
 ├── mysql-local/                   # MySQL Schema（19 表 + 4 视图）
-├── doc/
-│   ├── product-design.md          # 产品设计文档
-│   └── requirement/               # 甲方需求文档
+├── docs/
+│   ├── product/                   # 产品设计 & Palantir 对标
+│   │   ├── product-design-0.md    # 产品设计文档 v2.0
+│   │   ├── Palantir Foundry.md    # Palantir Foundry 深度解析
+│   │   └── Palantir深度调研报告.md # Palantir 调研报告
+│   ├── requirement-1/             # 甲方需求文档
+│   │   ├── xuqiu.md               # 核心需求（愿景）
+│   │   └── xuqiu1.md              # 甲方澄清（执行标准）
+│   └── plan/                      # 项目计划 & 团队分工
 ├── docker-compose.yml             # Docker 编排
 └── Dockerfile                     # 多阶段构建
 ```
@@ -351,7 +375,7 @@ bash deploy.sh
 
 ```bash
 source venv/bin/activate
-pytest tests/ -v    # 146 个测试（EAV 51 + 抽取 33 + API 45 + 简化 17）
+pytest tests/ -v    # 159 个测试（EAV 51 + 抽取 33 + API 45 + 简化 17）
 ```
 
 ## 配置
