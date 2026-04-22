@@ -83,9 +83,17 @@ platform/
 - [x] 目录结构、POM、应用入口就绪（一次 mvn spring-boot:run 可启动 /health）
 - [x] DM8 DDL 核心表（EAV + OM + 关联）
 - [x] 前端 Vite + Vue 3 骨架 + /health 调用
-- [ ] 接入 [webapp/scripts/object_extractor.py](../scripts/object_extractor.py) 抽取逻辑（建议做成 Python 旁挂微服务或用 DJL 重实现 SBERT 调用，**待与甲方确认南网内部是否部署 SBERT 模型**）
+- [x] **API 对齐 Phase 1（7 端点）** — 见 [docs/api-alignment.md](docs/api-alignment.md)
+  - `/api/v1/health` · `/api/v1/domains` · `/api/v1/objects` · `/api/v1/objects/{code}/relations` · `/api/v1/stats` · `/api/v1/stats/domains` · `/api/v1/summary`
+  - 数据源: 复用 webapp 侧 `outputs/extraction_*.json`（迁库前的临时方案）
+- [x] **算法接入设计** — 见 [docs/algorithm-integration.md](docs/algorithm-integration.md)
+  - Phase 1 走 **方案 C**（复用 webapp 产物 JSON），Phase 2 切 **方案 A**（Python 微服务）
+- [ ] Phase 2 API（CRUD / 合并 / 抽取触发）— 8 端点
+- [ ] Phase 3 API（生命周期 / 溯源）— 8 端点
+- [ ] Phase 4 API（机理函数 / 预警 / 治理）— 14 端点
+- [ ] 算法微服务容器（algo:9000）— 包 object_extractor.py 成 FastAPI
 - [ ] 南网数字平台前端组件库（向甲方索要 NPM 地址/SDK）
-- [ ] DeepSeek 内网可达性确认 → 若不可达需替换为南网内部 LLM 网关
+- [ ] DeepSeek 内网可达性确认 → 若不可达替换为南网内部 LLM 网关
 
 ---
 
