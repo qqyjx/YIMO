@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>YIMO · 对象管理平台</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+:root {
+    --primary: #2590FF;
+    --primary-dark: #1A7AE0;
+    --primary-soft: #E6F2FF;
+    --primary-lighter: #F2F8FF;
+    --logical: #3E9B4F;
+    --physical: #E6A23C;
+    --concept: #2590FF;
+    --text-main: #1F2D3D;
+    --text-sec: #3E5971;
+    --text-muted: #6584A4;
+    --bg-body: #EAF0F8;
+    --bg-card: #FFFFFF;
+    --bg-panel: #F7FAFC;
+    --border: #D9E2EC;
+    --border-strong: #B8CBDD;
+    --shadow-sm: 0 1px 2px rgba(31,45,61,.04);
+    --shadow: 0 2px 8px rgba(31,45,61,.06);
+    --shadow-lg: 0 4px 16px rgba(31,45,61,.08);
+    --font: 'PingFang SC','Microsoft YaHei','Source Han Sans CN','Noto Sans CJK SC',Arial,sans-serif;
+    --transition: .15s cubic-bezier(.4,0,.2,1);
+    --header-h: 48px;
+    --workspace-h: 40px;
+    --left-w: 320px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { height:100%; font-family:var(--font); color:var(--text-main); background:var(--bg-body); font-size:14px; line-height:1.5; }
+button,input,select,textarea { font-family:inherit; font-size:inherit; }
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
+a { color:inherit; text-decoration:none; }
+
+/* ============ Top Header ============ */
+.header {
+    height:var(--header-h); background:#fff; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; padding:0 16px; gap:16px;
+    position:sticky; top:0; z-index:50;
+}
+.brand { display:flex; align-items:center; gap:8px; font-weight:700; color:var(--primary); font-size:16px; }
+.brand .logo-dot { width:22px; height:22px; border-radius:4px; background:var(--primary); display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700; }
+.brand-sub { color:var(--text-muted); font-size:12px; font-weight:500; border-left:1px solid var(--border); padding-left:8px; margin-left:4px; }
+.header-search {
+    flex:1; max-width:480px; position:relative;
+}
+.header-search input {
+    width:100%; height:30px; padding:0 12px 0 30px;
+    border:1px solid var(--border); border-radius:4px; background:var(--bg-panel);
+    color:var(--text-main); outline:none; transition:var(--transition);
+}
+.header-search input:focus { border-color:var(--primary); background:#fff; box-shadow:0 0 0 3px rgba(37,144,255,.1); }
+.header-search i { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:14px; }
+.header-actions { display:flex; gap:8px; margin-left:auto; align-items:center; }
+.btn {
+    height:28px; padding:0 12px; border-radius:2px; border:1px solid var(--border);
+    background:#fff; color:var(--text-sec); cursor:pointer; font-size:12px;
+    display:inline-flex; align-items:center; gap:4px; transition:var(--transition);
+}
+.btn:hover { border-color:var(--primary); color:var(--primary); }
+.btn-primary { background:var(--primary); color:#fff; border-color:var(--primary); }
+.btn-primary:hover { background:var(--primary-dark); color:#fff; border-color:var(--primary-dark); }
+.btn-sm { height:24px; padding:0 8px; font-size:11px; }
+
+/* ============ Workspace Switcher ============ */
+.workspace-bar {
+    height:var(--workspace-h); background:#fff; border-bottom:1px solid var(--border);
+    display:flex; align-items:stretch; padding:0 16px; gap:0;
+    position:sticky; top:var(--header-h); z-index:49;
+}
+.ws-tab {
+    padding:0 20px; display:inline-flex; align-items:center; gap:8px;
+    color:var(--text-sec); cursor:pointer; position:relative;
+    font-size:13px; font-weight:500; transition:var(--transition);
+    border-bottom:2px solid transparent;
+}
+.ws-tab:hover { color:var(--primary); background:var(--primary-lighter); }
+.ws-tab.active {
+    color:var(--primary); font-weight:600;
+    border-bottom-color:var(--primary);
+    background:var(--primary-lighter);
+}
+.ws-tab i { font-size:15px; }
+.ws-tab .ws-count {
+    font-size:11px; background:var(--border); color:var(--text-sec);
+    padding:1px 6px; border-radius:8px; font-weight:500;
+}
+.ws-tab.active .ws-count { background:var(--primary-soft); color:var(--primary); }
+
+.workspace-bar .ws-tools {
+    margin-left:auto; display:flex; align-items:center; gap:8px; color:var(--text-muted); font-size:12px;
+}
+
+/* ============ Main Layout ============ */
+.main {
+    display:grid;
+    grid-template-columns: var(--left-w) 1fr;
+    height: calc(100vh - var(--header-h) - var(--workspace-h));
+}
+
+/* ============ Left Panel: Object List ============ */
+.left-panel {
+    background:#fff; border-right:1px solid var(--border);
+    display:flex; flex-direction:column; min-width:0;
+}
+.left-head {
+    padding:12px 16px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+}
+.left-head-title { font-weight:600; font-size:13px; color:var(--text-main); }
+.left-head-actions { display:flex; gap:4px; }
+.left-filter {
+    padding:10px 12px; border-bottom:1px solid var(--border); background:var(--bg-panel);
+}
+.left-filter input {
+    width:100%; height:28px; padding:0 8px; font-size:12px;
+    border:1px solid var(--border); border-radius:2px; outline:none;
+    background:#fff; color:var(--text-main);
+}
+.left-filter input:focus { border-color:var(--primary); }
+.left-type-pills {
+    display:flex; gap:4px; margin-top:8px; flex-wrap:wrap;
+}
+.type-pill {
+    padding:3px 8px; font-size:11px; background:#fff; border:1px solid var(--border);
+    border-radius:2px; color:var(--text-sec); cursor:pointer; transition:var(--transition);
+}
+.type-pill:hover { border-color:var(--primary); color:var(--primary); }
+.type-pill.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+.object-list { flex:1; overflow-y:auto; }
+.object-item {
+    padding:10px 16px; border-bottom:1px solid var(--border-light, #EAF0F8);
+    cursor:pointer; display:flex; align-items:center; gap:10px;
+    transition:var(--transition); border-left:3px solid transparent;
+}
+.object-item:hover { background:var(--primary-lighter); }
+.object-item.active {
+    background:var(--primary-soft);
+    border-left-color:var(--primary);
+}
+.object-icon {
+    width:32px; height:32px; flex-shrink:0;
+    border-radius:3px;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:700;
+}
+.obj-t-CORE .object-icon { background:var(--primary-soft); color:var(--primary); }
+.obj-t-DERIVED .object-icon { background:rgba(62,155,79,.12); color:var(--logical); }
+.obj-t-AUXILIARY .object-icon { background:rgba(101,132,164,.12); color:var(--text-muted); }
+.object-meta { flex:1; min-width:0; }
+.object-name { font-weight:600; font-size:13px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.object-sub { font-size:11px; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.object-badge {
+    padding:1px 5px; font-size:10px; border-radius:2px; font-weight:500;
+    background:var(--primary-soft); color:var(--primary);
+}
+
+/* ============ Right Panel: Detail ============ */
+.right-panel {
+    display:flex; flex-direction:column; min-width:0; background:var(--bg-body);
+}
+.detail-head {
+    padding:14px 20px; background:#fff; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+}
+.detail-title { font-size:18px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:8px; }
+.detail-subtitle { color:var(--text-muted); font-size:12px; padding-left:8px; border-left:1px solid var(--border); margin-left:8px; }
+.detail-actions { margin-left:auto; display:flex; gap:6px; }
+
+.detail-tabs {
+    display:flex; padding:0 20px; background:#fff; border-bottom:1px solid var(--border);
+}
+.detail-tab {
+    padding:10px 16px; cursor:pointer; color:var(--text-sec); font-size:13px;
+    font-weight:500; border-bottom:2px solid transparent;
+    transition:var(--transition); display:inline-flex; align-items:center; gap:6px;
+}
+.detail-tab:hover { color:var(--primary); }
+.detail-tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:600; }
+.detail-tab i { font-size:14px; }
+.detail-tab .count { background:var(--border); color:var(--text-sec); padding:1px 6px; font-size:10px; border-radius:2px; }
+.detail-tab.active .count { background:var(--primary-soft); color:var(--primary); }
+
+.detail-body { flex:1; overflow-y:auto; padding:16px 20px; }
+
+/* 详情内 Tab 面板容器 */
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+
+/* ============ 卡片通用 ============ */
+.card {
+    background:#fff; border:1px solid var(--border); border-radius:4px;
+    margin-bottom:12px;
+}
+.card-head {
+    padding:10px 14px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--bg-panel);
+}
+.card-title { font-size:13px; font-weight:600; color:var(--text-main); display:flex; align-items:center; gap:6px; }
+.card-title i { color:var(--primary); }
+.card-body { padding:14px; }
+
+/* 属性表格 */
+.prop-table { width:100%; border-collapse:collapse; font-size:13px; }
+.prop-table tr { border-bottom:1px solid var(--border); }
+.prop-table tr:last-child { border-bottom:0; }
+.prop-table td { padding:8px 12px; }
+.prop-table td:first-child { color:var(--text-muted); width:140px; font-weight:500; background:var(--bg-panel); }
+.prop-table td:last-child { color:var(--text-main); }
+
+/* 关联列表（三层） */
+.rel-tier-grid {
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;
+}
+.rel-tier-col {
+    background:#fff; border:1px solid var(--border); border-radius:4px;
+    display:flex; flex-direction:column; max-height:500px;
+}
+.rel-tier-head {
+    padding:10px 12px; font-weight:600; font-size:12px;
+    border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;
+}
+.rel-tier-head i { font-size:13px; }
+.rel-tier-col.col-concept .rel-tier-head { background:var(--primary-lighter); color:var(--concept); }
+.rel-tier-col.col-logical .rel-tier-head { background:rgba(62,155,79,.08); color:var(--logical); }
+.rel-tier-col.col-physical .rel-tier-head { background:rgba(230,162,60,.08); color:var(--physical); }
+.rel-tier-count { background:#fff; color:var(--text-sec); font-size:11px; padding:1px 7px; border-radius:2px; border:1px solid var(--border); }
+.rel-tier-body { overflow-y:auto; flex:1; padding:4px 0; }
+.rel-tier-item {
+    padding:6px 12px; font-size:12px; color:var(--text-main);
+    border-bottom:1px dashed var(--border); cursor:default;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.rel-tier-item:last-child { border-bottom:0; }
+.rel-tier-item:hover { background:var(--primary-lighter); }
+
+/* 函数/规则卡片 */
+.func-item {
+    padding:12px 14px; border:1px solid var(--border); border-radius:3px;
+    margin-bottom:8px; background:#fff; cursor:pointer; transition:var(--transition);
+}
+.func-item:hover { border-color:var(--primary); }
+.func-head-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.func-name { font-weight:600; font-size:13px; color:var(--text-main); }
+.func-flow { font-size:11px; color:var(--text-muted); margin-top:4px; display:flex; align-items:center; gap:6px; }
+.badge-sm {
+    padding:1px 6px; font-size:10px; border-radius:2px; font-weight:500;
+}
+.badge-blue { background:var(--primary-soft); color:var(--primary); }
+.badge-green { background:rgba(62,155,79,.12); color:var(--logical); }
+.badge-red { background:rgba(239,68,68,.1); color:#d92626; }
+.badge-yellow { background:rgba(230,162,60,.12); color:var(--physical); }
+.badge-purple { background:rgba(91,50,208,.1); color:#5b32d0; }
+
+/* 血缘 / 历史 */
+.lineage-step {
+    padding:10px 14px; background:#fff; border:1px solid var(--border); border-radius:3px;
+    margin-bottom:8px; display:flex; align-items:center; gap:12px;
+}
+.lineage-arrow { color:var(--text-muted); font-size:16px; }
+.history-row {
+    padding:10px 14px; border-left:3px solid var(--primary);
+    background:#fff; border:1px solid var(--border); border-radius:3px;
+    margin-bottom:8px;
+}
+.history-row .h-stage { font-weight:600; font-size:13px; color:var(--text-main); display:flex; align-items:center; justify-content:space-between; }
+.history-row .h-time { font-size:11px; color:var(--text-muted); }
+.history-row .h-attrs { margin-top:8px; font-size:12px; color:var(--text-sec); background:var(--bg-panel); padding:8px; border-radius:2px; }
+
+/* Graph container */
+.graph-container {
+    background:#fff; border:1px solid var(--border); border-radius:4px;
+    padding:12px; margin-bottom:12px;
+}
+.graph-toolbar {
+    display:flex; align-items:center; gap:8px; padding:8px 4px; border-bottom:1px solid var(--border);
+    margin-bottom:8px; font-size:12px;
+}
+.graph-toolbar label { color:var(--text-muted); }
+.graph-toolbar select { height:26px; padding:0 6px; border:1px solid var(--border); border-radius:2px; outline:none; font-size:12px; background:#fff; color:var(--text-sec); }
+#detailGraph { width:100%; height:520px; }
+
+/* Empty state */
+.empty-state { padding:60px 20px; text-align:center; color:var(--text-muted); }
+.empty-state i { font-size:36px; margin-bottom:10px; display:block; opacity:.4; }
+
+/* Toast */
+.toast-container { position:fixed; top:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:6px; }
+.toast {
+    background:#fff; border:1px solid var(--border); border-left:3px solid var(--primary);
+    padding:10px 14px; border-radius:3px; box-shadow:var(--shadow);
+    display:flex; align-items:center; gap:8px; font-size:13px;
+    min-width:240px;
+}
+.toast.error { border-left-color:#d92626; }
+.toast.success { border-left-color:var(--logical); }
+
+/* Domain filter bar（置于 Workspace bar 下，仅对象空间出现） */
+.domain-sub-bar {
+    padding:8px 16px; background:#fff; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:12px;
+}
+.domain-sub-bar .label { color:var(--text-muted); font-weight:500; }
+.domain-sub-bar select {
+    height:26px; padding:0 8px; border:1px solid var(--border); border-radius:2px;
+    background:#fff; color:var(--text-main); outline:none; min-width:140px;
+}
+</style>
+</head>
+<body>
+
+<!-- ============ Header ============ -->
+<header class="header">
+    <div class="brand">
+        <span class="logo-dot">Y</span>
+        <span>YIMO</span>
+        <span class="brand-sub">对象管理 · 企业数据平台</span>
+    </div>
+    <div class="header-search">
+        <i class="bi bi-search"></i>
+        <input type="text" id="globalSearch" placeholder="搜索对象或实体（Ctrl+K）" oninput="handleGlobalSearch(this.value)">
+    </div>
+    <div class="header-actions">
+        <button class="btn" onclick="refreshAll()"><i class="bi bi-arrow-clockwise"></i>刷新</button>
+        <button class="btn" onclick="window.location.href='/?v=10.0'" title="切换旧版"><i class="bi bi-box-arrow-up-right"></i>旧版</button>
+        <button class="btn btn-primary" onclick="openExtractModal()"><i class="bi bi-cpu"></i>执行抽取</button>
+    </div>
+</header>
+
+<!-- ============ Workspace Switcher ============ -->
+<nav class="workspace-bar">
+    <div class="ws-tab active" data-ws="objects" onclick="switchWorkspace('objects')">
+        <i class="bi bi-box-seam"></i>对象空间<span class="ws-count" id="wsCountObjects">-</span>
+    </div>
+    <div class="ws-tab" data-ws="concept" onclick="switchWorkspace('concept')">
+        <i class="bi bi-lightbulb"></i>概念实体<span class="ws-count" id="wsCountConcept">-</span>
+    </div>
+    <div class="ws-tab" data-ws="logical" onclick="switchWorkspace('logical')">
+        <i class="bi bi-ui-checks-grid"></i>逻辑实体<span class="ws-count" id="wsCountLogical">-</span>
+    </div>
+    <div class="ws-tab" data-ws="physical" onclick="switchWorkspace('physical')">
+        <i class="bi bi-hdd-stack"></i>物理实体<span class="ws-count" id="wsCountPhysical">待接入</span>
+    </div>
+    <div class="ws-tab" data-ws="governance" onclick="switchWorkspace('governance')">
+        <i class="bi bi-shield-check"></i>治理
+    </div>
+    <div class="ws-tab" data-ws="rules" onclick="switchWorkspace('rules')">
+        <i class="bi bi-diagram-3"></i>规则
+    </div>
+    <div class="ws-tools">
+        <span id="wsSubtitle">按业务对象浏览</span>
+    </div>
+</nav>
+
+<!-- 数据域筛选子栏（仅对象空间显示） -->
+<div class="domain-sub-bar" id="domainSubBar">
+    <span class="label"><i class="bi bi-funnel"></i> 数据域</span>
+    <select id="domainSelect" onchange="onDomainChange()">
+        <option value="">全部域</option>
+    </select>
+    <span class="label" style="margin-left:16px;">对象类型</span>
+    <span style="display:inline-flex;gap:4px;">
+        <span class="type-pill active" data-type="ALL" onclick="filterType('ALL',this)">全部</span>
+        <span class="type-pill" data-type="CORE" onclick="filterType('CORE',this)">核心</span>
+        <span class="type-pill" data-type="DERIVED" onclick="filterType('DERIVED',this)">衍生</span>
+        <span class="type-pill" data-type="AUXILIARY" onclick="filterType('AUXILIARY',this)">辅助</span>
+    </span>
+</div>
+
+<!-- ============ Main Layout ============ -->
+<main class="main">
+
+    <!-- Left Panel -->
+    <aside class="left-panel">
+        <div class="left-head">
+            <span class="left-head-title">对象列表</span>
+            <span id="objectTotal" style="font-size:11px; color:var(--text-muted);"></span>
+        </div>
+        <div class="left-filter">
+            <input type="text" id="leftSearch" placeholder="筛选当前列表…" oninput="filterObjectList(this.value)">
+        </div>
+        <div class="object-list" id="objectList">
+            <div class="empty-state"><i class="bi bi-hourglass"></i><p>加载中…</p></div>
+        </div>
+    </aside>
+
+    <!-- Right Panel -->
+    <section class="right-panel">
+
+        <!-- Detail Header -->
+        <div class="detail-head" id="detailHead" style="display:none;">
+            <div class="detail-title">
+                <span id="detailTypeBadge" class="badge-sm badge-blue">CORE</span>
+                <span id="detailName">-</span>
+            </div>
+            <span class="detail-subtitle" id="detailSub"></span>
+            <div class="detail-actions">
+                <button class="btn btn-sm" onclick="showObjectExplanation()"><i class="bi bi-info-circle"></i>命名解释</button>
+                <button class="btn btn-sm" onclick="editObjectName()"><i class="bi bi-pencil"></i>重命名</button>
+            </div>
+        </div>
+
+        <!-- Detail Tabs -->
+        <div class="detail-tabs" id="detailTabs" style="display:none;">
+            <div class="detail-tab active" data-tab="properties" onclick="switchDetailTab('properties')">
+                <i class="bi bi-list-check"></i>属性
+            </div>
+            <div class="detail-tab" data-tab="relations" onclick="switchDetailTab('relations')">
+                <i class="bi bi-diagram-2"></i>关联<span class="count" id="tabCountRelations">-</span>
+            </div>
+            <div class="detail-tab" data-tab="functions" onclick="switchDetailTab('functions')">
+                <i class="bi bi-gear"></i>函数/规则<span class="count" id="tabCountFunctions">-</span>
+            </div>
+            <div class="detail-tab" data-tab="lineage" onclick="switchDetailTab('lineage')">
+                <i class="bi bi-share"></i>血缘<span class="count" id="tabCountLineage">-</span>
+            </div>
+            <div class="detail-tab" data-tab="history" onclick="switchDetailTab('history')">
+                <i class="bi bi-clock-history"></i>历史<span class="count" id="tabCountHistory">-</span>
+            </div>
+            <div class="detail-tab" data-tab="graph" onclick="switchDetailTab('graph')">
+                <i class="bi bi-share"></i>图谱
+            </div>
+        </div>
+
+        <!-- Detail Body -->
+        <div class="detail-body" id="detailBody">
+            <div class="empty-state" id="emptyRight">
+                <i class="bi bi-box-seam"></i>
+                <p>请在左侧选择一个对象查看详情</p>
+            </div>
+
+            <div class="tab-pane" id="pane-properties"></div>
+            <div class="tab-pane" id="pane-relations"></div>
+            <div class="tab-pane" id="pane-functions"></div>
+            <div class="tab-pane" id="pane-lineage"></div>
+            <div class="tab-pane" id="pane-history"></div>
+            <div class="tab-pane" id="pane-graph">
+                <div class="graph-toolbar">
+                    <label>展示深度</label>
+                    <select id="graphDepth" onchange="renderObjectGraph()">
+                        <option value="1">仅对象</option>
+                        <option value="2">对象 → 概念</option>
+                        <option value="3" selected>对象 → 概念 → 逻辑</option>
+                    </select>
+                    <label style="margin-left:16px;">布局</label>
+                    <select id="graphLayout" onchange="renderObjectGraph()">
+                        <option value="force" selected>力导向</option>
+                        <option value="circular">环形</option>
+                    </select>
+                    <button class="btn btn-sm" style="margin-left:auto;" onclick="resetGraphZoom()"><i class="bi bi-arrows-angle-contract"></i>居中</button>
+                </div>
+                <div id="detailGraph"></div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ============ 全局状态 ============
+let allObjects = [];
+let filteredObjects = [];
+let currentObject = null;
+let currentWorkspace = 'objects';
+let currentDomain = '';
+let currentType = 'ALL';
+let currentTab = 'properties';
+let detailChart = null;
+let allDomains = [];
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+// ============ 初始化 ============
+document.addEventListener('DOMContentLoaded', () => {
+    loadDomains();
+    loadObjects();
+    // 快捷键 Ctrl+K 聚焦搜索
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey||e.metaKey) && e.key === 'k') { e.preventDefault(); document.getElementById('globalSearch').focus(); }
+    });
+});
+
+async function loadDomains() {
+    try {
+        const r = await fetch('/api/domains');
+        const list = await r.json();
+        allDomains = list;
+        const sel = document.getElementById('domainSelect');
+        list.forEach(d => {
+            const o = document.createElement('option');
+            o.value = d.code; o.textContent = d.name + ` (${d.files.length})`;
+            sel.appendChild(o);
+        });
+    } catch(e) { console.error('loadDomains', e); }
+}
+
+function onDomainChange() {
+    currentDomain = document.getElementById('domainSelect').value;
+    loadObjects();
+}
+
+function filterType(t, el) {
+    currentType = t;
+    document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    applyLeftFilter();
+}
+
+async function loadObjects() {
+    const list = document.getElementById('objectList');
+    list.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass"></i><p>加载中…</p></div>';
+    try {
+        const q = currentDomain ? '?domain=' + encodeURIComponent(currentDomain) : '';
+        const [oResp, sResp] = await Promise.all([
+            fetch('/api/olm/extracted-objects' + q),
+            fetch('/api/olm/summary' + q)
+        ]);
+        const od = await oResp.json();
+        allObjects = od.objects || od || [];
+        filteredObjects = allObjects.slice();
+        renderObjectList();
+        // 更新 workspace 计数
+        if (sResp.ok) {
+            const s = await sResp.json();
+            document.getElementById('wsCountObjects').textContent = allObjects.length;
+            document.getElementById('wsCountConcept').textContent = s.concept_entity_count || s.concept_count || '-';
+            document.getElementById('wsCountLogical').textContent = s.logical_entity_count || s.logical_count || '-';
+        }
+    } catch(e) {
+        list.innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败：' + esc(e.message) + '</p></div>';
+    }
+}
+
+function applyLeftFilter() {
+    const q = (document.getElementById('leftSearch').value || '').toLowerCase();
+    filteredObjects = allObjects.filter(o => {
+        if (currentType !== 'ALL' && (o.object_type||'') !== currentType) return false;
+        if (!q) return true;
+        return (o.object_name||'').toLowerCase().includes(q) ||
+               (o.object_code||'').toLowerCase().includes(q) ||
+               (o.description||'').toLowerCase().includes(q);
+    });
+    renderObjectList();
+}
+function filterObjectList(q) { applyLeftFilter(); }
+
+function renderObjectList() {
+    const list = document.getElementById('objectList');
+    document.getElementById('objectTotal').textContent = `${filteredObjects.length} / ${allObjects.length}`;
+    if (!filteredObjects.length) {
+        list.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><p>暂无对象</p></div>';
+        return;
+    }
+    list.innerHTML = filteredObjects.map(o => {
+        const typeCls = 'obj-t-' + (o.object_type || 'CORE');
+        const initial = (o.object_name || '?').charAt(0);
+        const domain = o.data_domain || '-';
+        const size = o.cluster_size || (o.sample_entities || []).length || 0;
+        return `<div class="object-item ${typeCls} ${currentObject && currentObject.object_code===o.object_code?'active':''}"
+            onclick="selectObject('${esc(o.object_code)}')">
+            <div class="object-icon">${esc(initial)}</div>
+            <div class="object-meta">
+                <div class="object-name">${esc(o.object_name)}</div>
+                <div class="object-sub">${esc(domain)} · ${size} 实体 · ${esc(o.object_type||'')}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function selectObject(code) {
+    currentObject = allObjects.find(o => o.object_code === code);
+    if (!currentObject) return;
+    renderObjectList();
+    document.getElementById('emptyRight').style.display = 'none';
+    document.getElementById('detailHead').style.display = 'flex';
+    document.getElementById('detailTabs').style.display = 'flex';
+    document.getElementById('detailName').textContent = currentObject.object_name;
+    document.getElementById('detailSub').textContent =
+        `${currentObject.object_code} · ${currentObject.data_domain || '-'} · ${currentObject.cluster_size||0} 实体`;
+    const badge = document.getElementById('detailTypeBadge');
+    badge.textContent = currentObject.object_type || 'CORE';
+    badge.className = 'badge-sm ' + (
+        currentObject.object_type==='CORE'?'badge-blue':
+        currentObject.object_type==='DERIVED'?'badge-green':'badge-purple');
+    switchDetailTab(currentTab);
+}
+
+// ============ Detail Tab 切换 ============
+function switchDetailTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.detail-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById('pane-' + tab).classList.add('active');
+    if (!currentObject) return;
+    if (tab === 'properties') loadProperties();
+    else if (tab === 'relations') loadRelations();
+    else if (tab === 'functions') loadFunctions();
+    else if (tab === 'lineage') loadLineage();
+    else if (tab === 'history') loadHistory();
+    else if (tab === 'graph') renderObjectGraph();
+}
+
+// ========== Properties Tab ==========
+function loadProperties() {
+    const o = currentObject;
+    const pane = document.getElementById('pane-properties');
+    const samples = o.sample_entities || [];
+    pane.innerHTML = `
+    <div class="card">
+        <div class="card-head"><span class="card-title"><i class="bi bi-card-list"></i>基本信息</span></div>
+        <div class="card-body" style="padding:0;">
+            <table class="prop-table">
+                <tr><td>对象编码</td><td>${esc(o.object_code)}</td></tr>
+                <tr><td>对象名称</td><td><b>${esc(o.object_name)}</b></td></tr>
+                <tr><td>英文名</td><td>${esc(o.object_name_en || '-')}</td></tr>
+                <tr><td>对象类型</td><td><span class="badge-sm ${o.object_type==='CORE'?'badge-blue':o.object_type==='DERIVED'?'badge-green':'badge-purple'}">${esc(o.object_type||'CORE')}</span></td></tr>
+                <tr><td>所属数据域</td><td>${esc(o.data_domain||'-')}</td></tr>
+                <tr><td>聚类规模</td><td>${esc(o.cluster_size||samples.length||0)} 个实体</td></tr>
+                <tr><td>抽取方式</td><td>${esc(o.extraction_source||'-')}</td></tr>
+                <tr><td>置信度</td><td>${Math.round((o.extraction_confidence||0.7)*100)}%</td></tr>
+                <tr><td>描述</td><td>${esc(o.description || '-')}</td></tr>
+            </table>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-head"><span class="card-title"><i class="bi bi-collection"></i>代表实体 (前 ${Math.min(samples.length,20)}/${samples.length})</span></div>
+        <div class="card-body">
+            ${samples.slice(0,20).map(e => `<span class="badge-sm badge-blue" style="margin:2px; display:inline-block;">${esc(e)}</span>`).join('') || '<span style="color:var(--text-muted);">无</span>'}
+        </div>
+    </div>`;
+}
+
+// ========== Relations Tab (三层) ==========
+async function loadRelations() {
+    const pane = document.getElementById('pane-relations');
+    pane.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass"></i><p>加载中…</p></div>';
+    try {
+        const r = await fetch(`/api/olm/object-relations/${encodeURIComponent(currentObject.object_code)}`);
+        const d = await r.json();
+        const con = d.concept_entities || d.CONCEPT || [];
+        const log = d.logical_entities || d.LOGICAL || [];
+        const phy = d.physical_entities || d.PHYSICAL || [];
+        const total = con.length + log.length + phy.length;
+        document.getElementById('tabCountRelations').textContent = total;
+        pane.innerHTML = `
+        <div class="rel-tier-grid">
+            <div class="rel-tier-col col-concept">
+                <div class="rel-tier-head"><span><i class="bi bi-lightbulb"></i>概念实体</span><span class="rel-tier-count">${con.length}</span></div>
+                <div class="rel-tier-body">${con.length?con.map(e=>`<div class="rel-tier-item" title="${esc(e.entity_name||e.name||e)}">${esc(e.entity_name||e.name||e)}</div>`).join(''):'<div class="empty-state" style="padding:20px;"><p>无</p></div>'}</div>
+            </div>
+            <div class="rel-tier-col col-logical">
+                <div class="rel-tier-head"><span><i class="bi bi-ui-checks-grid"></i>逻辑实体</span><span class="rel-tier-count">${log.length}</span></div>
+                <div class="rel-tier-body">${log.length?log.map(e=>`<div class="rel-tier-item" title="${esc(e.entity_name||e.name||e)}">${esc(e.entity_name||e.name||e)}</div>`).join(''):'<div class="empty-state" style="padding:20px;"><p>无</p></div>'}</div>
+            </div>
+            <div class="rel-tier-col col-physical">
+                <div class="rel-tier-head"><span><i class="bi bi-hdd-stack"></i>物理实体</span><span class="rel-tier-count">${phy.length||'待接入'}</span></div>
+                <div class="rel-tier-body"><div class="empty-state" style="padding:20px;"><p>物理实体将从生产系统自动映射</p></div></div>
+            </div>
+        </div>`;
+    } catch(e) {
+        pane.innerHTML = '<div class="empty-state"><i class="bi bi-exclamation-triangle"></i><p>加载失败</p></div>';
+    }
+}
+
+// ========== Functions Tab（挂载在该对象上的关系规则）==========
+async function loadFunctions() {
+    const pane = document.getElementById('pane-functions');
+    pane.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass"></i><p>加载中…</p></div>';
+    try {
+        const r = await fetch('/api/olm/relation-rules');
+        const d = await r.json();
+        const code = currentObject.object_code;
+        const rules = (d.rules || []).filter(x => x.source_object_code === code || x.target_object_code === code);
+        document.getElementById('tabCountFunctions').textContent = rules.length;
+        if (!rules.length) {
+            pane.innerHTML = '<div class="empty-state"><i class="bi bi-gear"></i><p>此对象无挂载的函数/规则</p></div>';
+            return;
+        }
+        const cat2class = {PHYSICAL_FORMULA:'badge-blue',BUSINESS_RULE:'badge-green',THRESHOLD:'badge-red',DERIVED_CALC:'badge-yellow',VALIDATION:'badge-purple'};
+        const cat2label = {PHYSICAL_FORMULA:'物理公式',BUSINESS_RULE:'业务规则',THRESHOLD:'阈值约束',DERIVED_CALC:'派生计算',VALIDATION:'校验规则'};
+        pane.innerHTML = rules.map(rl => {
+            const exp = typeof rl.expression === 'string' ? JSON.parse(rl.expression) : rl.expression||{};
+            const formula = exp.formula || exp.condition || '';
+            const direction = rl.source_object_code === code ? '→' : '←';
+            const other = rl.source_object_code === code ? rl.target_object_code : rl.source_object_code;
+            return `<div class="func-item" onclick="alert('规则 ${esc(rl.rule_code)} 详情待实现')">
+                <div class="func-head-row">
+                    <div>
+                        <span class="badge-sm ${cat2class[rl.rule_category]||'badge-blue'}">${esc(cat2label[rl.rule_category]||rl.rule_category)}</span>
+                        <span class="func-name" style="margin-left:8px;">${esc(rl.rule_name)}</span>
+                    </div>
+                    <span style="font-size:11px;color:var(--text-muted);">${esc(rl.rule_code)}</span>
+                </div>
+                <div class="func-flow">
+                    <span>${esc(code.replace('OBJ_',''))}</span>
+                    <span style="color:var(--primary);">${direction} ${esc(rl.relation_type)} ${direction==='→'?'→':'←'}</span>
+                    <span>${esc((other||'').replace('OBJ_',''))}</span>
+                </div>
+                ${formula?`<div style="margin-top:6px;font-family:Consolas,monospace;font-size:11px;color:var(--text-sec);background:var(--bg-panel);padding:6px 8px;border-radius:2px;">${esc(formula)}</div>`:''}
+            </div>`;
+        }).join('');
+    } catch(e) {
+        pane.innerHTML = '<div class="empty-state"><p>加载失败</p></div>';
+    }
+}
+
+// ========== Lineage Tab（字段血缘）==========
+async function loadLineage() {
+    const pane = document.getElementById('pane-lineage');
+    pane.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass"></i><p>加载中…</p></div>';
+    try {
+        const r = await fetch(`/api/olm/field-lineage?object_code=${encodeURIComponent(currentObject.object_code)}`);
+        if (!r.ok) throw new Error('API 不可用');
+        const d = await r.json();
+        const rows = d.lineages || d || [];
+        document.getElementById('tabCountLineage').textContent = rows.length;
+        if (!rows.length) {
+            pane.innerHTML = '<div class="empty-state"><i class="bi bi-share"></i><p>此对象暂无字段血缘记录</p></div>';
+            return;
+        }
+        pane.innerHTML = rows.map(lin => `
+            <div class="lineage-step">
+                <span class="badge-sm badge-blue">目标</span>
+                <b>${esc(lin.target_field||lin.field_name)}</b>
+                <i class="bi bi-arrow-left-short lineage-arrow"></i>
+                <span style="color:var(--text-muted);">${esc(lin.formula || '直接派生')}</span>
+                <i class="bi bi-arrow-left-short lineage-arrow"></i>
+                <span>${(lin.source_fields||[]).map(s=>`<span class="badge-sm badge-green" style="margin-right:4px;">${esc(s)}</span>`).join('')}</span>
+            </div>
+        `).join('');
+    } catch(e) {
+        pane.innerHTML = '<div class="empty-state"><i class="bi bi-share"></i><p>字段血缘数据暂不可用</p></div>';
+    }
+}
+
+// ========== History Tab（生命周期）==========
+async function loadHistory() {
+    const pane = document.getElementById('pane-history');
+    pane.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass"></i><p>加载中…</p></div>';
+    try {
+        const r = await fetch(`/api/olm/object-lifecycle/${encodeURIComponent(currentObject.object_code)}`);
+        const d = await r.json();
+        const rows = d.history || d.records || [];
+        document.getElementById('tabCountHistory').textContent = rows.length;
+        if (!rows.length) {
+            pane.innerHTML = '<div class="empty-state"><i class="bi bi-clock-history"></i><p>此对象暂无生命周期记录</p></div>';
+            return;
+        }
+        const stageLabels = {Planning:'规划',Design:'设计',Construction:'施工',Operation:'运维'};
+        pane.innerHTML = rows.map(h => {
+            const attrs = typeof h.attributes_snapshot==='string'?JSON.parse(h.attributes_snapshot||'{}'):(h.attributes_snapshot||{});
+            const attrsHtml = Object.keys(attrs).length ?
+                `<div class="h-attrs">${Object.entries(attrs).map(([k,v])=>`<b>${esc(k)}:</b> ${esc(v)}`).join(' · ')}</div>` : '';
+            return `<div class="history-row">
+                <div class="h-stage">
+                    <span>${esc(stageLabels[h.lifecycle_stage]||h.lifecycle_stage)}</span>
+                    <span class="h-time">${esc(h.stage_entered_at||'-').substring(0,19)}</span>
+                </div>
+                ${attrsHtml}
+            </div>`;
+        }).join('');
+    } catch(e) {
+        pane.innerHTML = '<div class="empty-state"><p>加载失败</p></div>';
+    }
+}
+
+// ========== Graph Tab（可交互本对象图谱）==========
+async function renderObjectGraph() {
+    const pane = document.getElementById('pane-graph');
+    if (!currentObject) return;
+    const dom = document.getElementById('detailGraph');
+    if (!detailChart) detailChart = echarts.init(dom);
+    detailChart.showLoading();
+    try {
+        const r = await fetch(`/api/olm/graph-data/${encodeURIComponent(currentObject.object_code)}`);
+        const d = await r.json();
+        const depth = parseInt(document.getElementById('graphDepth').value);
+        const layout = document.getElementById('graphLayout').value;
+        const nodes = (d.nodes||[]).filter(n => depth>=1 || n.category===0)
+            .filter(n => depth>=2 || n.category!==1)
+            .filter(n => depth>=3 || n.category!==2);
+        const links = (d.links||[]).filter(l => {
+            const ns = nodes.find(n=>n.id===l.source||n.name===l.source);
+            const nt = nodes.find(n=>n.id===l.target||n.name===l.target);
+            return ns && nt;
+        });
+        detailChart.hideLoading();
+        detailChart.setOption({
+            tooltip: { trigger: 'item' },
+            legend: { data: ['对象','概念实体','逻辑实体'], top: 5, textStyle:{fontSize:11} },
+            series: [{
+                type: 'graph',
+                layout: layout,
+                roam: true,
+                draggable: true,
+                data: nodes.map(n => ({ ...n,
+                    itemStyle: {color: n.category===0?'#2590FF':n.category===1?'#5AA9FF':'#3E9B4F', borderColor:'#fff', borderWidth:2}
+                })),
+                links: links,
+                categories: [{name:'对象'},{name:'概念实体'},{name:'逻辑实体'}],
+                force: { repulsion: 220, edgeLength: [80,180] },
+                label: { show: true, fontSize: 11, color:'#1F2D3D' },
+                lineStyle: { color:'source', opacity: .35, curveness: .1 },
+                emphasis: { focus:'adjacency', lineStyle:{width:3} }
+            }]
+        }, true);
+        setTimeout(() => detailChart.resize(), 80);
+    } catch(e) {
+        detailChart.hideLoading();
+        detailChart.setOption({
+            graphic:{type:'text',left:'center',top:'middle',style:{text:'加载图谱失败',fontSize:14,fill:'#6584A4'}}
+        });
+    }
+}
+function resetGraphZoom() { if (detailChart) detailChart.dispatchAction({type:'restore'}); }
+
+// ============ Workspace 切换 ============
+function switchWorkspace(ws) {
+    currentWorkspace = ws;
+    document.querySelectorAll('.ws-tab').forEach(t => t.classList.toggle('active', t.dataset.ws === ws));
+    const subtitles = {
+        objects: '按业务对象浏览',
+        concept: '概念实体空间 · 业务语义层',
+        logical: '逻辑实体空间 · 数据结构层',
+        physical: '物理实体空间 · 数据库层（待接入）',
+        governance: '数据治理看板',
+        rules: '对象关系规则 · 物理公式 / 业务规则'
+    };
+    document.getElementById('wsSubtitle').textContent = subtitles[ws] || '';
+    document.getElementById('domainSubBar').style.display = (ws==='objects')?'flex':'none';
+    if (ws === 'objects') {
+        loadObjects();
+    } else if (ws === 'concept' || ws === 'logical') {
+        loadEntityWorkspace(ws === 'concept' ? 'CONCEPT' : 'LOGICAL');
+    } else if (ws === 'governance') {
+        loadGovernanceWorkspace();
+    } else if (ws === 'rules') {
+        loadRulesWorkspace();
+    } else if (ws === 'physical') {
+        renderPhysicalPlaceholder();
+    }
+}
+
+async function loadEntityWorkspace(layer) {
+    // 简化版：把左侧列表换成该层实体
+    const list = document.getElementById('objectList');
+    list.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass"></i><p>加载中…</p></div>';
+    try {
+        const r = await fetch('/api/olm/search-entities?layer=' + layer + '&limit=500');
+        const d = await r.json();
+        const rows = d.entities || d || [];
+        list.innerHTML = rows.map(e => `
+            <div class="object-item obj-t-CORE">
+                <div class="object-icon">${esc((e.entity_name||'?').charAt(0))}</div>
+                <div class="object-meta">
+                    <div class="object-name">${esc(e.entity_name)}</div>
+                    <div class="object-sub">${esc(e.data_domain||'-')} · 关联 ${e.relation_count||0}</div>
+                </div>
+            </div>
+        `).join('') || '<div class="empty-state"><p>无数据</p></div>';
+        document.getElementById('objectTotal').textContent = rows.length;
+        document.getElementById('detailHead').style.display = 'none';
+        document.getElementById('detailTabs').style.display = 'none';
+        document.getElementById('emptyRight').style.display = 'block';
+        document.getElementById('emptyRight').innerHTML = `<i class="bi bi-layers"></i><p>${layer==='CONCEPT'?'概念':'逻辑'}实体空间 · 点击左侧查看该实体关联的对象</p>`;
+    } catch(e) {
+        list.innerHTML = '<div class="empty-state"><p>API 暂不可用</p></div>';
+    }
+}
+
+function renderPhysicalPlaceholder() {
+    const list = document.getElementById('objectList');
+    list.innerHTML = '<div class="empty-state"><p>物理实体将从生产系统接入</p></div>';
+    document.getElementById('detailHead').style.display = 'none';
+    document.getElementById('detailTabs').style.display = 'none';
+    document.getElementById('emptyRight').style.display = 'block';
+    document.getElementById('emptyRight').innerHTML = '<i class="bi bi-hdd-stack"></i><p>物理实体空间待接入生产数据库</p>';
+}
+
+async function loadGovernanceWorkspace() {
+    document.getElementById('detailHead').style.display = 'none';
+    document.getElementById('detailTabs').style.display = 'none';
+    const pane = document.getElementById('emptyRight');
+    pane.style.display = 'block';
+    pane.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass"></i><p>加载治理指标…</p></div>';
+    try {
+        const r = await fetch('/api/olm/governance/metrics');
+        const d = await r.json();
+        pane.innerHTML = `<div style="padding:8px;">
+            <div class="card">
+                <div class="card-head"><span class="card-title"><i class="bi bi-shield-check"></i>治理指标概览</span></div>
+                <div class="card-body">
+                    <pre style="font-size:12px;color:var(--text-sec);">${esc(JSON.stringify(d,null,2))}</pre>
+                </div>
+            </div>
+            <p style="margin-top:12px;color:var(--text-muted);font-size:12px;">详细面板请切换回<a href="/?v=10.0" style="color:var(--primary);">旧版</a>查看</p>
+        </div>`;
+    } catch(e) { pane.innerHTML = '<div class="empty-state"><p>加载失败</p></div>'; }
+}
+
+async function loadRulesWorkspace() {
+    document.getElementById('detailHead').style.display = 'none';
+    document.getElementById('detailTabs').style.display = 'none';
+    const pane = document.getElementById('emptyRight');
+    pane.style.display = 'block';
+    pane.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass"></i><p>加载关系规则…</p></div>';
+    try {
+        const r = await fetch('/api/olm/relation-rules');
+        const d = await r.json();
+        const rules = d.rules || [];
+        const cat2label = {PHYSICAL_FORMULA:'物理公式',BUSINESS_RULE:'业务规则',THRESHOLD:'阈值约束',DERIVED_CALC:'派生计算',VALIDATION:'校验规则'};
+        pane.innerHTML = `<div style="padding:8px;">
+            <div class="card">
+                <div class="card-head"><span class="card-title"><i class="bi bi-diagram-3"></i>对象间关系规则 (${rules.length})</span></div>
+                <div class="card-body" style="padding:0;">
+                    <table class="prop-table">
+                        <tr><td>编号</td><td>名称</td><td>关系</td><td>类别</td></tr>
+                        ${rules.map(rl=>`<tr><td>${esc(rl.rule_code)}</td><td><b>${esc(rl.rule_name)}</b></td><td>${esc((rl.source_object_code||'').replace('OBJ_',''))} → ${esc((rl.target_object_code||'').replace('OBJ_',''))}</td><td>${esc(cat2label[rl.rule_category]||rl.rule_category)}</td></tr>`).join('')}
+                    </table>
+                </div>
+            </div>
+        </div>`;
+    } catch(e) { pane.innerHTML = '<div class="empty-state"><p>加载失败</p></div>'; }
+}
+
+// ============ 其它 ============
+function handleGlobalSearch(q) {
+    // 简化版：搜索映射到左侧搜索框
+    document.getElementById('leftSearch').value = q;
+    filterObjectList(q);
+}
+function refreshAll() { loadObjects(); loadDomains(); showToast('已刷新'); }
+function openExtractModal() { window.location.href = '/?v=10.0#section-objects'; }
+async function showObjectExplanation() {
+    if (!currentObject) return;
+    try {
+        const r = await fetch(`/api/olm/object-name-explanation/${encodeURIComponent(currentObject.object_code)}`);
+        const d = await r.json();
+        alert(d.reasoning || d.explanation || '暂无命名解释');
+    } catch(e) { showToast('加载失败', 'error'); }
+}
+async function editObjectName() {
+    if (!currentObject) return;
+    const nv = prompt('新对象名', currentObject.object_name);
+    if (!nv || nv === currentObject.object_name) return;
+    try {
+        const r = await fetch(`/api/olm/objects/${encodeURIComponent(currentObject.object_code)}`, {
+            method:'PUT', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({object_name: nv})
+        });
+        if (r.ok) { showToast('重命名成功','success'); loadObjects(); }
+        else showToast('重命名失败','error');
+    } catch(e) { showToast('重命名失败','error'); }
+}
+
+function showToast(msg, kind='') {
+    const c = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = 'toast ' + kind;
+    t.innerHTML = `<i class="bi bi-info-circle"></i><span>${esc(msg)}</span>`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 2400);
+}
+
+window.addEventListener('resize', () => { if (detailChart) detailChart.resize(); });
+</script>
+</body>
+</html>

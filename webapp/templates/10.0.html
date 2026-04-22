@@ -11,27 +11,29 @@
         /* ========== CSS Variables ========== */
         :root {
             --sidebar-w: 260px;
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --primary-light: #818cf8;
-            --secondary: #3b82f6;
-            --accent: #22c55e;
-            --concept: #6366f1;
-            --logical: #10b981;
-            --physical: #f59e0b;
-            --text-main: #0f172a;
-            --text-sec: #475569;
-            --text-muted: #94a3b8;
-            --bg-body: #f1f5f9;
-            --bg-card: #ffffff;
-            --border: #e2e8f0;
-            --border-light: #f1f5f9;
-            --radius: 12px;
-            --radius-sm: 8px;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-            --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
-            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
-            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            /* 南方电网企业品牌色规范 */
+            --primary: #2590FF;          /* 南网主色蓝 */
+            --primary-dark: #1A7AE0;
+            --primary-light: #5AA9FF;
+            --primary-softbg: #E6F2FF;   /* 主色底淡底 */
+            --secondary: #2590FF;
+            --accent: #3E9B4F;
+            --concept: #2590FF;
+            --logical: #3E9B4F;
+            --physical: #E6A23C;
+            --text-main: #1F2D3D;        /* 主标题深灰蓝 */
+            --text-sec: #3E5971;
+            --text-muted: #6584A4;       /* 规范指定辅色 */
+            --bg-body: #EAF0F8;          /* 规范指定页面底色：浅灰蓝 */
+            --bg-card: #FFFFFF;
+            --border: #D9E2EC;
+            --border-light: #EAF0F8;
+            --radius: 4px;               /* 企业级偏小圆角 */
+            --radius-sm: 2px;
+            --shadow-sm: 0 1px 2px rgba(31,45,61,.04);
+            --shadow: 0 2px 8px rgba(31,45,61,.06);
+            --shadow-lg: 0 4px 16px rgba(31,45,61,.08);
+            --font: 'PingFang SC', 'Microsoft YaHei', 'Source Han Sans CN', 'Noto Sans CJK SC', Arial, sans-serif;
             --transition: .2s cubic-bezier(.4,0,.2,1);
         }
 
@@ -45,43 +47,51 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* ========== Sidebar ========== */
+        /* ========== Sidebar（垂直导航-白底，南网规范样式二） ========== */
         .sidebar {
             position: fixed; top: 0; left: 0; bottom: 0;
             width: var(--sidebar-w);
-            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
+            background: #FFFFFF;
+            color: var(--text-sec);
             display: flex; flex-direction: column;
             z-index: 100;
             transition: transform .3s ease;
+            border-right: 1px solid var(--border);
         }
         .sidebar-brand {
-            padding: 1.5rem 1.25rem 1.25rem;
-            border-bottom: 1px solid rgba(255,255,255,.08);
+            padding: 1.25rem 1.25rem 1rem;
+            border-bottom: 1px solid var(--border);
         }
         .sidebar-brand h1 {
-            font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em;
-            background: linear-gradient(135deg, #818cf8, #22d3ee);
-            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+            font-size: 1.25rem; font-weight: 700; letter-spacing: .02em;
+            color: var(--primary);
         }
         .sidebar-brand p {
-            font-size: .75rem; color: #64748b; margin-top: .15rem; letter-spacing: .02em;
+            font-size: .72rem; color: var(--text-muted); margin-top: .2rem; letter-spacing: .04em;
         }
 
-        .sidebar-nav { padding: .75rem 0; flex: 1; min-height: 0; overflow-y: auto; }
+        .sidebar-nav {
+            padding: .5rem 0; flex: 1; min-height: 0; overflow-y: auto;
+            scrollbar-width: thin; scrollbar-color: #D9E2EC transparent;
+        }
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: #D9E2EC; border-radius: 2px; }
+        .sidebar-nav::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
         .nav-item {
             display: flex; align-items: center; gap: .65rem;
-            padding: .6rem 1.25rem;
-            font-size: .875rem; font-weight: 500; color: #94a3b8;
+            padding: .65rem 1.25rem;
+            font-size: .875rem; font-weight: 500; color: var(--text-sec);
             cursor: pointer; position: relative; transition: var(--transition);
             border-left: 3px solid transparent;
         }
-        .nav-item:hover { color: #e2e8f0; background: rgba(255,255,255,.04); }
+        .nav-item:hover { color: var(--primary); background: var(--primary-softbg); }
         .nav-item.active {
-            color: #e2e8f0; background: rgba(99,102,241,.12);
-            border-left-color: var(--primary-light);
+            color: var(--primary); background: var(--primary-softbg);
+            border-left-color: var(--primary);
+            font-weight: 600;
         }
-        .nav-item i { font-size: 1.1rem; width: 1.25rem; text-align: center; }
+        .nav-item i { font-size: 1rem; width: 1.25rem; text-align: center; color: var(--text-muted); }
+        .nav-item:hover i, .nav-item.active i { color: var(--primary); }
 
         .sidebar-section {
             padding: 1rem 1.25rem .5rem;
@@ -104,17 +114,63 @@
         }
         .domain-item .domain-badge {
             margin-left: auto; font-size: .7rem; font-weight: 600;
-            background: rgba(99,102,241,.2); color: var(--primary-light);
+            background: rgba(37,144,255,.2); color: var(--primary-light);
             padding: .1rem .4rem; border-radius: 8px;
         }
 
         .sidebar-footer {
-            padding: 1rem 1.25rem; border-top: 1px solid rgba(255,255,255,.06);
-            font-size: .72rem; color: #475569;
+            padding: .85rem 1.25rem; border-top: 1px solid var(--border);
+            font-size: .72rem; color: var(--text-muted);
         }
-        .sidebar-footer span { color: #64748b; }
+        .sidebar-footer span { color: var(--text-muted); }
 
         @keyframes wl-pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+        /* ========== Domain Filter Bar（企业级 tab 样式） ========== */
+        .domain-filter-bar {
+            display: flex; align-items: center; flex-wrap: wrap;
+            gap: .75rem; padding: .9rem 2rem 0;
+            font-size: .82rem;
+        }
+        .domain-filter-label {
+            display: inline-flex; align-items: center; gap: .4rem;
+            font-weight: 500; color: var(--text-sec);
+            font-size: .8rem;
+            padding-right: .4rem;
+        }
+        .domain-segmented {
+            display: inline-flex; align-items: center;
+            gap: 0;
+        }
+        .domain-chip {
+            display: inline-flex; align-items: center; gap: .4rem;
+            padding: .45rem 1rem;
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            color: var(--text-sec); cursor: pointer;
+            transition: var(--transition);
+            user-select: none;
+            font-size: .82rem; font-weight: 400;
+            margin-left: -1px;
+        }
+        .domain-chip:first-of-type { border-radius: 2px 0 0 2px; margin-left: 0; }
+        .domain-chip:last-of-type { border-radius: 0 2px 2px 0; }
+        .domain-chip:only-of-type { border-radius: 2px; }
+        .domain-chip:hover { color: var(--primary); border-color: var(--primary); position: relative; z-index: 1; }
+        .domain-chip.active {
+            background: var(--primary); color: #FFFFFF;
+            border-color: var(--primary);
+            font-weight: 500;
+            position: relative; z-index: 2;
+        }
+        .domain-chip .chip-count {
+            font-size: .7rem; font-weight: 500;
+            padding: 0 .35rem; border-radius: 2px;
+            background: rgba(101,132,164,.12); color: var(--text-muted);
+        }
+        .domain-chip.active .chip-count {
+            background: rgba(255,255,255,.22); color: #FFFFFF;
+        }
 
         /* ========== Main Content ========== */
         .main { margin-left: var(--sidebar-w); min-height: 100vh; }
@@ -122,7 +178,7 @@
         /* Top Bar */
         .topbar {
             position: sticky; top: 0; z-index: 50;
-            background: rgba(255,255,255,.85); backdrop-filter: blur(12px);
+            background: #FFFFFF;
             border-bottom: 1px solid var(--border);
             padding: .75rem 2rem;
             display: flex; align-items: center; gap: 1rem;
@@ -138,7 +194,7 @@
         }
         .search-box input:focus {
             outline: none; border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99,102,241,.1); background: #fff;
+            box-shadow: 0 0 0 3px rgba(37,144,255,.1); background: #fff;
         }
         .search-box input::placeholder { color: var(--text-muted); }
         .search-box i {
@@ -154,9 +210,11 @@
         }
         .btn-primary {
             background: var(--primary); color: #fff;
-            box-shadow: 0 1px 3px rgba(99,102,241,.25);
+            box-shadow: none;
+            border-radius: 2px;
         }
-        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-primary:active { background: #1666B8; }
         .btn-outline {
             background: #fff; color: var(--text-sec);
             border: 1px solid var(--border);
@@ -205,7 +263,7 @@
             font-size: .62rem; font-weight: 700; padding: .1rem .35rem;
             border-radius: 3px; text-transform: uppercase; flex-shrink: 0;
         }
-        .sr-layer.CONCEPT { background: rgba(99,102,241,.1); color: var(--concept); }
+        .sr-layer.CONCEPT { background: rgba(37,144,255,.1); color: var(--concept); }
         .sr-layer.LOGICAL { background: rgba(16,185,129,.1); color: var(--logical); }
         .sr-layer.PHYSICAL { background: rgba(245,158,11,.1); color: var(--physical); }
         .search-result-item .sr-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -226,18 +284,20 @@
 
         /* Algorithm Info Banner */
         .algo-info {
-            background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(59,130,246,.06));
-            border: 1px solid rgba(99,102,241,.2);
-            border-radius: var(--radius);
+            background: var(--primary-softbg);
+            border: 1px solid #C3DEFB;
+            border-left: 3px solid var(--primary);
+            border-radius: var(--radius-sm);
             padding: .75rem 1rem;
             display: flex; align-items: flex-start; gap: .75rem;
-            margin-bottom: 1rem; font-size: .82rem; color: var(--text-sub);
+            margin-bottom: 1rem; font-size: .82rem; color: var(--text-sec);
         }
-        .algo-info i { color: var(--accent); font-size: 1.1rem; margin-top: .1rem; flex-shrink: 0; }
+        .algo-info i { color: var(--primary); font-size: 1.1rem; margin-top: .1rem; flex-shrink: 0; }
         .algo-info strong { color: var(--text-main); }
         .algo-info-tags { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .4rem; }
-        .algo-tag { background: rgba(99,102,241,.12); color: var(--accent); padding: 2px 8px;
-            border-radius: 4px; font-size: .72rem; font-weight: 500; }
+        .algo-tag { background: #FFFFFF; color: var(--primary); padding: 2px 8px;
+            border-radius: 2px; font-size: .72rem; font-weight: 500;
+            border: 1px solid #C3DEFB; }
 
         /* View Tabs */
         .view-tab {
@@ -275,23 +335,23 @@
             position: relative; overflow: hidden;
             transition: var(--transition);
         }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+        .stat-card:hover { box-shadow: var(--shadow); border-color: #B8CBDD; }
         .stat-card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px;
         }
-        .stat-card.card-objects::before { background: linear-gradient(90deg, var(--primary), var(--secondary)); }
-        .stat-card.card-concept::before { background: linear-gradient(90deg, var(--concept), #a78bfa); }
-        .stat-card.card-logical::before { background: linear-gradient(90deg, var(--logical), #34d399); }
-        .stat-card.card-physical::before { background: linear-gradient(90deg, var(--physical), #fbbf24); }
+        .stat-card.card-objects::before { background: var(--primary); }
+        .stat-card.card-concept::before { background: var(--primary); }
+        .stat-card.card-logical::before { background: var(--logical); }
+        .stat-card.card-physical::before { background: var(--physical); }
         .stat-icon {
-            width: 36px; height: 36px; border-radius: 10px;
+            width: 32px; height: 32px; border-radius: 4px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; margin-bottom: .75rem;
+            font-size: 1rem; margin-bottom: .75rem;
         }
-        .card-objects .stat-icon { background: rgba(99,102,241,.1); color: var(--primary); }
-        .card-concept .stat-icon { background: rgba(99,102,241,.1); color: var(--concept); }
-        .card-logical .stat-icon { background: rgba(16,185,129,.1); color: var(--logical); }
-        .card-physical .stat-icon { background: rgba(245,158,11,.1); color: var(--physical); }
+        .card-objects .stat-icon { background: var(--primary-softbg); color: var(--primary); }
+        .card-concept .stat-icon { background: var(--primary-softbg); color: var(--primary); }
+        .card-logical .stat-icon { background: rgba(62,155,79,.1); color: var(--logical); }
+        .card-physical .stat-icon { background: rgba(230,162,60,.1); color: var(--physical); }
         .stat-value {
             font-size: 1.75rem; font-weight: 800; line-height: 1;
             color: var(--text-main); margin-bottom: .25rem;
@@ -339,12 +399,12 @@
         .object-card.type-DERIVED::before { background: var(--secondary); }
         .object-card.type-AUXILIARY::before { background: #94a3b8; }
         .object-card:hover {
-            transform: translateY(-2px); box-shadow: var(--shadow);
-            border-color: #cbd5e1;
+            box-shadow: var(--shadow);
+            border-color: #B8CBDD;
         }
         .object-card.active {
             border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(99,102,241,.15), var(--shadow);
+            box-shadow: 0 0 0 2px rgba(37,144,255,.12);
         }
         .object-card.active::before { width: 4px; }
         .obj-top { display: flex; align-items: flex-start; gap: .65rem; margin-bottom: .5rem; }
@@ -352,7 +412,7 @@
             width: 36px; height: 36px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
             font-size: 1.15rem; flex-shrink: 0;
-            background: linear-gradient(135deg, rgba(99,102,241,.1), rgba(59,130,246,.08));
+            background: linear-gradient(135deg, rgba(37,144,255,.1), rgba(59,130,246,.08));
         }
         .obj-info { min-width: 0; }
         .obj-name { font-size: .95rem; font-weight: 700; color: var(--text-main); line-height: 1.3; }
@@ -370,7 +430,7 @@
             padding: .15rem .45rem; border-radius: 4px;
             font-size: .68rem; font-weight: 600;
         }
-        .badge-concept { background: rgba(99,102,241,.1); color: var(--concept); }
+        .badge-concept { background: rgba(37,144,255,.1); color: var(--concept); }
         .badge-logical { background: rgba(16,185,129,.1); color: var(--logical); }
         .badge-physical { background: rgba(245,158,11,.1); color: var(--physical); }
         .badge-type {
@@ -378,7 +438,7 @@
             font-size: .62rem; font-weight: 700; text-transform: uppercase;
             margin-left: auto;
         }
-        .badge-CORE { background: rgba(99,102,241,.1); color: var(--primary); }
+        .badge-CORE { background: rgba(37,144,255,.1); color: var(--primary); }
         .badge-DERIVED { background: rgba(59,130,246,.1); color: var(--secondary); }
         .badge-AUXILIARY { background: rgba(148,163,184,.12); color: #64748b; }
 
@@ -423,7 +483,7 @@
             display: flex; align-items: center; justify-content: space-between;
             border-bottom: 1px solid var(--border); flex-shrink: 0;
         }
-        .rel-col.col-concept .rel-col-header { background: rgba(99,102,241,.05); color: var(--concept); }
+        .rel-col.col-concept .rel-col-header { background: rgba(37,144,255,.05); color: var(--concept); }
         .rel-col.col-logical .rel-col-header { background: rgba(16,185,129,.05); color: var(--logical); }
         .rel-col.col-physical .rel-col-header { background: rgba(245,158,11,.05); color: var(--physical); }
         .rel-col-count {
@@ -448,7 +508,7 @@
             transition: var(--transition); margin-bottom: .15rem;
         }
         .entity-item:hover { background: var(--bg-body); }
-        .entity-item.highlighted { background: rgba(99,102,241,.08); color: var(--primary); font-weight: 500; }
+        .entity-item.highlighted { background: rgba(37,144,255,.08); color: var(--primary); font-weight: 500; }
         .entity-dot {
             width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
         }
@@ -470,19 +530,46 @@
         .concept-group-header {
             padding: .3rem .5rem; margin: .25rem 0 .1rem; border-radius: 6px;
             font-size: .72rem; font-weight: 600; color: var(--concept);
-            background: rgba(99,102,241,.06); cursor: pointer;
+            background: rgba(37,144,255,.06); cursor: pointer;
             display: flex; align-items: center; justify-content: space-between;
         }
-        .concept-group-header:hover { background: rgba(99,102,241,.1); }
+        .concept-group-header:hover { background: rgba(37,144,255,.1); }
         .concept-group-header .toggle { font-size: .6rem; color: var(--text-muted); }
         .concept-group-items { padding-left: .4rem; }
         .concept-group-items.collapsed { display: none; }
 
         /* ========== Sankey Section ========== */
         .sankey-container {
-            background: var(--bg-card); border-radius: var(--radius);
-            border: 1px solid var(--border); padding: 1.25rem;
+            position: relative;
+            background:
+                radial-gradient(circle at 15% 10%, rgba(37,144,255,.05), transparent 50%),
+                radial-gradient(circle at 85% 90%, rgba(16,185,129,.04), transparent 50%),
+                #fff;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            padding: 1rem 1.25rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(15,23,42,.04);
         }
+        .sankey-tier-labels {
+            display: flex; justify-content: space-between;
+            padding: 0 40px 0 40px;
+            margin-bottom: .5rem;
+            font-size: .72rem; font-weight: 600;
+            letter-spacing: .05em;
+        }
+        .sankey-tier-labels span {
+            display: inline-flex; align-items: center; gap: .4rem;
+            text-transform: uppercase;
+        }
+        .sankey-tier-labels span::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%;
+        }
+        .sankey-tier-labels .tier-obj { color: #1A7AE0; }
+        .sankey-tier-labels .tier-obj::before { background: #2590FF; }
+        .sankey-tier-labels .tier-con { color: #7c3aed; }
+        .sankey-tier-labels .tier-con::before { background: #5AA9FF; }
+        .sankey-tier-labels .tier-log { color: #059669; }
+        .sankey-tier-labels .tier-log::before { background: #10b981; }
         #sankey-chart { width: 100%; min-height: 500px; height: 700px; }
 
         /* ========== Datasets Table ========== */
@@ -500,11 +587,11 @@
             padding: .6rem .85rem; border-bottom: 1px solid var(--border-light);
             color: var(--text-sec);
         }
-        .datasets-table tr:hover td { background: rgba(99,102,241,.02); }
+        .datasets-table tr:hover td { background: rgba(37,144,255,.02); }
         .ds-tag {
             display: inline-block; padding: .1rem .4rem; border-radius: 4px;
             font-size: .68rem; font-weight: 600;
-            background: rgba(99,102,241,.08); color: var(--primary);
+            background: rgba(37,144,255,.08); color: var(--primary);
         }
 
         /* ========== Toast / Notifications ========== */
@@ -565,7 +652,7 @@
         /* Loading spinner */
         .spinner {
             width: 18px; height: 18px;
-            border: 2px solid rgba(99,102,241,.2);
+            border: 2px solid rgba(37,144,255,.2);
             border-top-color: var(--primary);
             border-radius: 50%; animation: spin .6s linear infinite;
         }
@@ -576,7 +663,7 @@
         .modal-box h3 { margin:0 0 .5rem;color:#f1f5f9;font-size:1rem }
         .domain-check-item { display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:.5rem;margin-bottom:.375rem;background:#0f172a;cursor:pointer }
         .domain-check-item:hover { background:#1a2744 }
-        .domain-check-item input[type="checkbox"] { accent-color:#6366f1;width:16px;height:16px }
+        .domain-check-item input[type="checkbox"] { accent-color:#2590FF;width:16px;height:16px }
         .domain-check-item span { color:#e2e8f0;font-size:.88rem }
     </style>
 </head>
@@ -599,7 +686,7 @@
             <div class="nav-item" data-section="section-objects" onclick="scrollToSection('section-objects')">
                 <i class="bi bi-box-seam"></i><span>对象管理</span>
             </div>
-            <div class="nav-item" data-section="section-relations" onclick="scrollToSection('section-relations')">
+            <div class="nav-item" data-section="section-relations" onclick="openRelationsSection()">
                 <i class="bi bi-diagram-3"></i><span>关联分析</span>
             </div>
             <div class="nav-item" data-section="section-sankey" onclick="scrollToSection('section-sankey')">
@@ -635,11 +722,6 @@
             <!-- HTAP 已移至右下角浮动面板 -->
         </nav>
 
-        <div class="sidebar-section">数据域</div>
-        <div class="sidebar-domains" id="sidebarDomains">
-            <div style="padding:.5rem; color:#64748b; font-size:.78rem;">加载中...</div>
-        </div>
-
         <div class="sidebar-footer">
             <span>&copy; 2026 YIMO Platform</span>
         </div>
@@ -670,6 +752,12 @@
                     <i class="bi bi-cpu"></i>执行抽取
                 </button>
             </div>
+        </div>
+
+        <!-- Domain Filter Bar -->
+        <div class="domain-filter-bar" id="domainFilter">
+            <span class="domain-filter-label"><i class="bi bi-funnel"></i> 数据域：</span>
+            <span style="color:#94a3b8;font-size:.8rem;">加载中...</span>
         </div>
 
         <!-- Content -->
@@ -791,27 +879,24 @@
                 </div>
             </section>
 
-            <!-- Section: Granularity Analysis -->
-            <section class="section" id="section-granularity" style="display:none;">
-                <div class="section-header">
-                    <div class="section-title">
-                        <i class="bi bi-bar-chart"></i>颗粒度分析
-                    </div>
-                    <button class="btn-sm" onclick="loadGranularity()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
-                </div>
-                <div id="granularity-chart" style="width:100%;height:320px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);"></div>
-                <div id="smallObjectsPanel" style="margin-top:12px;"></div>
-                <div id="dedupPanel" style="margin-top:16px;"></div>
-            </section>
-
             <!-- Section: Sankey -->
             <section class="section" id="section-sankey">
                 <div class="section-header">
-                    <div class="section-title">
-                        <i class="bi bi-bar-chart-steps"></i>对象-三层架构关联流向图
+                    <div>
+                        <div class="section-title">
+                            <i class="bi bi-bar-chart-steps"></i>对象 · 三层架构关联流向
+                        </div>
+                        <div style="font-size:.78rem;color:var(--text-muted);margin-top:.15rem;padding-left:1.65rem;">
+                            从业务对象穿透到概念实体、再汇聚到逻辑实体层，粗细表示关联强度
+                        </div>
                     </div>
                 </div>
                 <div class="sankey-container">
+                    <div class="sankey-tier-labels">
+                        <span class="tier-obj">对象层</span>
+                        <span class="tier-con">概念实体层</span>
+                        <span class="tier-log">逻辑实体层</span>
+                    </div>
                     <div id="sankey-chart"></div>
                 </div>
             </section>
@@ -841,10 +926,10 @@
                 </div>
                 <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
                     <span style="display:inline-flex;align-items:center;gap:4px;font-size:.75rem;color:#64748b;">
-                        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#6366f1;"></span>对象
+                        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#2590FF;"></span>对象
                     </span>
                     <span style="display:inline-flex;align-items:center;gap:4px;font-size:.75rem;color:#64748b;">
-                        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#818cf8;"></span>概念实体
+                        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#5AA9FF;"></span>概念实体
                     </span>
                     <span style="display:inline-flex;align-items:center;gap:4px;font-size:.75rem;color:#64748b;">
                         <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#10b981;"></span>逻辑实体
@@ -855,6 +940,19 @@
                 </div>
                 <div id="three-tier-chart" style="width:100%;height:700px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);"></div>
                 <div id="three-tier-stats" style="margin-top:8px;font-size:.78rem;color:#64748b;"></div>
+            </section>
+
+            <!-- Section: Granularity Analysis -->
+            <section class="section" id="section-granularity" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-bar-chart"></i>颗粒度分析
+                    </div>
+                    <button class="btn-sm" onclick="loadGranularity()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                </div>
+                <div id="granularity-chart" style="width:100%;height:320px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);"></div>
+                <div id="smallObjectsPanel" style="margin-top:12px;"></div>
+                <div id="dedupPanel" style="margin-top:16px;"></div>
             </section>
 
             <!-- Section: Datasets -->
@@ -930,7 +1028,7 @@
                 </div>
                 <!-- 生命周期阶段统计 -->
                 <div class="stats-grid" id="lifecycleStats" style="margin-bottom:16px;">
-                    <div class="stat-card" style="border-left:3px solid #6366f1;">
+                    <div class="stat-card" style="border-left:3px solid #2590FF;">
                         <div class="stat-value" id="lcPlanning">0</div>
                         <div class="stat-label">规划 Planning</div>
                     </div>
@@ -1012,6 +1110,31 @@
             </section>
 
             <!-- Section: Relation Rules (Phase 3 新增) -->
+            <!-- Section: Mechanism Functions (Phase 4) -->
+            <section class="section" id="section-mechanism" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-gear-wide-connected"></i>机理函数
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn-sm" onclick="showCreateFuncForm()"><i class="bi bi-plus-lg"></i> 新建函数</button>
+                        <button class="btn-sm" onclick="loadMechanismFunctions()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                    </div>
+                </div>
+                <div class="filter-tabs" id="funcFilterTabs">
+                    <div class="filter-tab active" onclick="filterFunctions('ALL')">全部</div>
+                    <div class="filter-tab" onclick="filterFunctions('THRESHOLD')">阈值检查</div>
+                    <div class="filter-tab" onclick="filterFunctions('FORMULA')">计算公式</div>
+                    <div class="filter-tab" onclick="filterFunctions('RULE')">条件规则</div>
+                </div>
+                <div id="funcList" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
+                    <div class="empty-state"><i class="bi bi-gear-wide-connected"></i><p>加载中...</p></div>
+                </div>
+                <div id="funcTestPanel" style="display:none;margin-top:12px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;"></div>
+                <div id="createFuncForm" style="display:none;margin-top:12px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;"></div>
+            </section>
+
+            <!-- Section: Relation Rules -->
             <section class="section" id="section-relation-rules" style="display:none;">
                 <div class="section-header">
                     <div class="section-title">
@@ -1065,30 +1188,6 @@
                 </div>
             </section>
 
-            <!-- Section: Mechanism Functions (Phase 4) -->
-            <section class="section" id="section-mechanism" style="display:none;">
-                <div class="section-header">
-                    <div class="section-title">
-                        <i class="bi bi-gear-wide-connected"></i>机理函数
-                    </div>
-                    <div style="display:flex;gap:6px;">
-                        <button class="btn-sm" onclick="showCreateFuncForm()"><i class="bi bi-plus-lg"></i> 新建函数</button>
-                        <button class="btn-sm" onclick="loadMechanismFunctions()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
-                    </div>
-                </div>
-                <div class="filter-tabs" id="funcFilterTabs">
-                    <div class="filter-tab active" onclick="filterFunctions('ALL')">全部</div>
-                    <div class="filter-tab" onclick="filterFunctions('THRESHOLD')">阈值检查</div>
-                    <div class="filter-tab" onclick="filterFunctions('FORMULA')">计算公式</div>
-                    <div class="filter-tab" onclick="filterFunctions('RULE')">条件规则</div>
-                </div>
-                <div id="funcList" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
-                    <div class="empty-state"><i class="bi bi-gear-wide-connected"></i><p>加载中...</p></div>
-                </div>
-                <div id="funcTestPanel" style="display:none;margin-top:12px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;"></div>
-                <div id="createFuncForm" style="display:none;margin-top:12px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;"></div>
-            </section>
-
             <!-- Section: Alerts (Phase 5) -->
             <section class="section" id="section-alerts" style="display:none;">
                 <div class="section-header">
@@ -1116,7 +1215,7 @@
                         <div class="stat-value" id="alertWarning">0</div>
                         <div class="stat-label">警告</div>
                     </div>
-                    <div class="stat-card" style="border-left:3px solid #6366f1;">
+                    <div class="stat-card" style="border-left:3px solid #2590FF;">
                         <div class="stat-value" id="alertInfo">0</div>
                         <div class="stat-label">信息</div>
                     </div>
@@ -1143,7 +1242,7 @@
                         <div class="stat-value" id="govCompleteness">0%</div>
                         <div class="stat-label">三层完整率</div>
                     </div>
-                    <div class="stat-card" style="border-left:3px solid #6366f1;">
+                    <div class="stat-card" style="border-left:3px solid #2590FF;">
                         <div class="stat-value" id="govAvgStrength">0</div>
                         <div class="stat-label">平均关联强度</div>
                     </div>
@@ -1217,6 +1316,7 @@
 
     // ========== HTAP 浮动面板渲染 ==========
     function renderHtapPanel() {
+        var el = function(id){ return document.getElementById(id); };
         var tp = _wlLog.filter(function(e){return e.type==='TP';});
         var ap = _wlLog.filter(function(e){return e.type==='AP';});
         var total = tp.length + ap.length;
@@ -1366,14 +1466,45 @@
         document.getElementById('mobileOverlay').classList.toggle('open');
     }
 
+    let _scrollSpyLocked = false;
+    let _scrollSpyUnlockTimer = null;
+
+    function selectNavItem(id) {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const nav = document.querySelector(`.nav-item[data-section="${id}"]`);
+        if (nav) nav.classList.add('active');
+        _scrollSpyLocked = true;
+        clearTimeout(_scrollSpyUnlockTimer);
+        _scrollSpyUnlockTimer = setTimeout(() => { _scrollSpyLocked = false; }, 900);
+    }
+
     function scrollToSection(id) {
-        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        selectNavItem(id);
+        const sec = document.getElementById(id);
+        if (sec) {
+            // 隐藏的 section 先显示，否则 scrollIntoView 无效，导致"需点两次"
+            if (sec.style.display === 'none') sec.style.display = 'block';
+            // 强制 reflow 确保 display 立即生效
+            void sec.offsetHeight;
+            sec.scrollIntoView({ behavior: 'smooth' });
+        }
         if (window.innerWidth <= 768) toggleSidebar();
+    }
+
+    function openRelationsSection() {
+        if (!selectedObjectCode) {
+            showToast('请先在"对象管理"中选择一个对象', 'info');
+            scrollToSection('section-objects');
+            return;
+        }
+        document.getElementById('section-relations').classList.add('active');
+        scrollToSection('section-relations');
     }
 
     function setupScrollSpy() {
         const sections = document.querySelectorAll('.section[id]');
         const observer = new IntersectionObserver(entries => {
+            if (_scrollSpyLocked) return;
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1387,57 +1518,59 @@
 
     // ========== Domain Loading ==========
     async function loadDomains() {
-        const container = document.getElementById('sidebarDomains');
+        const container = document.getElementById('domainFilter');
         try {
             const resp = await fetch('/api/domains');
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const domains = await resp.json();
 
             if (!domains.length) {
-                container.innerHTML = '<div style="padding:.5rem; color:#f59e0b; font-size:.78rem;">未发现数据域</div>';
+                container.innerHTML = '<span class="domain-filter-label"><i class="bi bi-funnel"></i> 数据域</span><span style="color:#f59e0b;font-size:.8rem;">未发现数据域</span>';
                 return;
             }
 
             allDomainCodes = domains.map(d => d.code);
-            selectedDomains = [...allDomainCodes]; // 初始选全部
+            selectedDomains = [...allDomainCodes];
 
-            let html = `<label class="domain-item" style="border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:.35rem;padding-bottom:.55rem">
-                <input type="checkbox" id="domainAll" checked onchange="toggleAllDomains(this.checked)">
-                <span style="font-weight:600;color:#e2e8f0">全部域</span>
-            </label>`;
+            let html = '<span class="domain-filter-label"><i class="bi bi-funnel"></i> 数据域</span>';
+            html += '<div class="domain-segmented">';
+            html += `<button class="domain-chip active" id="chipAll" onclick="selectDomain(null)">
+                <i class="bi bi-collection"></i>全部
+                <span class="chip-count">${domains.length}</span>
+            </button>`;
             html += domains.map(d => `
-                <label class="domain-item">
-                    <input type="checkbox" class="domain-cb" value="${esc(d.code)}" checked onchange="toggleDomain()">
-                    <span>${esc(d.name)}</span>
-                    <span class="domain-badge">${d.files?.length || 0}</span>
-                </label>
+                <button class="domain-chip" data-domain="${esc(d.code)}" onclick="selectDomain('${esc(d.code)}')">
+                    ${esc(d.name)}
+                    <span class="chip-count">${d.files?.length || 0}</span>
+                </button>
             `).join('');
+            html += '</div>';
             container.innerHTML = html;
 
             loadObjects();
         } catch(e) {
-            container.innerHTML = '<div style="padding:.5rem; color:#ef4444; font-size:.78rem;">加载失败</div>';
+            container.innerHTML = '<span class="domain-filter-label"><i class="bi bi-funnel"></i> 数据域</span><span style="color:#ef4444;font-size:.8rem;">加载失败</span>';
             loadObjects();
         }
     }
 
-    function toggleAllDomains(checked) {
-        document.querySelectorAll('.domain-cb').forEach(cb => cb.checked = checked);
-        selectedDomains = checked ? [...allDomainCodes] : [];
+    function selectDomain(code) {
+        // code=null 表示"全部"；否则单选该域
+        selectedDomains = code === null ? [...allDomainCodes] : [code];
+        syncDomainChips();
         selectedObjectCode = null;
         document.getElementById('section-relations')?.classList.remove('active');
         loadObjects();
     }
 
-    function toggleDomain() {
-        const cbs = document.querySelectorAll('.domain-cb');
-        selectedDomains = Array.from(cbs).filter(cb => cb.checked).map(cb => cb.value);
-        // 同步"全部"复选框状态
-        const allCb = document.getElementById('domainAll');
-        if (allCb) allCb.checked = selectedDomains.length === allDomainCodes.length;
-        selectedObjectCode = null;
-        document.getElementById('section-relations')?.classList.remove('active');
-        loadObjects();
+    function syncDomainChips() {
+        const isAll = selectedDomains.length === allDomainCodes.length;
+        document.querySelectorAll('.domain-chip[data-domain]').forEach(chip => {
+            const code = chip.getAttribute('data-domain');
+            chip.classList.toggle('active', !isAll && selectedDomains.includes(code));
+        });
+        const allChip = document.getElementById('chipAll');
+        if (allChip) allChip.classList.toggle('active', isAll);
     }
 
     function getDomainParam() {
@@ -1668,7 +1801,7 @@
             var result = expr.result_sample;
 
             var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);" onclick="if(event.target===this)this.remove();">';
-            html += '<div style="background:linear-gradient(180deg,#1e293b,#0f172a);border:1px solid rgba(99,102,241,.2);border-radius:16px;padding:28px;max-width:560px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.5);">';
+            html += '<div style="background:linear-gradient(180deg,#1e293b,#0f172a);border:1px solid rgba(37,144,255,.2);border-radius:16px;padding:28px;max-width:560px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.5);">';
             // 标题
             html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">';
             html += '<div style="font-size:1rem;font-weight:700;color:#e2e8f0;"><i class="bi bi-link-45deg" style="color:#f59e0b;"></i> 字段溯源</div>';
@@ -1681,7 +1814,7 @@
             if (result !== undefined) html += '<div style="font-size:.85rem;color:#10b981;margin-top:4px;">= ' + esc(String(result)) + '</div>';
             html += '</div>';
             // 公式
-            html += '<div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);border-radius:10px;padding:14px;margin-bottom:16px;text-align:center;">';
+            html += '<div style="background:rgba(37,144,255,.08);border:1px solid rgba(37,144,255,.15);border-radius:10px;padding:14px;margin-bottom:16px;text-align:center;">';
             html += '<div style="font-family:\'Geist Mono\',monospace;font-size:.88rem;color:#e2e8f0;font-weight:600;">' + esc(formula) + '</div>';
             html += '</div>';
             // 源字段流程
@@ -2155,76 +2288,134 @@
         conArr.forEach((c, i) => { const p = parentOf(c.name); if (!(p in objIdx)) objIdx[p] = i; });
         objArr.sort((a, b) => (objIdx[a.name] ?? 999) - (objIdx[b.name] ?? 999));
 
-        // ── Final nodes: objects + concepts + 2 aggregate blocks ──
-        const nodes = [
-            ...objArr.map(n => ({ name: n.name, depth: 0,
-                itemStyle: { color: '#6366f1', borderColor: '#4f46e5', borderWidth: 1 } })),
-            ...conArr.map(n => ({ name: n.name, depth: 1,
-                itemStyle: { color: '#818cf8', borderColor: '#6366f1', borderWidth: 0 } })),
-            { name: '逻辑实体层', depth: 2,
-              itemStyle: { color: '#10b981', borderColor: '#059669', borderWidth: 2 } }
-        ];
-
-        // ── Links: keep obj→concept, aggregate concept→logical ──
-        const links = [];
+        // ── Aggregate concept→logical 到逻辑实体（单汇聚节点，但显示"N个逻辑实体"标签） ──
         const conLogSum = {};
         let logicalTotal = 0;
+        const logicalSet = new Set();
 
         rawLinks.forEach(l => {
             const src = nodeMap[l.source];
             if (!src) return;
-            if (src.depth === 0) {
-                // object → concept: keep as-is
-                links.push({ source: l.source, target: l.target, value: l.value });
-            } else if (src.depth === 1) {
-                // concept → logical/*: aggregate into 逻辑实体层
+            if (src.depth === 1) {
                 conLogSum[l.source] = (conLogSum[l.source] || 0) + l.value;
                 logicalTotal += l.value;
+                logicalSet.add(l.target);
             }
         });
+        const logicalCount = logicalSet.size || Object.values(nodeMap).filter(n => n.depth === 2).length;
+        const logicalNodeLabel = `逻辑实体  ${logicalCount}`;
 
-        // concept → 逻辑实体层
+        // ── Final nodes ──
+        const nodes = [
+            ...objArr.map(n => ({
+                name: n.name, depth: 0, value: n.value,
+                itemStyle: { color: '#2590FF' }
+            })),
+            ...conArr.map(n => ({
+                name: n.name, depth: 1,
+                itemStyle: { color: '#5AA9FF' }
+            })),
+            {
+                name: logicalNodeLabel, depth: 2,
+                itemStyle: { color: '#10b981' }
+            }
+        ];
+
+        // ── Links ──
+        const links = [];
+        rawLinks.forEach(l => {
+            const src = nodeMap[l.source];
+            if (!src) return;
+            if (src.depth === 0) {
+                links.push({ source: l.source, target: l.target, value: l.value });
+            }
+        });
         Object.entries(conLogSum).forEach(([s, v]) => {
-            links.push({ source: s, target: '逻辑实体层', value: v });
+            links.push({ source: s, target: logicalNodeLabel, value: v });
         });
 
         // ── Dynamic height ──
         const rows = Math.max(objArr.length, conArr.length);
-        const h = Math.max(480, rows * 28 + 80);
+        const h = Math.max(520, rows * 30 + 120);
         document.getElementById('sankey-chart').style.height = h + 'px';
         sankeyChart.resize();
 
-        // ── Render ──
+        // ── Render (Linear/Vercel 风) ──
         sankeyChart.setOption({
             backgroundColor: 'transparent',
             tooltip: {
                 trigger: 'item', triggerOn: 'mousemove',
+                backgroundColor: 'rgba(15,23,42,.92)',
+                borderWidth: 0,
+                textStyle: { color: '#f1f5f9', fontSize: 12 },
+                padding: [8, 12],
                 formatter: p => {
-                    if (p.dataType === 'edge')
-                        return `${esc(p.data.source)} → ${esc(p.data.target)}<br/>关联: ${p.data.value}`;
-                    return esc(p.name);
+                    if (p.dataType === 'edge') {
+                        return `<div style="font-weight:600;margin-bottom:4px;color:#fff;">${esc(p.data.source)} <span style="color:#94a3b8;">→</span> ${esc(p.data.target)}</div>
+                                <div style="color:#cbd5e1;">关联强度 <b style="color:#fbbf24;">${p.data.value}</b></div>`;
+                    }
+                    return `<div style="font-weight:600;color:#fff;">${esc(p.name)}</div>`;
                 }
             },
             series: [{
                 type: 'sankey',
-                left: 40, right: 150, top: 20, bottom: 20,
-                emphasis: { focus: 'adjacency' },
-                nodeAlign: 'left', nodeGap: 10, nodeWidth: 18,
-                layoutIterations: 64,
-                data: nodes, links: links,
-                lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.3 },
-                label: { color: '#334155', fontSize: 11, fontWeight: 500,
-                         overflow: 'truncate', width: 180 },
+                left: 40, right: 100, top: 10, bottom: 10,
+                nodeAlign: 'left',
+                nodeGap: 12,
+                nodeWidth: 14,
+                layoutIterations: 128,
+                emphasis: {
+                    focus: 'adjacency',
+                    itemStyle: { shadowBlur: 10, shadowColor: 'rgba(37,144,255,.25)' },
+                    lineStyle: { opacity: 0.6 }
+                },
+                data: nodes,
+                links: links,
+                lineStyle: {
+                    color: 'gradient',
+                    curveness: 0.55,
+                    opacity: 0.25
+                },
+                label: {
+                    color: '#334155',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    overflow: 'truncate',
+                    width: 160
+                },
                 levels: [
-                    { depth: 0, itemStyle: { color: '#6366f1', borderWidth: 1 },
-                      lineStyle: { color: 'source', opacity: 0.25 },
-                      label: { fontSize: 12, fontWeight: 600, color: '#1e293b' } },
-                    { depth: 1, itemStyle: { color: '#818cf8', borderWidth: 0 },
-                      lineStyle: { color: 'source', opacity: 0.2 },
-                      label: { fontSize: 10.5, color: '#475569' } },
-                    { depth: 2, itemStyle: { color: '#10b981', borderWidth: 2, borderColor: '#059669' },
-                      lineStyle: { color: '#10b981', opacity: 0.15 },
-                      label: { fontSize: 14, fontWeight: 700, color: '#fff', position: 'inside' } }
+                    {
+                        depth: 0,
+                        itemStyle: { color: '#2590FF', borderColor: 'transparent', borderRadius: 3 },
+                        lineStyle: { color: 'source', opacity: 0.28 },
+                        label: { fontSize: 12.5, fontWeight: 600, color: '#1e293b', position: 'left',
+                                 distance: 8 }
+                    },
+                    {
+                        depth: 1,
+                        itemStyle: { color: '#5AA9FF', borderColor: 'transparent', borderRadius: 3 },
+                        lineStyle: { color: 'target', opacity: 0.18 },
+                        label: { fontSize: 10.5, fontWeight: 500, color: '#64748b' }
+                    },
+                    {
+                        depth: 2,
+                        itemStyle: { color: '#10b981', borderColor: 'transparent', borderRadius: 3 },
+                        lineStyle: { color: '#10b981', opacity: 0.2 },
+                        label: {
+                            fontSize: 13, fontWeight: 700, color: '#fff',
+                            position: 'inside',
+                            formatter: p => {
+                                const parts = p.name.split('  ');
+                                return parts.length > 1
+                                    ? `{name|${parts[0]}}\n{cnt|${parts[1]}}`
+                                    : p.name;
+                            },
+                            rich: {
+                                name: { color: '#fff', fontSize: 12, fontWeight: 600, lineHeight: 18 },
+                                cnt: { color: 'rgba(255,255,255,.85)', fontSize: 10, lineHeight: 14 }
+                            }
+                        }
+                    }
                 ]
             }]
         }, true);
@@ -2240,13 +2431,13 @@
         extractedObjects.forEach(obj => {
             const name = obj.object_name;
             if (!nodeSet.has(name)) {
-                nodes.push({ name, depth: 0, itemStyle: { color: '#6366f1', borderColor: '#4f46e5' } });
+                nodes.push({ name, depth: 0, itemStyle: { color: '#2590FF', borderColor: '#1A7AE0' } });
                 nodeSet.add(name);
             }
             const cc = obj.stats?.concept || 0, lc = obj.stats?.logical || 0;
             if (cc > 0) {
                 const cn = `概念实体(${name})`;
-                if (!nodeSet.has(cn)) { nodes.push({ name: cn, depth: 1, itemStyle: { color: '#818cf8' } }); nodeSet.add(cn); }
+                if (!nodeSet.has(cn)) { nodes.push({ name: cn, depth: 1, itemStyle: { color: '#5AA9FF' } }); nodeSet.add(cn); }
                 links.push({ source: name, target: cn, value: cc });
                 if (lc > 0) {
                     links.push({ source: cn, target: '逻辑实体层', value: lc });
@@ -2358,7 +2549,7 @@
     function showToast(message, type = 'info') {
         const container = document.getElementById('toastContainer');
         const icons = { success: 'bi-check-circle-fill', error: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
-        const colors = { success: '#10b981', error: '#ef4444', info: '#6366f1' };
+        const colors = { success: '#10b981', error: '#ef4444', info: '#2590FF' };
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.innerHTML = `<i class="bi ${icons[type]}" style="color:${colors[type]}"></i><span>${esc(message)}</span>`;
@@ -2407,7 +2598,7 @@
         }
 
         // 层级颜色配置
-        const categoryColors = ['#6366f1', '#818cf8', '#10b981', '#f59e0b'];
+        const categoryColors = ['#2590FF', '#5AA9FF', '#10b981', '#f59e0b'];
         const categoryLabels = ['抽取对象', '概念实体', '逻辑实体', '物理实体'];
         data.categories.forEach((c, i) => {
             c.itemStyle = { color: categoryColors[i], borderColor: '#fff', borderWidth: 1 };
@@ -2436,7 +2627,7 @@
                 n.symbolSize = Math.max(40, Math.min(60, edges * 1.5));
                 n.label = { show: true, fontSize: 13, fontWeight: 'bold', color: '#1e293b' };
                 n.itemStyle = { color: categoryColors[0], borderColor: '#fff', borderWidth: 3,
-                                shadowColor: 'rgba(99,102,241,0.4)', shadowBlur: 12 };
+                                shadowColor: 'rgba(37,144,255,0.4)', shadowBlur: 12 };
             } else if (cat === 1) {
                 // 概念实体 - 中等
                 n.symbolSize = Math.max(18, Math.min(32, edges * 3));
@@ -2553,7 +2744,7 @@
             xAxis: { type: 'category', data: names, axisLabel: { rotate: 30, fontSize: 10, color: '#94a3b8' } },
             yAxis: { type: 'value', axisLabel: { color: '#94a3b8' } },
             series: [
-                { name: '聚类大小', type: 'bar', data: clusterSizes, itemStyle: { color: '#6366f1' } },
+                { name: '聚类大小', type: 'bar', data: clusterSizes, itemStyle: { color: '#2590FF' } },
                 { name: '概念实体', type: 'bar', data: conceptCounts, itemStyle: { color: '#3b82f6' } },
                 { name: '逻辑实体', type: 'bar', data: logicalCounts, itemStyle: { color: '#10b981' } }
             ]
@@ -2895,7 +3086,7 @@
             const tdType = document.createElement('td');
             tdType.style.cssText = 'padding:6px;text-align:center;';
             const badge = document.createElement('span');
-            var badgeColor = c.match_type === 'EXACT_CODE' ? '#6366f1' : c.match_type === 'EXACT_NAME' ? '#3b82f6' : '#64748b';
+            var badgeColor = c.match_type === 'EXACT_CODE' ? '#2590FF' : c.match_type === 'EXACT_NAME' ? '#3b82f6' : '#64748b';
             badge.style.cssText = 'font-size:.72rem;padding:1px 6px;border-radius:3px;background:' + badgeColor + ';color:#fff;';
             badge.textContent = c.match_type;
             tdType.appendChild(badge);
@@ -3036,7 +3227,7 @@
         var filterVal = (document.getElementById('fieldPanoramaFilter') || {}).value || 'all';
         var stages = ['Planning','Design','Construction','Operation'];
         var stageLabels = {Planning:'规划',Design:'设计',Construction:'建设',Operation:'运行'};
-        var stageColors = {Planning:'#6366f1',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b'};
+        var stageColors = {Planning:'#2590FF',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b'};
 
         // 收集所有阶段的全部字段
         var stageMap = {};
@@ -3134,7 +3325,7 @@
                         + esc(grp) + ' <span style="color:var(--text-muted);font-weight:400;">('+fields.length+')</span></div>';
                     html += '<div style="display:flex;flex-wrap:wrap;gap:3px;">';
                     fields.slice(0, 8).forEach(function(f) {
-                        html += '<span style="font-size:.68rem;padding:2px 7px;background:rgba(99,102,241,.08);border-radius:4px;color:#94a3b8;">' + esc(f.name.replace('信息','').trim()) + '</span>';
+                        html += '<span style="font-size:.68rem;padding:2px 7px;background:rgba(37,144,255,.08);border-radius:4px;color:#94a3b8;">' + esc(f.name.replace('信息','').trim()) + '</span>';
                     });
                     if (fields.length > 8) {
                         html += '<span style="font-size:.68rem;padding:2px 7px;color:#64748b;">+' + (fields.length-8) + '</span>';
@@ -3175,7 +3366,7 @@
         var ganttContainer = document.getElementById('lifecycleGantt');
         var stages = ['Planning','Design','Construction','Operation'];
         var stageLabels = {Planning:'规划',Design:'设计',Construction:'建设',Operation:'运行'};
-        var stageColors = {Planning:'#6366f1',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b'};
+        var stageColors = {Planning:'#2590FF',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b'};
         var obj = extractedObjects.find(function(o){return o.object_code===objectCode;});
         var objName = obj ? obj.object_name : objectCode;
         var activeStages = new Set(lifecycle.map(function(l){return l.lifecycle_stage;}));
@@ -3220,7 +3411,7 @@
         } else {
             html += '<div style="margin-top:24px;">';
             lifecycle.forEach(function(l, i) {
-                var color = stageColors[l.lifecycle_stage] || '#6366f1';
+                var color = stageColors[l.lifecycle_stage] || '#2590FF';
                 var days = l.stage_exited_at ? calcDaysBetween(l.stage_entered_at, l.stage_exited_at) : calcDaysBetween(l.stage_entered_at, new Date().toISOString());
                 var daysLabel = days !== null ? (l.stage_exited_at ? days+'天' : days+'天（进行中）') : '';
 
@@ -3370,7 +3561,7 @@
             categories.push(label);
             var start = new Date(l.stage_entered_at).getTime();
             var end = l.stage_exited_at ? new Date(l.stage_exited_at).getTime() : now.getTime();
-            barData.push({ value: [categories.length-1, start, end], itemStyle: {color: stageColors[l.lifecycle_stage]||'#6366f1'} });
+            barData.push({ value: [categories.length-1, start, end], itemStyle: {color: stageColors[l.lifecycle_stage]||'#2590FF'} });
         });
         if (typeof echarts !== 'undefined') {
             var chart = echarts.init(document.getElementById('ganttChart'));
@@ -3411,7 +3602,7 @@
     }
 
     function renderLifecycleCompare(data) {
-        var stageColors = {Planning:'#6366f1',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b'};
+        var stageColors = {Planning:'#2590FF',Design:'#3b82f6',Construction:'#10b981',Operation:'#f59e0b'};
         var stageLabels = {Planning:'规划',Design:'设计',Construction:'建设',Operation:'运行'};
         var stageOrder = ['Planning','Design','Construction','Operation'];
         var objects = data.objects || [];
@@ -3522,7 +3713,7 @@
                 var srcName = objNames[s.object] || s.object;
                 var opColor = opColors[s.operator] || '#94a3b8';
                 flowHtml += '<div style="display:flex;align-items:center;gap:6px;">';
-                flowHtml += '<div style="flex:1;padding:4px 8px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:4px;font-size:.72rem;text-align:center;">';
+                flowHtml += '<div style="flex:1;padding:4px 8px;background:rgba(37,144,255,.08);border:1px solid rgba(37,144,255,.2);border-radius:4px;font-size:.72rem;text-align:center;">';
                 flowHtml += '<span style="color:var(--text-muted);">' + esc(srcName) + '.</span><span style="font-weight:600;color:var(--text-main);">' + esc(s.field) + '</span>';
                 if (s.sample_value !== undefined) flowHtml += '<div style="font-size:.65rem;color:var(--text-muted);">' + esc(String(s.sample_value)) + '</div>';
                 flowHtml += '</div>';
@@ -3554,11 +3745,11 @@
             return;
         }
 
-        const typeColors = {'FINANCIAL':'#ef4444','PROCUREMENT':'#3b82f6','CONSTRUCTION':'#10b981','CUSTOM':'#6366f1'};
+        const typeColors = {'FINANCIAL':'#ef4444','PROCUREMENT':'#3b82f6','CONSTRUCTION':'#10b981','CUSTOM':'#2590FF'};
         const typeLabels = {'FINANCIAL':'财务','PROCUREMENT':'采购','CONSTRUCTION':'建设','CUSTOM':'自定义'};
 
         container.innerHTML = chains.map(c => {
-            const color = typeColors[c.chain_type] || '#6366f1';
+            const color = typeColors[c.chain_type] || '#2590FF';
             return `<div style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;cursor:pointer;transition:var(--transition);border-left:3px solid ${color};"
                          onmouseover="this.style.boxShadow='var(--shadow)'" onmouseout="this.style.boxShadow='none'"
                          onclick="loadChainDetail(${c.chain_id})">
@@ -3605,7 +3796,7 @@
         // 节点流程图
         html += '<div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:16px 0;">';
         nodes.forEach((node, idx) => {
-            const color = typeColors[node.node_type] || '#6366f1';
+            const color = typeColors[node.node_type] || '#2590FF';
             const layerColor = layerColors[node.entity_layer] || '#94a3b8';
 
             html += `<div style="text-align:center;min-width:120px;flex-shrink:0;">`;
@@ -3714,15 +3905,24 @@
     };
 
     async function loadRelationRules() {
-        document.getElementById('section-relation-rules').style.display = 'block';
+        const section = document.getElementById('section-relation-rules');
+        section.style.display = 'block';
+        // 强制浏览器 reflow，确保容器拥有非零尺寸后再 init ECharts
+        void section.offsetHeight;
         try {
             const res = await fetch('/api/olm/relation-rules');
             const data = await res.json();
             allRelationRules = data.rules || [];
             renderRelationRuleList(allRelationRules);
-            loadRelationRuleGraph();
         } catch(e) {
-            document.getElementById('relationRuleList').innerHTML = '<div class="empty-state"><p>加载失败</p></div>';
+            console.error('加载关系规则列表失败', e);
+            const list = document.getElementById('relationRuleList');
+            if (list) list.innerHTML = '<div class="empty-state"><p>加载失败：' + (e.message || e) + '</p></div>';
+        }
+        try {
+            await loadRelationRuleGraph();
+        } catch(e) {
+            console.error('加载关系规则图谱失败', e);
         }
     }
 
@@ -3732,6 +3932,34 @@
         event.target.closest('.filter-tab').classList.add('active');
         const filtered = cat === 'ALL' ? allRelationRules : allRelationRules.filter(r => r.rule_category === cat);
         renderRelationRuleList(filtered);
+        // 同步过滤图谱
+        filterRelationRuleGraph(cat);
+    }
+
+    function filterRelationRuleGraph(cat) {
+        const dom = document.getElementById('relationRuleGraph');
+        const inst = echarts.getInstanceByDom(dom);
+        if (!inst) return;
+        const opt = inst.getOption();
+        const allLinks = inst._fullLinks || opt.series[0].links.slice();
+        if (!inst._fullLinks) inst._fullLinks = allLinks;
+        const allNodes = inst._fullNodes || opt.series[0].data.slice();
+        if (!inst._fullNodes) inst._fullNodes = allNodes;
+
+        let links, nodes;
+        if (cat === 'ALL') {
+            links = allLinks.slice();
+            nodes = allNodes.slice();
+        } else {
+            links = allLinks.filter(l => l.rule_category === cat);
+            // 仅保留被过滤后 links 涉及的节点
+            const used = new Set();
+            links.forEach(l => { used.add(l.source); used.add(l.target); });
+            nodes = allNodes.filter(n => used.has(n.id));
+        }
+        inst.setOption({
+            series: [{data: nodes, links: links}]
+        });
     }
 
     function renderRelationRuleList(rules) {
@@ -3913,7 +4141,13 @@
 
     function renderRelationRuleGraph(data) {
         const dom = document.getElementById('relationRuleGraph');
-        const chart = echarts.init(dom);
+        if (!dom) return;
+        // 若容器尺寸为 0（section 刚 display:block 未 reflow），强制补齐 inline 尺寸
+        if (dom.offsetWidth === 0) dom.style.width = '100%';
+        if (dom.offsetHeight === 0) dom.style.height = '420px';
+        // 复用已有实例避免重复初始化（也避免残留旧配置）
+        let chart = echarts.getInstanceByDom(dom);
+        if (!chart) chart = echarts.init(dom);
         const option = {
             tooltip: {
                 trigger: 'item',
@@ -3935,22 +4169,27 @@
                 layout: 'force',
                 roam: true,
                 draggable: true,
-                label: {show: true, fontSize: 12, fontWeight: 'bold'},
+                categories: data.categories || [],
+                label: {show: true, position: 'right', fontSize: 12, fontWeight: 'bold', color: '#1e293b'},
                 edgeLabel: {show: true, fontSize: 9, formatter: p => p.data.value || '',
                     backgroundColor: 'rgba(255,255,255,0.85)', padding: [2, 6], borderRadius: 3},
                 edgeSymbol: ['none', 'arrow'],
                 edgeSymbolSize: [0, 10],
-                force: {repulsion: 300, edgeLength: [120, 200], gravity: 0.1},
+                force: {repulsion: 500, edgeLength: [140, 220], gravity: 0.1, layoutAnimation: true},
                 data: (data.nodes || []).map(n => ({
                     ...n,
-                    itemStyle: {color: '#6366f1', borderColor: '#fff', borderWidth: 2},
-                    label: {color: '#1e293b'}
+                    symbolSize: n.symbolSize || 40,
+                    itemStyle: {borderColor: '#fff', borderWidth: 2}
                 })),
                 links: (data.links || []).map(l => ({...l})),
                 lineStyle: {curveness: 0.2}
             }]
         };
-        chart.setOption(option);
+        chart.setOption(option, true);
+        // 双保险：初次渲染时容器尺寸可能还在 reflow 途中，延迟两次 resize
+        setTimeout(() => chart.resize(), 50);
+        setTimeout(() => chart.resize(), 300);
+        chart.off('click');
         chart.on('click', function(params) {
             if (params.dataType === 'edge' && params.data.rule_id) {
                 showRuleDetail(params.data.rule_id);
@@ -4088,7 +4327,7 @@
 
         const typeColors = {'THRESHOLD':'#ef4444','FORMULA':'#3b82f6','RULE':'#f59e0b','VALIDATION':'#10b981'};
         const typeLabels = {'THRESHOLD':'阈值检查','FORMULA':'计算公式','RULE':'条件规则','VALIDATION':'数据校验'};
-        const sevColors = {'CRITICAL':'#dc2626','WARNING':'#f59e0b','INFO':'#6366f1'};
+        const sevColors = {'CRITICAL':'#dc2626','WARNING':'#f59e0b','INFO':'#2590FF'};
 
         let html = '<table style="width:100%;font-size:.82rem;border-collapse:collapse;">';
         html += '<thead><tr style="border-bottom:2px solid var(--border);background:var(--bg-body);">';
@@ -4101,8 +4340,8 @@
         html += '</tr></thead><tbody>';
 
         funcs.forEach(f => {
-            const typeColor = typeColors[f.func_type] || '#6366f1';
-            const sevColor = sevColors[f.severity] || '#6366f1';
+            const typeColor = typeColors[f.func_type] || '#2590FF';
+            const sevColor = sevColors[f.severity] || '#2590FF';
             html += `<tr style="border-bottom:1px solid var(--border);">`;
             html += `<td style="padding:10px 14px;"><div style="font-weight:600;">${esc(f.func_name)}</div><div style="font-size:.72rem;color:var(--text-muted);">${esc(f.func_code)}</div></td>`;
             html += `<td style="text-align:center;padding:10px;"><span style="font-size:.72rem;padding:2px 8px;border-radius:4px;background:${typeColor}15;color:${typeColor};font-weight:500;">${esc(typeLabels[f.func_type] || f.func_type)}</span></td>`;
@@ -4343,12 +4582,12 @@
             return;
         }
 
-        const levelColors = {'CRITICAL':'#dc2626','WARNING':'#f59e0b','INFO':'#6366f1'};
+        const levelColors = {'CRITICAL':'#dc2626','WARNING':'#f59e0b','INFO':'#2590FF'};
         const levelIcons = {'CRITICAL':'bi-exclamation-octagon-fill','WARNING':'bi-exclamation-triangle-fill','INFO':'bi-info-circle-fill'};
 
         let html = '';
         alerts.forEach(a => {
-            const color = levelColors[a.alert_level] || '#6366f1';
+            const color = levelColors[a.alert_level] || '#2590FF';
             const icon = levelIcons[a.alert_level] || 'bi-bell';
             html += `<div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;${a.is_resolved?'opacity:.6;':''}">`;
             html += `<i class="bi ${icon}" style="color:${color};font-size:1.2rem;margin-top:2px;flex-shrink:0;"></i>`;
@@ -4493,12 +4732,12 @@
         }
 
         const typeLabels = {'MISSING_LAYER':'层级缺失','WEAK_RELATION':'弱关联','NO_ATTRIBUTES':'属性缺失'};
-        const sevColors = {'WARNING':'#f59e0b','INFO':'#6366f1','CRITICAL':'#ef4444'};
+        const sevColors = {'WARNING':'#f59e0b','INFO':'#2590FF','CRITICAL':'#ef4444'};
         const sevIcons = {'WARNING':'bi-exclamation-triangle-fill','INFO':'bi-info-circle-fill','CRITICAL':'bi-exclamation-octagon-fill'};
 
         let html = '';
         defects.forEach(d => {
-            const color = sevColors[d.severity] || '#6366f1';
+            const color = sevColors[d.severity] || '#2590FF';
             const icon = sevIcons[d.severity] || 'bi-info-circle';
             const typeLabel = typeLabels[d.defect_type] || d.defect_type;
             html += `<div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">`;
@@ -4713,17 +4952,17 @@
     #htapFloat .htap-toggle {
         width:56px; height:56px; border-radius:16px; border:none; cursor:pointer;
         background:linear-gradient(135deg,#1e293b 0%,#334155 100%);
-        box-shadow:0 4px 24px rgba(0,0,0,.25), 0 0 0 1px rgba(99,102,241,.2);
+        box-shadow:0 4px 24px rgba(0,0,0,.25), 0 0 0 1px rgba(37,144,255,.2);
         display:flex; flex-direction:column; align-items:center; justify-content:center;
         transition:all .2s; color:#e2e8f0; gap:1px;
     }
-    #htapFloat .htap-toggle:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(99,102,241,.3), 0 0 0 1px rgba(99,102,241,.4); }
+    #htapFloat .htap-toggle:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(37,144,255,.3), 0 0 0 1px rgba(37,144,255,.4); }
     #htapFloat .htap-toggle i { font-size:1.1rem; color:#f59e0b; }
     #htapFloat .htap-toggle .htap-counts { font-size:.6rem; font-weight:700; letter-spacing:.5px; color:#94a3b8; }
     #htapFloat .htap-panel {
         position:absolute; bottom:68px; right:0; width:380px;
         background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);
-        border:1px solid rgba(99,102,241,.15); border-radius:16px;
+        border:1px solid rgba(37,144,255,.15); border-radius:16px;
         box-shadow:0 20px 60px rgba(0,0,0,.4); overflow:hidden;
         transform:scale(.95) translateY(10px); opacity:0; pointer-events:none;
         transition:all .25s cubic-bezier(.4,0,.2,1);
@@ -4732,7 +4971,7 @@
     #htapFloat .htap-header {
         padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
         border-bottom:1px solid rgba(255,255,255,.06);
-        background:rgba(99,102,241,.06);
+        background:rgba(37,144,255,.06);
     }
     #htapFloat .htap-header h4 { margin:0; font-size:.85rem; color:#e2e8f0; font-weight:600; display:flex; align-items:center; gap:6px; }
     #htapFloat .htap-header .htap-close { background:none; border:none; color:#64748b; cursor:pointer; font-size:1rem; padding:2px; border-radius:4px; }
@@ -4787,10 +5026,10 @@
                 <div id="htapBarAp" style="background:linear-gradient(90deg,#f59e0b,#fbbf24);width:50%;"></div>
             </div>
             <div class="htap-charts">
-                <div class="htap-chart-box"><div class="chart-title"><i class="bi bi-pie-chart-fill" style="color:#6366f1;"></i> 负载分布</div><div id="htapPieChart" style="width:100%;height:160px;"></div></div>
+                <div class="htap-chart-box"><div class="chart-title"><i class="bi bi-pie-chart-fill" style="color:#2590FF;"></i> 负载分布</div><div id="htapPieChart" style="width:100%;height:160px;"></div></div>
                 <div class="htap-chart-box"><div class="chart-title"><i class="bi bi-graph-up" style="color:#10b981;"></i> 延迟对比</div><div id="htapLatencyChart" style="width:100%;height:160px;"></div></div>
             </div>
-            <div style="font-size:.72rem;color:#94a3b8;font-weight:600;margin-bottom:6px;"><i class="bi bi-journal-text" style="color:#6366f1;"></i> 最近操作</div>
+            <div style="font-size:.72rem;color:#94a3b8;font-weight:600;margin-bottom:6px;"><i class="bi bi-journal-text" style="color:#2590FF;"></i> 最近操作</div>
             <div class="htap-log" id="htapOpLog"></div>
         </div>
     </div>

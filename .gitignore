@@ -57,6 +57,9 @@ outputs/semantic_dedupe_gpu_full/*/*.pid
 dataset/*.xlsx
 dataset/*.csv
 
+# DATA 备份目录（ingest 脚本生成的覆盖前副本，冗余）
+DATA/_archive/backup_*/
+
 # Model cache
 models/
 *.bin

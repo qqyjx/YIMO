@@ -84,6 +84,7 @@ os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", MODEL_CACHE)
 
 # 数据域名称映射
 DOMAIN_NAMES = {
+    # DATA 子目录直接用中文作为 code，这里仅保留历史拼音 code 兼容映射
     "shupeidian": "输配电",
     "jicai": "计划财务",
     "yingxiao": "营销",
@@ -198,10 +199,10 @@ def home():
                     })
                     idx += 1
 
-        # 默认使用 v10.0 模板
-        v = request.args.get('v', '10.0')
+        # 默认使用 ontology 新版 Palantir 风格模板；?v=10.0 回退旧版
+        v = request.args.get('v', 'ontology')
         if not all(c.isalnum() or c == '.' for c in v):
-            v = '10.0'
+            v = 'ontology'
 
         template_name = f"{v}.html"
         # 使用 Jinja2 loader 检查模板是否存在
