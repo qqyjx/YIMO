@@ -1,0 +1,8 @@
+# 本地冒烟测试 profile: 用 MySQL 替代达梦,仅为了在 WSL 上跑通链路.
+# 正式环境必须切到 application-prod.yml (DM8).
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/eav_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: eav_user
+    password: eavpass123
+    driver-class-name: com.mysql.cj.jdbc.Driver

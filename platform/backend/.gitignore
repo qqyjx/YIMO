@@ -1,0 +1,13 @@
+target/
+.mvn/
+*.class
+*.jar
+!src/main/resources/*.jar
+.idea/
+*.iml
+.vscode/
+logs/
+*.log
+HELP.md
+mvnw
+mvnw.cmd

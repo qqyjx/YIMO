@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    container_name: twin-fusion-backend
+    environment:
+      PROFILE: prod
+      DM_HOST: ${DM_HOST:?must set}
+      DM_PORT: ${DM_PORT:-5236}
+      DM_SCHEMA: ${DM_SCHEMA:-TWIN_FUSION}
+      DM_USER: ${DM_USER:?must set}
+      DM_PASSWORD: ${DM_PASSWORD:?must set}
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    volumes:
+      - ../../DATA:/data:ro
+    networks: [twin-net]
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+    container_name: twin-fusion-frontend
+    ports:
+      - "80:80"
+    depends_on: [backend]
+    restart: unless-stopped
+    networks: [twin-net]
+
+networks:
+  twin-net:
+    driver: bridge

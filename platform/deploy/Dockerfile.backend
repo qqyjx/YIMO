@@ -1,0 +1,23 @@
+# 后端构建镜像 - 基于 eclipse-temurin (南网内部若有私有基础镜像则替换)
+FROM eclipse-temurin:17-jdk-jammy AS builder
+WORKDIR /build
+COPY backend/pom.xml .
+COPY backend/src ./src
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -q -DskipTests package
+
+FROM eclipse-temurin:17-jre-jammy
+ENV TZ=Asia/Shanghai \
+    JAVA_OPTS="-server -Xms512m -Xmx1024m -XX:+UseG1GC" \
+    PROFILE=prod
+WORKDIR /app
+COPY --from=builder /build/target/twin-fusion-platform.jar app.jar
+
+# 达梦 JDBC 驱动需要由南网交付环境提供, 构建时放入 lib/
+# COPY deploy/lib/DmJdbcDriver18-8.1.3.62.jar /app/lib/
+# 启动时追加 -Dloader.path=/app/lib
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -fsS http://localhost:8080/api/v1/health || exit 1
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar --spring.profiles.active=$PROFILE"]

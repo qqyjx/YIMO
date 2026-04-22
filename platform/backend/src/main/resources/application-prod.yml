@@ -1,0 +1,20 @@
+# 南方电网正式/测试环境 profile (达梦 DM8)
+# 所有敏感项从环境变量读取,不入 git.
+spring:
+  datasource:
+    url: jdbc:dm://${DM_HOST}:${DM_PORT:5236}/${DM_SCHEMA:TWIN_FUSION}
+    username: ${DM_USER}
+    password: ${DM_PASSWORD}
+    driver-class-name: dm.jdbc.driver.DmDriver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+mybatis-plus:
+  configuration:
+    # 达梦方言 (MyBatis-Plus 3.5.5+ 已内建)
+    jdbc-type-for-null: NULL
