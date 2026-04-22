@@ -17,6 +17,12 @@ services:
     restart: unless-stopped
     volumes:
       - ../../DATA:/data:ro
+      - ../../outputs:/outputs:ro
+    # 研发环境 32C/64G, 后端/前端/算法三个容器分配, 后端占 8C/8G
+    deploy:
+      resources:
+        limits: { cpus: "8", memory: 8G }
+        reservations: { cpus: "2", memory: 2G }
     networks: [twin-net]
 
   frontend:
