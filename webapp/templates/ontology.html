@@ -857,14 +857,22 @@ async function loadEntityWorkspace(layer) {
     list.innerHTML = '<div class="empty-state"><i class="bi bi-hourglass"></i><p>加载中…</p></div>';
     try {
         const r = await fetch('/api/olm/search-entities?layer=' + layer + '&limit=500');
+        if (!r.ok) throw new Error('http ' + r.status);
         const d = await r.json();
-        const rows = d.entities || d || [];
-        list.innerHTML = rows.map(e => `
+        const rows = d.results || d.entities || [];
+        // 相同 entity_name 在多个对象下会重复出现, 这里按名称去重
+        const seen = new Set();
+        const unique = rows.filter(e => {
+            const k = (e.entity_name || '') + '|' + (e.data_domain || '');
+            if (seen.has(k)) return false;
+            seen.add(k); return true;
+        });
+        list.innerHTML = unique.map(e => `
             <div class="object-item obj-t-CORE">
                 <div class="object-icon">${esc((e.entity_name||'?').charAt(0))}</div>
                 <div class="object-meta">
                     <div class="object-name">${esc(e.entity_name)}</div>
-                    <div class="object-sub">${esc(e.data_domain||'-')} · 关联 ${e.relation_count||0}</div>
+                    <div class="object-sub">${esc(e.data_domain || e.object_name || '-')}</div>
                 </div>
             </div>
         `).join('') || '<div class="empty-state"><p>无数据</p></div>';

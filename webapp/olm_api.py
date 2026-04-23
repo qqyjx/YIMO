@@ -2301,23 +2301,26 @@ def api_search_entities():
         limit (int): 返回上限，默认30，最大100
     """
     query = request.args.get('q', '').strip()
-    if not query:
-        return jsonify({'error': 'q parameter is required', 'results': []}), 400
-
     layer = request.args.get('layer', '').strip().upper()
     domain = request.args.get('domain', '').strip()
-    limit = min(int(request.args.get('limit', '30')), 100)
+    limit = min(int(request.args.get('limit', '500')), 500)
+
+    # q 可选: 仅当 q/layer/domain 三者均为空时才拒绝 (避免返回全库)
+    if not query and not layer and not domain:
+        return jsonify({'error': 'at least one of q/layer/domain is required', 'results': []}), 400
 
     if layer and layer not in ('CONCEPT', 'LOGICAL', 'PHYSICAL'):
         return jsonify({'error': 'layer must be concept, logical, or physical', 'results': []}), 400
 
     if is_db_available():
         try:
-            like_q = f'%{query}%'
-
             # 构建动态 WHERE 条件
-            conditions = ["r.entity_name LIKE %s"]
-            params = [like_q]
+            conditions = []
+            params = []
+
+            if query:
+                conditions.append("r.entity_name LIKE %s")
+                params.append(f'%{query}%')
 
             if layer:
                 conditions.append("r.entity_layer = %s")
@@ -2329,7 +2332,7 @@ def api_search_entities():
 
             params.append(limit)
 
-            where_clause = " AND ".join(conditions)
+            where_clause = " AND ".join(conditions) if conditions else "1=1"
             result = execute_query(f"""
                 SELECT DISTINCT r.entity_name, r.entity_layer,
                        o.object_code, o.object_name, r.relation_strength
