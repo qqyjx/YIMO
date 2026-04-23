@@ -675,9 +675,37 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <h1>孪生体融合框架</h1>
-            <p>多维数据融合 &middot; 对象管理平台</p>
+            <h1 id="sbBrandTitle">孪生体融合框架</h1>
+            <p id="sbBrandSub">多维数据融合 &middot; 对象管理平台</p>
+            <button class="btn btn-outline" style="margin-top:8px;font-size:12px;padding:4px 10px;" onclick="toggleBrand()" title="任务书名 / YIMO 原版 一键切换">
+                <i class="bi bi-tag"></i>
+                <span id="sbBrandBtnLabel">切到 YIMO 原版</span>
+            </button>
         </div>
+        <script>
+        const BRAND_PRESETS = {
+            task: { title: '孪生体融合框架', sub: '多维数据融合 · 对象管理平台',
+                    docTitle: '支撑孪生体新范式多维数据融合分析框架原型系统', btnLabel: '切到 YIMO 原版' },
+            yimo: { title: 'YIMO', sub: '一模到底 · 对象管理平台',
+                    docTitle: 'YIMO | 对象抽取与三层架构关联', btnLabel: '切到任务书名' }
+        };
+        function applyBrand(mode) {
+            const p = BRAND_PRESETS[mode] || BRAND_PRESETS.task;
+            const t = document.getElementById('sbBrandTitle');
+            const s = document.getElementById('sbBrandSub');
+            const b = document.getElementById('sbBrandBtnLabel');
+            if (t) t.textContent = p.title;
+            if (s) s.textContent = p.sub;
+            if (b) b.textContent = p.btnLabel;
+            document.title = p.docTitle;
+            localStorage.setItem('brandMode', mode);
+        }
+        function toggleBrand() {
+            const cur = localStorage.getItem('brandMode') || 'task';
+            applyBrand(cur === 'task' ? 'yimo' : 'task');
+        }
+        document.addEventListener('DOMContentLoaded', () => applyBrand(localStorage.getItem('brandMode') || 'task'));
+        </script>
 
         <nav class="sidebar-nav">
             <div class="nav-item active" data-section="section-overview" onclick="scrollToSection('section-overview')">

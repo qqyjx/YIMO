@@ -321,9 +321,9 @@ a { color:inherit; text-decoration:none; }
 <!-- ============ Header ============ -->
 <header class="header">
     <div class="brand">
-        <span class="logo-dot">孪</span>
-        <span>孪生体融合框架</span>
-        <span class="brand-sub">多维数据融合分析原型系统</span>
+        <span class="logo-dot" id="brandLogo">孪</span>
+        <span id="brandTitle">孪生体融合框架</span>
+        <span class="brand-sub" id="brandSub">多维数据融合分析原型系统</span>
     </div>
     <div class="header-search">
         <i class="bi bi-search"></i>
@@ -331,10 +331,37 @@ a { color:inherit; text-decoration:none; }
     </div>
     <div class="header-actions">
         <button class="btn" onclick="refreshAll()"><i class="bi bi-arrow-clockwise"></i>刷新</button>
+        <button class="btn" onclick="toggleBrand()" id="btnBrand" title="任务书名 / YIMO 原版 一键切换"><i class="bi bi-tag"></i><span id="brandBtnLabel">YIMO 原版</span></button>
         <button class="btn" onclick="window.location.href='/?v=10.0'" title="切换旧版"><i class="bi bi-box-arrow-up-right"></i>旧版</button>
         <button class="btn btn-primary" onclick="openExtractModal()"><i class="bi bi-cpu"></i>执行抽取</button>
     </div>
 </header>
+
+<script>
+// 品牌切换: 在"任务书名(task)"和"YIMO 原成熟版(yimo)"间一键切
+// 切换只改 title + 左上 brand, 不动任何功能. 存 localStorage 刷新后保留.
+const BRAND_PRESETS = {
+    task: { logo: '孪', title: '孪生体融合框架', sub: '多维数据融合分析原型系统',
+            docTitle: '支撑孪生体新范式多维数据融合分析框架原型系统', btnLabel: '切到 YIMO' },
+    yimo: { logo: 'Y', title: 'YIMO', sub: '对象管理 · 企业数据平台',
+            docTitle: 'YIMO · 对象管理平台', btnLabel: '切到任务书名' }
+};
+function applyBrand(mode) {
+    const p = BRAND_PRESETS[mode] || BRAND_PRESETS.task;
+    document.getElementById('brandLogo').textContent = p.logo;
+    document.getElementById('brandTitle').textContent = p.title;
+    document.getElementById('brandSub').textContent = p.sub;
+    document.getElementById('brandBtnLabel').textContent = p.btnLabel;
+    document.title = p.docTitle;
+    localStorage.setItem('brandMode', mode);
+}
+function toggleBrand() {
+    const cur = localStorage.getItem('brandMode') || 'task';
+    applyBrand(cur === 'task' ? 'yimo' : 'task');
+}
+// 页面加载即应用已保存的选择
+applyBrand(localStorage.getItem('brandMode') || 'task');
+</script>
 
 <!-- ============ Workspace Switcher ============ -->
 <nav class="workspace-bar">
