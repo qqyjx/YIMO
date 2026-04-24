@@ -1072,10 +1072,11 @@ class SemanticClusterExtractor:
 class LLMObjectNamer:
     """大模型归纳命名器"""
 
-    def __init__(self, api_base: str = None, api_key: str = None, model: str = "deepseek-chat"):
+    def __init__(self, api_base: str = None, api_key: str = None, model: str = None):
         self.api_base = api_base or os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1")
         self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY", "")
-        self.model = model
+        # model 优先级: 显式参数 > 环境变量 DEEPSEEK_MODEL > 默认 deepseek-v4
+        self.model = model or os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro")
 
     def name_clusters(self, clusters: List[Dict]) -> List[ExtractedObject]:
         """为每个聚类命名"""
@@ -2369,7 +2370,7 @@ class SemanticObjectExtractionPipeline:
 
                 # 获取实际读取的文件列表
                 source_files = self.excel_files or [f for f in os.listdir(self.data_dir) if f.endswith('.xlsx')]
-                batch_id = writer.create_batch(source_files, "deepseek-chat")
+                batch_id = writer.create_batch(source_files, os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro"))
                 object_ids = writer.write_objects(objects, batch_id)
                 rel_count = writer.write_relations(relations, object_ids)
                 writer.update_batch(batch_id, len(objects), rel_count)

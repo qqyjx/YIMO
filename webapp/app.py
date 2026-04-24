@@ -159,7 +159,11 @@ def build_rag_index(dataset_id: int) -> RagIndex:
 
 # =================== Deepseek API ===================
 
-def call_deepseek(messages: List[Dict[str, str]], model: str = "deepseek-chat") -> Dict[str, Any]:
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-pro")
+
+def call_deepseek(messages: List[Dict[str, str]], model: str = None) -> Dict[str, Any]:
+    if model is None:
+        model = DEEPSEEK_MODEL
     if not DEEPSEEK_API_KEY:
         return {"error": "DEEPSEEK_API_KEY not set"}
     headers = {
@@ -288,7 +292,7 @@ def api_attributes(dsid: int):
 def api_deepseek_chat():
     data = request.json or {}
     messages = data.get('messages', [])
-    model = data.get('model', 'deepseek-chat')
+    model = data.get('model', DEEPSEEK_MODEL)
     return jsonify(call_deepseek(messages, model))
 
 @app.route('/rag/query', methods=['POST'])
