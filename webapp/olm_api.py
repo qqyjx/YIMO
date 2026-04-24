@@ -464,6 +464,41 @@ def api_extracted_objects():
                     }
                     objects.append(row)
 
+                # DB 空但 JSON 文件存在 (新抽取尚未入库)时, 降级到 JSON 读取
+                if not objects and domains:
+                    json_union = []
+                    for d in domains:
+                        if (OUTPUTS_DIR / f'extraction_{d}.json').exists():
+                            json_union.extend(get_objects_from_json(d))
+                    if json_union:
+                        return jsonify({
+                            'objects': json_union, 'total': len(json_union),
+                            'domain': domain, 'source': 'json_file',
+                            'note': 'DB 无此域数据, 已回落到 outputs/extraction_*.json'
+                        })
+                elif not objects and not domains:
+                    # 无 domain 过滤时, DB 空 = 全部走 JSON 汇总
+                    import glob as _glob
+                    all_objs = []
+                    for jf in sorted(_glob.glob(str(OUTPUTS_DIR / 'extraction_*.json'))):
+                        if jf.endswith('extraction_global.json'):
+                            continue
+                        try:
+                            with open(jf, 'r', encoding='utf-8') as _f:
+                                _d = json.load(_f)
+                            dom_name = _d.get('data_domain') or os.path.basename(jf).replace('extraction_', '').replace('.json', '')
+                            for _o in _d.get('objects', []):
+                                _o2 = dict(_o)
+                                _o2['data_domain'] = dom_name
+                                all_objs.append(_o2)
+                        except Exception:
+                            pass
+                    if all_objs:
+                        return jsonify({
+                            'objects': all_objs, 'total': len(all_objs),
+                            'domain': 'all', 'source': 'json_file_aggregate'
+                        })
+
                 # 补充 sample_entities（DB中不存此字段，从JSON获取）
                 _enrich_sample_entities(objects, domain)
 
@@ -1970,7 +2005,40 @@ def api_domain_stats():
                 for row in result:
                     if row.get('avg_relation_strength'):
                         row['avg_relation_strength'] = float(row['avg_relation_strength'])
-                return jsonify({'stats': result, 'total': len(result), 'source': 'database'})
+
+                # 扫 outputs/extraction_*.json 看是否比 DB 涵盖的域更多, 若是则合并
+                import glob as _glob_mod
+                db_domains = {r.get('data_domain') for r in result}
+                json_files = _glob_mod.glob(str(OUTPUTS_DIR / 'extraction_*.json'))
+                json_domains_extra = []
+                for jf in json_files:
+                    base = os.path.basename(jf)
+                    if base in ('extraction_global.json',):
+                        continue
+                    dom = base.replace('extraction_', '').replace('.json', '')
+                    if dom in db_domains:
+                        continue
+                    try:
+                        with open(jf, 'r', encoding='utf-8') as _f:
+                            _d = json.load(_f)
+                        json_domains_extra.append({
+                            'data_domain': dom,
+                            'object_count': len(_d.get('objects', [])),
+                            'relation_count': len(_d.get('relations', [])),
+                            'concept_entity_count': sum(1 for r in _d.get('relations', []) if r.get('entity_layer') == 'CONCEPT'),
+                            'logical_entity_count': sum(1 for r in _d.get('relations', []) if r.get('entity_layer') == 'LOGICAL'),
+                            'physical_entity_count': sum(1 for r in _d.get('relations', []) if r.get('entity_layer') == 'PHYSICAL'),
+                            'avg_relation_strength': 0.7,
+                            'source': 'json_file',
+                        })
+                    except Exception:
+                        pass
+                merged = list(result) + json_domains_extra
+                merged.sort(key=lambda r: -(r.get('object_count') or 0))
+                return jsonify({
+                    'stats': merged, 'total': len(merged),
+                    'source': 'database+json' if json_domains_extra else 'database',
+                })
         except Exception:
             pass
 
@@ -2035,6 +2103,80 @@ def api_cross_domain_duplicates():
     return jsonify({
         'duplicates': duplicates,
         'total': len(duplicates)
+    })
+
+
+# ============================================================================
+# 跨域融合 (组内 + 组间) API
+# ============================================================================
+
+def _load_global() -> dict:
+    """读取 outputs/extraction_global.json (跨域融合产物)."""
+    path = OUTPUTS_DIR / 'extraction_global.json'
+    if not path.exists():
+        return {}
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[WARN] 读取 extraction_global.json 失败: {e}")
+        return {}
+
+
+@olm_api.route('/api/olm/global-objects')
+def api_global_objects():
+    """跨域融合对象清单.
+    参数:
+        mode: literal(默认,字面对齐) | semantic(语义聚类) | both
+        cross_only: 1=只返回跨域组 (present_in_domains>=2)
+    """
+    mode = request.args.get('mode', 'literal')
+    cross_only = request.args.get('cross_only', '0') in ('1', 'true', 'yes')
+
+    g = _load_global()
+    if not g:
+        return jsonify({
+            'available': False,
+            'message': '请先运行 scripts/cross_domain_merge.py 生成 extraction_global.json'
+        }), 200
+
+    def filter_cross(groups):
+        return [x for x in groups if len(x.get('present_in_domains', [])) >= 2] \
+            if cross_only else groups
+
+    payload = {
+        'available': True,
+        'meta': g.get('meta', {}),
+        'domains': g.get('domains', []),
+    }
+    if mode in ('literal', 'both'):
+        payload['literal_groups'] = filter_cross(g.get('literal_groups', []))
+    if mode in ('semantic', 'both'):
+        payload['semantic_groups'] = filter_cross(g.get('semantic_groups', []))
+    return jsonify(payload)
+
+
+@olm_api.route('/api/olm/global-summary')
+def api_global_summary():
+    """跨域融合汇总卡片数据 (轻量, 仅 meta + 前 10 个跨域组)."""
+    g = _load_global()
+    if not g:
+        return jsonify({'available': False}), 200
+    lit = g.get('literal_groups', [])
+    sem = g.get('semantic_groups', [])
+    top_lit_cross = sorted(
+        [x for x in lit if len(x.get('present_in_domains', [])) >= 2],
+        key=lambda x: -len(x.get('present_in_domains', []))
+    )[:10]
+    top_sem_cross = sorted(
+        [x for x in sem if len(x.get('present_in_domains', [])) >= 2],
+        key=lambda x: -len(x.get('present_in_domains', []))
+    )[:10]
+    return jsonify({
+        'available': True,
+        'meta': g.get('meta', {}),
+        'top_literal_cross_domain': top_lit_cross,
+        'top_semantic_cross_domain': top_sem_cross,
     })
 
 

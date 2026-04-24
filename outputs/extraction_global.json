@@ -1,0 +1,6734 @@
+{
+  "meta": {
+    "built_at": "2026-04-24 14:37:52",
+    "sbert_model": "shibing624/text2vec-base-chinese",
+    "semantic_threshold": 0.15,
+    "total_domains": 22,
+    "total_local_objects": 135,
+    "total_relations": 125094,
+    "literal_group_count": 33,
+    "semantic_group_count": 125,
+    "cross_domain_literal_count": 20,
+    "cross_domain_ratio": 0.6061
+  },
+  "domains": [
+    "产业金融",
+    "人力资源",
+    "企业架构",
+    "供应链",
+    "党建",
+    "办公",
+    "国际业务",
+    "安全监管",
+    "审计",
+    "巡视",
+    "工会",
+    "市场营销",
+    "战略规划",
+    "政策研究",
+    "数字化",
+    "新兴业务",
+    "法规",
+    "科技创新",
+    "系统运行",
+    "纪检监察",
+    "计划财务",
+    "输配电"
+  ],
+  "local_objects": [
+    {
+      "domain": "产业金融",
+      "object_code": "OBJ_DOCUMENT",
+      "object_name": "文档",
+      "object_type": "AUXILIARY",
+      "description": "业务文档",
+      "cluster_size": 14,
+      "sample_entities": [
+        "财顾事件",
+        "企业事件",
+        "股票行情",
+        "指数行情",
+        "财顾信息"
+      ],
+      "concept_count": 14,
+      "logical_count": 31,
+      "physical_count": 0
+    },
+    {
+      "domain": "产业金融",
+      "object_code": "OBJ_业务完",
+      "object_name": "业务完",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：公司业务基本情况",
+      "cluster_size": 16,
+      "sample_entities": [
+        "金融需求",
+        "金融单位业务完成情况",
+        "管制单位业务完成情况",
+        "客户数量",
+        "公司业务基本情况"
+      ],
+      "concept_count": 16,
+      "logical_count": 33,
+      "physical_count": 0
+    },
+    {
+      "domain": "产业金融",
+      "object_code": "OBJ_TASK",
+      "object_name": "任务",
+      "object_type": "DERIVED",
+      "description": "工作任务",
+      "cluster_size": 9,
+      "sample_entities": [
+        "任务日志",
+        "任务文件",
+        "项目任务",
+        "任务执行人",
+        "任务调整申请"
+      ],
+      "concept_count": 9,
+      "logical_count": 19,
+      "physical_count": 0
+    },
+    {
+      "domain": "产业金融",
+      "object_code": "OBJ_SYSTEM",
+      "object_name": "系统",
+      "object_type": "AUXILIARY",
+      "description": "信息系统",
+      "cluster_size": 8,
+      "sample_entities": [
+        "交易对手",
+        "交割交易",
+        "合约",
+        "日常操作附件",
+        "上会记录"
+      ],
+      "concept_count": 8,
+      "logical_count": 18,
+      "physical_count": 0
+    },
+    {
+      "domain": "产业金融",
+      "object_code": "OBJ_PERSONNEL",
+      "object_name": "人员",
+      "object_type": "CORE",
+      "description": "相关人员",
+      "cluster_size": 7,
+      "sample_entities": [
+        "企业人员信息",
+        "投资信息",
+        "企业信息",
+        "人才信息",
+        "广告信息"
+      ],
+      "concept_count": 7,
+      "logical_count": 20,
+      "physical_count": 0
+    },
+    {
+      "domain": "产业金融",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 5,
+      "sample_entities": [
+        "项目信息",
+        "项目运作单位",
+        "项目阶段",
+        "公共指标信息",
+        "项目任务"
+      ],
+      "concept_count": 6,
+      "logical_count": 15,
+      "physical_count": 0
+    },
+    {
+      "domain": "人力资源",
+      "object_code": "OBJ_PERSONNEL",
+      "object_name": "人员",
+      "object_type": "CORE",
+      "description": "相关人员",
+      "cluster_size": 67,
+      "sample_entities": [
+        "培训业务评价管理信息",
+        "补偿赔偿信息",
+        "培训评价体系信息",
+        "员工绩效结果管理信息",
+        "培训评价课程管理信息"
+      ],
+      "concept_count": 67,
+      "logical_count": 2881,
+      "physical_count": 2881
+    },
+    {
+      "domain": "人力资源",
+      "object_code": "OBJ_CONTRACT",
+      "object_name": "合同",
+      "object_type": "CORE",
+      "description": "业务合同",
+      "cluster_size": 56,
+      "sample_entities": [
+        "人才工作站信息",
+        "人才工作目标责任制信息",
+        "人才信息",
+        "干部人事档案信息",
+        "招聘公告信息"
+      ],
+      "concept_count": 56,
+      "logical_count": 1014,
+      "physical_count": 1014
+    },
+    {
+      "domain": "人力资源",
+      "object_code": "OBJ_ASSET",
+      "object_name": "资产",
+      "object_type": "CORE",
+      "description": "固定资产",
+      "cluster_size": 34,
+      "sample_entities": [
+        "用户画像",
+        "个人信息",
+        "投资组合",
+        "银行账户信息",
+        "年金核算信息"
+      ],
+      "concept_count": 34,
+      "logical_count": 666,
+      "physical_count": 666
+    },
+    {
+      "domain": "人力资源",
+      "object_code": "OBJ_AUDIT",
+      "object_name": "监督",
+      "object_type": "AUXILIARY",
+      "description": "监督稽查",
+      "cluster_size": 10,
+      "sample_entities": [
+        "干部监督信息",
+        "干部选拔任用信息",
+        "干部基础信息",
+        "干部日常管理信息",
+        "领导班子信息"
+      ],
+      "concept_count": 10,
+      "logical_count": 439,
+      "physical_count": 439
+    },
+    {
+      "domain": "人力资源",
+      "object_code": "OBJ_VOUCHER",
+      "object_name": "票据",
+      "object_type": "AUXILIARY",
+      "description": "财务票据凭证",
+      "cluster_size": 9,
+      "sample_entities": [
+        "报账单据",
+        "账簿",
+        "财务对账信息",
+        "账套",
+        "凭证"
+      ],
+      "concept_count": 9,
+      "logical_count": 98,
+      "physical_count": 98
+    },
+    {
+      "domain": "人力资源",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 6,
+      "sample_entities": [
+        "知识向量化处理",
+        "问答对审核",
+        "问答对",
+        "多轮对话管理",
+        "综合查询方案"
+      ],
+      "concept_count": 6,
+      "logical_count": 8,
+      "physical_count": 8
+    },
+    {
+      "domain": "人力资源",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "核心对象：项目",
+      "cluster_size": 3,
+      "sample_entities": [
+        "人才+项目信息",
+        "培训项目管理信息",
+        "业务外委项目统计信息"
+      ],
+      "concept_count": 3,
+      "logical_count": 377,
+      "physical_count": 377
+    },
+    {
+      "domain": "企业架构",
+      "object_code": "OBJ_STANDARD",
+      "object_name": "标准",
+      "object_type": "AUXILIARY",
+      "description": "技术标准",
+      "cluster_size": 95,
+      "sample_entities": [
+        "管理标准制定信息",
+        "菜单管理",
+        "管理工具导入与设计信息",
+        "管理子体系设计信息",
+        "单据信息"
+      ],
+      "concept_count": 95,
+      "logical_count": 1594,
+      "physical_count": 1594
+    },
+    {
+      "domain": "企业架构",
+      "object_code": "OBJ_METRIC",
+      "object_name": "指标",
+      "object_type": "AUXILIARY",
+      "description": "业务指标",
+      "cluster_size": 50,
+      "sample_entities": [
+        "指标体系修订记录信息",
+        "指标体系信息",
+        "指标修订记录信息",
+        "指标制度文件信息",
+        "指标库信息"
+      ],
+      "concept_count": 50,
+      "logical_count": 109,
+      "physical_count": 109
+    },
+    {
+      "domain": "企业架构",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 20,
+      "sample_entities": [
+        "品牌规划信息",
+        "品牌管理信息",
+        "品牌架构运营评价信息",
+        "品牌计划信息",
+        "品牌建设评价信息"
+      ],
+      "concept_count": 20,
+      "logical_count": 154,
+      "physical_count": 154
+    },
+    {
+      "domain": "企业架构",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 6,
+      "sample_entities": [
+        "会议纪要审批单信息",
+        "申请单据信息",
+        "审查结果信息",
+        "变革项目详情信息",
+        "管理创新项目信息"
+      ],
+      "concept_count": 10,
+      "logical_count": 202,
+      "physical_count": 202
+    },
+    {
+      "domain": "企业架构",
+      "object_code": "OBJ_推荐信",
+      "object_name": "推荐信",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：知识推荐信息",
+      "cluster_size": 6,
+      "sample_entities": [
+        "知识推荐信息",
+        "知识解答信息",
+        "关键词信息",
+        "查询信息",
+        "个性化推荐信息"
+      ],
+      "concept_count": 6,
+      "logical_count": 7,
+      "physical_count": 7
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 235,
+      "sample_entities": [
+        "品控监造项目明细信息",
+        "品控监造文件资料",
+        "考试形式",
+        "视频信息",
+        "品控专项任务管理类型相关信息"
+      ],
+      "concept_count": 285,
+      "logical_count": 3281,
+      "physical_count": 3281
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_MATERIAL",
+      "object_name": "物资",
+      "object_type": "CORE",
+      "description": "工程物资",
+      "cluster_size": 150,
+      "sample_entities": [
+        "检储配出库信息",
+        "检储配仓库信息",
+        "中转库存到货单信息",
+        "检储配出库任务信息",
+        "检储配报废物资入库信息"
+      ],
+      "concept_count": 150,
+      "logical_count": 786,
+      "physical_count": 786
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_AUDIT",
+      "object_name": "监督",
+      "object_type": "AUXILIARY",
+      "description": "监督稽查",
+      "cluster_size": 53,
+      "sample_entities": [
+        "供应商服务问答",
+        "供应商信息",
+        "供应商账号问答",
+        "供应商信用问答",
+        "供应商管理问答"
+      ],
+      "concept_count": 161,
+      "logical_count": 2972,
+      "physical_count": 2972
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_TASK",
+      "object_name": "任务",
+      "object_type": "DERIVED",
+      "description": "工作任务",
+      "cluster_size": 43,
+      "sample_entities": [
+        "语音文件转换信息",
+        "语音平台信息",
+        "语音流程开发内容",
+        "智能语音转人工配置信息",
+        "语音流转换信息"
+      ],
+      "concept_count": 43,
+      "logical_count": 52,
+      "physical_count": 52
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_CONTRACT",
+      "object_name": "合同",
+      "object_type": "CORE",
+      "description": "业务合同",
+      "cluster_size": 55,
+      "sample_entities": [
+        "合同变更信息（供应商）",
+        "专家报销信息",
+        "合同变更协议信息",
+        "专家通知公告信息",
+        "专家调整申请信息"
+      ],
+      "concept_count": 51,
+      "logical_count": 285,
+      "physical_count": 285
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 27,
+      "sample_entities": [
+        "招标采购主题",
+        "招标采购主题分析",
+        "非招标采购过程信息",
+        "采购项目",
+        "招标过程信息"
+      ],
+      "concept_count": 140,
+      "logical_count": 3089,
+      "physical_count": 3089
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_METRIC",
+      "object_name": "指标",
+      "object_type": "AUXILIARY",
+      "description": "业务指标",
+      "cluster_size": 27,
+      "sample_entities": [
+        "问题类型信息",
+        "行贿及涉嫌行贿记录",
+        "常见问题类型分布信息",
+        "问题解决率统计信息",
+        "问题数量记录"
+      ],
+      "concept_count": 27,
+      "logical_count": 119,
+      "physical_count": 119
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_DOCUMENT",
+      "object_name": "文档",
+      "object_type": "AUXILIARY",
+      "description": "业务文档",
+      "cluster_size": 21,
+      "sample_entities": [
+        "账号管理信息",
+        "用户信息",
+        "账号信息",
+        "自定义报告",
+        "登录信息"
+      ],
+      "concept_count": 133,
+      "logical_count": 2441,
+      "physical_count": 2441
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_STANDARD",
+      "object_name": "标准",
+      "object_type": "AUXILIARY",
+      "description": "技术标准",
+      "cluster_size": 19,
+      "sample_entities": [
+        "履约评价单信息",
+        "技术规范信息",
+        "鉴权认证信息",
+        "评标报告",
+        "履约评价信息"
+      ],
+      "concept_count": 134,
+      "logical_count": 2539,
+      "physical_count": 2539
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_COST",
+      "object_name": "费用",
+      "object_type": "DERIVED",
+      "description": "费用成本",
+      "cluster_size": 11,
+      "sample_entities": [
+        "集成送线路停运及恢复信息",
+        "暂停付款信息",
+        "暂停付款信息（供应商）",
+        "集成变电站停运及恢复信息",
+        "集成用户停电及恢复信息"
+      ],
+      "concept_count": 124,
+      "logical_count": 2433,
+      "physical_count": 2433
+    },
+    {
+      "domain": "供应链",
+      "object_code": "OBJ_PERSONNEL",
+      "object_name": "人员",
+      "object_type": "CORE",
+      "description": "相关人员",
+      "cluster_size": 11,
+      "sample_entities": [
+        "值班人员管理",
+        "值排班管理",
+        "排队清单",
+        "值班电话",
+        "定时刷新"
+      ],
+      "concept_count": 126,
+      "logical_count": 2434,
+      "physical_count": 2434
+    },
+    {
+      "domain": "党建",
+      "object_code": "OBJ_ORGANIZATION",
+      "object_name": "组织",
+      "object_type": "CORE",
+      "description": "组织机构",
+      "cluster_size": 51,
+      "sample_entities": [
+        "民主评议党员信息",
+        "“南网青年跟党走”教育实践路线信息",
+        "团员组织关系转接信息管理",
+        "团籍信息管理",
+        "员工记功评选信息"
+      ],
+      "concept_count": 50,
+      "logical_count": 907,
+      "physical_count": 907
+    },
+    {
+      "domain": "党建",
+      "object_code": "OBJ_AUDIT",
+      "object_name": "监督",
+      "object_type": "AUXILIARY",
+      "description": "监督稽查",
+      "cluster_size": 18,
+      "sample_entities": [
+        "信息管理",
+        "渠道编发管理信息",
+        "经费管理信息",
+        "制度管理信息",
+        "荣誉项目库管理信息"
+      ],
+      "concept_count": 20,
+      "logical_count": 488,
+      "physical_count": 488
+    },
+    {
+      "domain": "党建",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 17,
+      "sample_entities": [
+        "新闻宣传信息",
+        "舆情信息",
+        "年度宣传主题及选题信息",
+        "宣传思想工作信息",
+        "记者专家库信息"
+      ],
+      "concept_count": 19,
+      "logical_count": 317,
+      "physical_count": 317
+    },
+    {
+      "domain": "党建",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "核心对象：项目",
+      "cluster_size": 1,
+      "sample_entities": [
+        "荣誉项目库管理信息"
+      ],
+      "concept_count": 1,
+      "logical_count": 47,
+      "physical_count": 47
+    },
+    {
+      "domain": "办公",
+      "object_code": "OBJ_PROCESS",
+      "object_name": "流程",
+      "object_type": "AUXILIARY",
+      "description": "业务流程",
+      "cluster_size": 379,
+      "sample_entities": [
+        "报表信息",
+        "用户操作日志表历基础信息",
+        "访客预约",
+        "待办基础信息",
+        "到访时段"
+      ],
+      "concept_count": 364,
+      "logical_count": 534,
+      "physical_count": 534
+    },
+    {
+      "domain": "办公",
+      "object_code": "OBJ_ORGANIZATION",
+      "object_name": "组织",
+      "object_type": "CORE",
+      "description": "组织机构",
+      "cluster_size": 78,
+      "sample_entities": [
+        "消防安全档案信息",
+        "便民设施",
+        "建（构）筑物隐患应急组织",
+        "消防安全风险评估及管控措施",
+        "建（构）筑物隐患应急制度管理"
+      ],
+      "concept_count": 78,
+      "logical_count": 153,
+      "physical_count": 153
+    },
+    {
+      "domain": "办公",
+      "object_code": "OBJ_ASSET",
+      "object_name": "资产",
+      "object_type": "CORE",
+      "description": "固定资产",
+      "cluster_size": 44,
+      "sample_entities": [
+        "周转房应收租金信息",
+        "周转房租用申请单",
+        "周转房入住人信息",
+        "周转房配租信息",
+        "周转房维修单"
+      ],
+      "concept_count": 44,
+      "logical_count": 129,
+      "physical_count": 129
+    },
+    {
+      "domain": "办公",
+      "object_code": "OBJ_TASK",
+      "object_name": "任务",
+      "object_type": "DERIVED",
+      "description": "工作任务",
+      "cluster_size": 26,
+      "sample_entities": [
+        "信访事项表",
+        "用户委托基础信息",
+        "监督指导信息",
+        "督办任务变更信息",
+        "督办任务信息"
+      ],
+      "concept_count": 26,
+      "logical_count": 41,
+      "physical_count": 41
+    },
+    {
+      "domain": "办公",
+      "object_code": "OBJ_基本信",
+      "object_name": "基本信",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：通知信息",
+      "cluster_size": 18,
+      "sample_entities": [
+        "图书借阅",
+        "通知信息",
+        "消息通知",
+        "公告",
+        "收文基本信息"
+      ],
+      "concept_count": 18,
+      "logical_count": 26,
+      "physical_count": 26
+    },
+    {
+      "domain": "办公",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 12,
+      "sample_entities": [
+        "董事会专门委员会议案情况分析",
+        "董事会议案情况分析",
+        "会议议题",
+        "会议通知信息",
+        "议题计划信息"
+      ],
+      "concept_count": 12,
+      "logical_count": 34,
+      "physical_count": 34
+    },
+    {
+      "domain": "办公",
+      "object_code": "OBJ_AUDIT",
+      "object_name": "监督",
+      "object_type": "AUXILIARY",
+      "description": "监督稽查",
+      "cluster_size": 19,
+      "sample_entities": [
+        "稿件积分统计",
+        "OCR转换统计",
+        "验收检查",
+        "OCR统计信息",
+        "仓储检查"
+      ],
+      "concept_count": 19,
+      "logical_count": 62,
+      "physical_count": 62
+    },
+    {
+      "domain": "办公",
+      "object_code": "OBJ_DEVICE",
+      "object_name": "设备",
+      "object_type": "CORE",
+      "description": "电网设备",
+      "cluster_size": 20,
+      "sample_entities": [
+        "办公用品领用",
+        "检查用餐及工作人员管理",
+        "办公设备家具配置标准",
+        "药品领用",
+        "药箱、急救员"
+      ],
+      "concept_count": 20,
+      "logical_count": 92,
+      "physical_count": 92
+    },
+    {
+      "domain": "办公",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "核心对象：项目",
+      "cluster_size": 6,
+      "sample_entities": [
+        "新建项目表单",
+        "电网建设档案-项目",
+        "大修项目情况",
+        "标准化数据核查项目检测记录信息",
+        "技改项目情况"
+      ],
+      "concept_count": 6,
+      "logical_count": 11,
+      "physical_count": 11
+    },
+    {
+      "domain": "国际业务",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 43,
+      "sample_entities": [
+        "全员覆盖信息",
+        "公司领导出访计划信息",
+        "汇率",
+        "纪检审批信息",
+        "分子公司因公出国（境）团组计划信息"
+      ],
+      "concept_count": 43,
+      "logical_count": 225,
+      "physical_count": 225
+    },
+    {
+      "domain": "国际业务",
+      "object_code": "OBJ_PERSONNEL",
+      "object_name": "人员",
+      "object_type": "CORE",
+      "description": "相关人员",
+      "cluster_size": 15,
+      "sample_entities": [
+        "员工基本信息",
+        "机构基本信息",
+        "国民经济行业分类目录信息",
+        "人员调动信息",
+        "企业登记信息"
+      ],
+      "concept_count": 15,
+      "logical_count": 64,
+      "physical_count": 64
+    },
+    {
+      "domain": "国际业务",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 9,
+      "sample_entities": [
+        "风险管控-安保方案",
+        "风险管控-国别安全分析",
+        "风险预警信息",
+        "风险管控-应急演练",
+        "风险管控-巡查检查"
+      ],
+      "concept_count": 9,
+      "logical_count": 14,
+      "physical_count": 14
+    },
+    {
+      "domain": "安全监管",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 64,
+      "sample_entities": [
+        "作业监督计划信息",
+        "作业计划信息",
+        "作业资质信息",
+        "专项安全检查计划信息",
+        "作业人员信息"
+      ],
+      "concept_count": 64,
+      "logical_count": 775,
+      "physical_count": 775
+    },
+    {
+      "domain": "安全监管",
+      "object_code": "OBJ_STANDARD",
+      "object_name": "标准",
+      "object_type": "AUXILIARY",
+      "description": "技术标准",
+      "cluster_size": 19,
+      "sample_entities": [
+        "巡查报告信息",
+        "巡查信息",
+        "现场督查标准信息",
+        "督查队伍标准信息",
+        "大集体巡查人员"
+      ],
+      "concept_count": 19,
+      "logical_count": 38,
+      "physical_count": 38
+    },
+    {
+      "domain": "安全监管",
+      "object_code": "OBJ_AUDIT",
+      "object_name": "监督",
+      "object_type": "AUXILIARY",
+      "description": "监督稽查",
+      "cluster_size": 12,
+      "sample_entities": [
+        "国际业务企业制度信息",
+        "新兴业务企业制度信息",
+        "新兴业务企业职责信息",
+        "钻级预警通知信息",
+        "国际业务企业职责信息"
+      ],
+      "concept_count": 12,
+      "logical_count": 18,
+      "physical_count": 18
+    },
+    {
+      "domain": "安全监管",
+      "object_code": "OBJ_COST",
+      "object_name": "费用",
+      "object_type": "DERIVED",
+      "description": "费用成本",
+      "cluster_size": 8,
+      "sample_entities": [
+        "费用使用管理信息",
+        "征求意见汇总",
+        "工器具使用记录",
+        "工器具台账信息",
+        "工具使用信息"
+      ],
+      "concept_count": 8,
+      "logical_count": 17,
+      "physical_count": 17
+    },
+    {
+      "domain": "安全监管",
+      "object_code": "OBJ_TEAM",
+      "object_name": "班站",
+      "object_type": "AUXILIARY",
+      "description": "班组站所",
+      "cluster_size": 6,
+      "sample_entities": [
+        "安全文化建设",
+        "班组安全文化建设",
+        "安全教育培训档案",
+        "保命教育培训",
+        "安全交底"
+      ],
+      "concept_count": 6,
+      "logical_count": 362,
+      "physical_count": 362
+    },
+    {
+      "domain": "安全监管",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "核心对象：项目",
+      "cluster_size": 2,
+      "sample_entities": [
+        "重点项目信息",
+        "境外项目信息"
+      ],
+      "concept_count": 2,
+      "logical_count": 4,
+      "physical_count": 4
+    },
+    {
+      "domain": "审计",
+      "object_code": "OBJ_DOCUMENT",
+      "object_name": "文档",
+      "object_type": "AUXILIARY",
+      "description": "业务文档",
+      "cluster_size": 18,
+      "sample_entities": [
+        "申诉和复核结果信息",
+        "问题线索初核信息",
+        "数据质量问题信息",
+        "数据需求信息",
+        "问题线索分类处置信息"
+      ],
+      "concept_count": 18,
+      "logical_count": 130,
+      "physical_count": 130
+    },
+    {
+      "domain": "审计",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 11,
+      "sample_entities": [
+        "审计案列信息",
+        "审计计划信息",
+        "项目审理信息",
+        "审计方案信息",
+        "审计考核信息"
+      ],
+      "concept_count": 11,
+      "logical_count": 120,
+      "physical_count": 120
+    },
+    {
+      "domain": "巡视",
+      "object_code": "OBJ_DOCUMENT",
+      "object_name": "文档",
+      "object_type": "AUXILIARY",
+      "description": "业务文档",
+      "cluster_size": 29,
+      "sample_entities": [
+        "巡视进驻信息",
+        "指导监督信息",
+        "巡视组人员信息",
+        "巡视配合信息",
+        "巡视情况信息"
+      ],
+      "concept_count": 29,
+      "logical_count": 61,
+      "physical_count": 61
+    },
+    {
+      "domain": "巡视",
+      "object_code": "OBJ_MATERIAL",
+      "object_name": "物资",
+      "object_type": "CORE",
+      "description": "工程物资",
+      "cluster_size": 15,
+      "sample_entities": [
+        "报告材料核报信息",
+        "报告材料信息",
+        "通报材料信息",
+        "移交材料信息",
+        "问题及底稿信息"
+      ],
+      "concept_count": 15,
+      "logical_count": 28,
+      "physical_count": 28
+    },
+    {
+      "domain": "巡视",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "核心对象：项目",
+      "cluster_size": 1,
+      "sample_entities": [
+        "组内建设信息"
+      ],
+      "concept_count": 1,
+      "logical_count": 5,
+      "physical_count": 5
+    },
+    {
+      "domain": "工会",
+      "object_code": "OBJ_CONTRACT",
+      "object_name": "合同",
+      "object_type": "CORE",
+      "description": "业务合同",
+      "cluster_size": 10,
+      "sample_entities": [
+        "劳动争议调解信息",
+        "厂务公开信息",
+        "群众性宣传教育信息",
+        "集体合同信息",
+        "文体活动信息"
+      ],
+      "concept_count": 10,
+      "logical_count": 591,
+      "physical_count": 591
+    },
+    {
+      "domain": "工会",
+      "object_code": "OBJ_PERSONNEL",
+      "object_name": "人员",
+      "object_type": "CORE",
+      "description": "相关人员",
+      "cluster_size": 13,
+      "sample_entities": [
+        "工会劳动保护监督检查信息",
+        "工会委员会信息",
+        "职工文化信息",
+        "职工代表大会信息",
+        "职工之家建设信息"
+      ],
+      "concept_count": 13,
+      "logical_count": 690,
+      "physical_count": 690
+    },
+    {
+      "domain": "工会",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "核心对象：项目",
+      "cluster_size": 2,
+      "sample_entities": [
+        "集体合同信息",
+        "职工之家建设信息"
+      ],
+      "concept_count": 2,
+      "logical_count": 43,
+      "physical_count": 43
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 441,
+      "sample_entities": [
+        "造价标准",
+        "营销材料费投资实施监控信息",
+        "营销技改项目基本分析信息",
+        "营销材料费投资策略维护",
+        "受奖信息"
+      ],
+      "concept_count": 441,
+      "logical_count": 3480,
+      "physical_count": 3480
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_AUDIT",
+      "object_name": "监督",
+      "object_type": "AUXILIARY",
+      "description": "监督稽查",
+      "cluster_size": 85,
+      "sample_entities": [
+        "电量电费分析信息",
+        "电量电费用电户分析信息",
+        "电量电费工单分析信息",
+        "供用电设施检查分析信息",
+        "有序用电需求分析信息"
+      ],
+      "concept_count": 85,
+      "logical_count": 635,
+      "physical_count": 635
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_LINE",
+      "object_name": "线路",
+      "object_type": "CORE",
+      "description": "输配电线路",
+      "cluster_size": 48,
+      "sample_entities": [
+        "线路线损异常处置分析信息",
+        "线路线损异常分析信息",
+        "线损异常信息",
+        "服务工单异常处置分析信息",
+        "异常预警监控信息"
+      ],
+      "concept_count": 48,
+      "logical_count": 363,
+      "physical_count": 363
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_TASK",
+      "object_name": "任务",
+      "object_type": "DERIVED",
+      "description": "工作任务",
+      "cluster_size": 30,
+      "sample_entities": [
+        "购电日电量冲正退补信息",
+        "电费退补信息",
+        "坐席管理信息",
+        "计量故障电量退补信息",
+        "购电月电量冲正退补信息"
+      ],
+      "concept_count": 30,
+      "logical_count": 207,
+      "physical_count": 207
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_COST",
+      "object_name": "费用",
+      "object_type": "DERIVED",
+      "description": "费用成本",
+      "cluster_size": 22,
+      "sample_entities": [
+        "账单信息",
+        "结算信息",
+        "账单管理信息",
+        "费用支付信息",
+        "预付款信息"
+      ],
+      "concept_count": 22,
+      "logical_count": 281,
+      "physical_count": 281
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_SYSTEM",
+      "object_name": "系统",
+      "object_type": "AUXILIARY",
+      "description": "信息系统",
+      "cluster_size": 12,
+      "sample_entities": [
+        "消息模板管理信息",
+        "用户管理信息",
+        "微信公众号推文管理信息",
+        "访问日志管理",
+        "系统权限信息"
+      ],
+      "concept_count": 12,
+      "logical_count": 137,
+      "physical_count": 137
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_客户信",
+      "object_name": "客户信",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：客户信息",
+      "cluster_size": 12,
+      "sample_entities": [
+        "智能辅助",
+        "客户信息",
+        "客户标签信息",
+        "客户联系信息",
+        "重要客户信息"
+      ],
+      "concept_count": 12,
+      "logical_count": 199,
+      "physical_count": 199
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_METRIC",
+      "object_name": "指标",
+      "object_type": "AUXILIARY",
+      "description": "业务指标",
+      "cluster_size": 8,
+      "sample_entities": [
+        "资讯栏目",
+        "资讯收藏",
+        "资讯内容",
+        "资讯统计",
+        "其他内容"
+      ],
+      "concept_count": 8,
+      "logical_count": 69,
+      "physical_count": 69
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_分析",
+      "object_name": "分析",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：积分用户活动分析信息",
+      "cluster_size": 6,
+      "sample_entities": [
+        "积分用户活动分析信息",
+        "积分用户基本分析信息",
+        "用户积分基本分析信息",
+        "用户积分变更分析信息",
+        "积分管理信息"
+      ],
+      "concept_count": 6,
+      "logical_count": 144,
+      "physical_count": 144
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_营销业",
+      "object_name": "营销业",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：营销业务风险库",
+      "cluster_size": 6,
+      "sample_entities": [
+        "营销业务风险库",
+        "风险防控信息",
+        "营销业务风险信息",
+        "风险预警管理",
+        "坏账核销信息"
+      ],
+      "concept_count": 6,
+      "logical_count": 97,
+      "physical_count": 97
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_度消费",
+      "object_name": "度消费",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：绿证年度消费排行",
+      "cluster_size": 5,
+      "sample_entities": [
+        "绿证年度消费排行",
+        "绿证交易概览",
+        "绿证月度消费排行",
+        "绿电绿证服务宫格",
+        "绿电交易概览"
+      ],
+      "concept_count": 5,
+      "logical_count": 105,
+      "physical_count": 105
+    },
+    {
+      "domain": "市场营销",
+      "object_code": "OBJ_PERSONNEL",
+      "object_name": "人员",
+      "object_type": "CORE",
+      "description": "相关人员",
+      "cluster_size": 5,
+      "sample_entities": [
+        "业务办理资料",
+        "电子化资料移交信息",
+        "客户证件信息",
+        "人员资质报审",
+        "电子化资料信息"
+      ],
+      "concept_count": 5,
+      "logical_count": 13,
+      "physical_count": 13
+    },
+    {
+      "domain": "战略规划",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 81,
+      "sample_entities": [
+        "可研批次信息",
+        "历史单位造价指标校验结果信息",
+        "造价基础指标记录信息",
+        "退回分类信息",
+        "地图瓦片信息信息"
+      ],
+      "concept_count": 81,
+      "logical_count": 86,
+      "physical_count": 0
+    },
+    {
+      "domain": "战略规划",
+      "object_code": "OBJ_LINE",
+      "object_name": "线路",
+      "object_type": "CORE",
+      "description": "输配电线路",
+      "cluster_size": 27,
+      "sample_entities": [
+        "充电桩线损统计与分析",
+        "行业与设备线损监测概览",
+        "分线线损比对分析",
+        "线路日线损监测",
+        "线路月线损分析"
+      ],
+      "concept_count": 27,
+      "logical_count": 672,
+      "physical_count": 0
+    },
+    {
+      "domain": "战略规划",
+      "object_code": "OBJ_SYSTEM",
+      "object_name": "系统",
+      "object_type": "AUXILIARY",
+      "description": "信息系统",
+      "cluster_size": 24,
+      "sample_entities": [
+        "有功变损扣减电量",
+        "输电网规划信息",
+        "电网互联并网信息（公共电网）",
+        "日电量异常识别",
+        "电网互联并网信息（增量配电网）"
+      ],
+      "concept_count": 24,
+      "logical_count": 860,
+      "physical_count": 0
+    },
+    {
+      "domain": "战略规划",
+      "object_code": "OBJ_TASK",
+      "object_name": "任务",
+      "object_type": "DERIVED",
+      "description": "工作任务",
+      "cluster_size": 10,
+      "sample_entities": [
+        "战略规划任务信息",
+        "公司发展战略信息",
+        "战略分解信息",
+        "分子公司发展规划信息",
+        "战略对标信息"
+      ],
+      "concept_count": 10,
+      "logical_count": 143,
+      "physical_count": 0
+    },
+    {
+      "domain": "战略规划",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 7,
+      "sample_entities": [
+        "碳盘查与碳核查",
+        "低碳环保专业重点工作信息",
+        "低碳环保年度计划信息",
+        "环保风险监督信息",
+        "低碳环保规划信息"
+      ],
+      "concept_count": 7,
+      "logical_count": 972,
+      "physical_count": 0
+    },
+    {
+      "domain": "战略规划",
+      "object_code": "OBJ_帮扶管",
+      "object_name": "帮扶管",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：行业帮扶管理",
+      "cluster_size": 5,
+      "sample_entities": [
+        "行业帮扶管理",
+        "定点帮扶管理",
+        "消费帮扶信息",
+        "乡村振兴工作管理信息",
+        "南网知行教育发展基金管理"
+      ],
+      "concept_count": 5,
+      "logical_count": 129,
+      "physical_count": 0
+    },
+    {
+      "domain": "战略规划",
+      "object_code": "OBJ_PROCESS",
+      "object_name": "流程",
+      "object_type": "AUXILIARY",
+      "description": "业务流程",
+      "cluster_size": 5,
+      "sample_entities": [
+        "南网控制线库文件信息",
+        "南网信息价记录信息",
+        "南网控制线库文件锚点信息",
+        "南网信息价详情信息",
+        "数据权限控制信息"
+      ],
+      "concept_count": 5,
+      "logical_count": 5,
+      "physical_count": 0
+    },
+    {
+      "domain": "政策研究",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 23,
+      "sample_entities": [
+        "软课题概预算信息",
+        "留言板信息",
+        "软课题项目后评价",
+        "软课题项目信息",
+        "软课题进度信息"
+      ],
+      "concept_count": 23,
+      "logical_count": 69,
+      "physical_count": 69
+    },
+    {
+      "domain": "政策研究",
+      "object_code": "OBJ_信息管",
+      "object_name": "信息管",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：内容信息管理",
+      "cluster_size": 8,
+      "sample_entities": [
+        "内部稿件",
+        "智能问答信息",
+        "内容信息管理",
+        "信息快报",
+        "资源信息"
+      ],
+      "concept_count": 8,
+      "logical_count": 69,
+      "physical_count": 69
+    },
+    {
+      "domain": "政策研究",
+      "object_code": "OBJ_TASK",
+      "object_name": "任务",
+      "object_type": "DERIVED",
+      "description": "工作任务",
+      "cluster_size": 7,
+      "sample_entities": [
+        "国企改革任务管理",
+        "国企改革指标信息",
+        "国企改革考核评价信息",
+        "国企改革专项工程管理",
+        "国企改革成果监控"
+      ],
+      "concept_count": 7,
+      "logical_count": 84,
+      "physical_count": 84
+    },
+    {
+      "domain": "数字化",
+      "object_code": "OBJ_METRIC",
+      "object_name": "指标",
+      "object_type": "AUXILIARY",
+      "description": "业务指标",
+      "cluster_size": 1206,
+      "sample_entities": [
+        "IVR导航信息",
+        "饱和度管理",
+        "市场分析预测信息",
+        "屏幕水印",
+        "多语言支持信息"
+      ],
+      "concept_count": 1203,
+      "logical_count": 3428,
+      "physical_count": 3428
+    },
+    {
+      "domain": "数字化",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 27,
+      "sample_entities": [
+        "数据需求信息",
+        "需求单",
+        "需求调查",
+        "年度物理机需求信息",
+        "年度存储需求信息"
+      ],
+      "concept_count": 27,
+      "logical_count": 110,
+      "physical_count": 110
+    },
+    {
+      "domain": "数字化",
+      "object_code": "OBJ_LEDGER",
+      "object_name": "台账",
+      "object_type": "AUXILIARY",
+      "description": "设备资产台账",
+      "cluster_size": 13,
+      "sample_entities": [
+        "台账笔记本电脑",
+        "机器学习",
+        "数据监控台账信息",
+        "系统台账管理信息",
+        "台账扫描仪"
+      ],
+      "concept_count": 13,
+      "logical_count": 70,
+      "physical_count": 70
+    },
+    {
+      "domain": "数字化",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 11,
+      "sample_entities": [
+        "灾备架构设计信息",
+        "灾备切换",
+        "灾备预案",
+        "灾备自动化",
+        "灾备演练"
+      ],
+      "concept_count": 11,
+      "logical_count": 142,
+      "physical_count": 142
+    },
+    {
+      "domain": "数字化",
+      "object_code": "OBJ_TASK",
+      "object_name": "任务",
+      "object_type": "DERIVED",
+      "description": "工作任务",
+      "cluster_size": 11,
+      "sample_entities": [
+        "通知任务",
+        "任务日志",
+        "任务进度监控信息",
+        "指挥任务管理",
+        "待办任务信息"
+      ],
+      "concept_count": 11,
+      "logical_count": 18,
+      "physical_count": 18
+    },
+    {
+      "domain": "数字化",
+      "object_code": "OBJ_SYSTEM",
+      "object_name": "系统",
+      "object_type": "AUXILIARY",
+      "description": "信息系统",
+      "cluster_size": 8,
+      "sample_entities": [
+        "退运系统信息",
+        "退运分析结果信息",
+        "数据退运归档信息",
+        "设施投退信息",
+        "退运申请信息"
+      ],
+      "concept_count": 8,
+      "logical_count": 133,
+      "physical_count": 133
+    },
+    {
+      "domain": "数字化",
+      "object_code": "OBJ_ASSET",
+      "object_name": "资产",
+      "object_type": "CORE",
+      "description": "固定资产",
+      "cluster_size": 7,
+      "sample_entities": [
+        "云安全策略管理",
+        "云安全告警管理",
+        "云安全日志管理",
+        "云盾数据治理信息",
+        "云资产接入"
+      ],
+      "concept_count": 7,
+      "logical_count": 7,
+      "physical_count": 7
+    },
+    {
+      "domain": "新兴业务",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 146,
+      "sample_entities": [
+        "股权投资项目信息",
+        "标签列表信息",
+        "资本运作项目可研信息",
+        "股权投资项目子项目信息",
+        "股权投资项目大项目统计数据信息"
+      ],
+      "concept_count": 146,
+      "logical_count": 146,
+      "physical_count": 146
+    },
+    {
+      "domain": "新兴业务",
+      "object_code": "OBJ_PROCESS",
+      "object_name": "流程",
+      "object_type": "AUXILIARY",
+      "description": "业务流程",
+      "cluster_size": 81,
+      "sample_entities": [
+        "合作协议信息",
+        "问题提问与回复信息",
+        "协同单位信息",
+        "规划评价审批信息",
+        "发展规划评价方案信息"
+      ],
+      "concept_count": 81,
+      "logical_count": 88,
+      "physical_count": 88
+    },
+    {
+      "domain": "新兴业务",
+      "object_code": "OBJ_TASK",
+      "object_name": "任务",
+      "object_type": "DERIVED",
+      "description": "工作任务",
+      "cluster_size": 58,
+      "sample_entities": [
+        "领导批示指示工作任务进度汇总信息",
+        "领导批示指示工作任务编制信息",
+        "领导批示指示专项任务进度汇总信息",
+        "领导批示指示工作任务进度信息",
+        "领导批示指示专项任务进度信息"
+      ],
+      "concept_count": 58,
+      "logical_count": 58,
+      "physical_count": 58
+    },
+    {
+      "domain": "新兴业务",
+      "object_code": "OBJ_METRIC",
+      "object_name": "指标",
+      "object_type": "AUXILIARY",
+      "description": "业务指标",
+      "cluster_size": 24,
+      "sample_entities": [
+        "新兴业务企业信息",
+        "新兴业务营收信息",
+        "新兴业务经营信息",
+        "新兴业务战略主题信息",
+        "新兴业务人员信息"
+      ],
+      "concept_count": 24,
+      "logical_count": 82,
+      "physical_count": 82
+    },
+    {
+      "domain": "新兴业务",
+      "object_code": "OBJ_分析",
+      "object_name": "分析",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：赛道相识度分析规则信息",
+      "cluster_size": 5,
+      "sample_entities": [
+        "赛道相识度分析规则信息",
+        "赛道清单信息",
+        "赛道相识度分析结果信息",
+        "赛道申请信息",
+        "赛道退出信息"
+      ],
+      "concept_count": 5,
+      "logical_count": 5,
+      "physical_count": 5
+    },
+    {
+      "domain": "新兴业务",
+      "object_code": "OBJ_ASSET",
+      "object_name": "资产",
+      "object_type": "CORE",
+      "description": "固定资产",
+      "cluster_size": 5,
+      "sample_entities": [
+        "固定资产投资需求分析信息",
+        "固定资产投资需求跟踪信息",
+        "固定资产投资需求历史数据对比信息",
+        "固定资产投资需求数据差异信息",
+        "固定资产投资需求预警信息"
+      ],
+      "concept_count": 5,
+      "logical_count": 5,
+      "physical_count": 5
+    },
+    {
+      "domain": "法规",
+      "object_code": "OBJ_AUDIT",
+      "object_name": "监督",
+      "object_type": "AUXILIARY",
+      "description": "监督稽查",
+      "cluster_size": 17,
+      "sample_entities": [
+        "监督控制评价结果信息",
+        "内控合规评估标准",
+        "治理评价信息",
+        "监督实施信息",
+        "管理纠偏执行信息"
+      ],
+      "concept_count": 17,
+      "logical_count": 289,
+      "physical_count": 289
+    },
+    {
+      "domain": "法规",
+      "object_code": "OBJ_PERSONNEL",
+      "object_name": "人员",
+      "object_type": "CORE",
+      "description": "相关人员",
+      "cluster_size": 9,
+      "sample_entities": [
+        "法律案件信息",
+        "法律咨询信息",
+        "法律纠纷信息",
+        "专职法律人员信息",
+        "法律案件报告"
+      ],
+      "concept_count": 9,
+      "logical_count": 107,
+      "physical_count": 107
+    },
+    {
+      "domain": "法规",
+      "object_code": "OBJ_DOCUMENT",
+      "object_name": "文档",
+      "object_type": "AUXILIARY",
+      "description": "业务文档",
+      "cluster_size": 8,
+      "sample_entities": [
+        "公司处分清单",
+        "案件问责信息",
+        "公司处分信息",
+        "整改措施信息",
+        "问题销号信息"
+      ],
+      "concept_count": 8,
+      "logical_count": 251,
+      "physical_count": 251
+    },
+    {
+      "domain": "法规",
+      "object_code": "OBJ_PROCESS",
+      "object_name": "流程",
+      "object_type": "AUXILIARY",
+      "description": "业务流程",
+      "cluster_size": 5,
+      "sample_entities": [
+        "重大经营风险事件",
+        "重大风险信息",
+        "法律风险信息",
+        "流程风险",
+        "风险控制信息"
+      ],
+      "concept_count": 5,
+      "logical_count": 226,
+      "physical_count": 226
+    },
+    {
+      "domain": "法规",
+      "object_code": "OBJ_CONTRACT",
+      "object_name": "合同",
+      "object_type": "CORE",
+      "description": "业务合同",
+      "cluster_size": 5,
+      "sample_entities": [
+        "合同履约信息",
+        "合同订立信息",
+        "合同承办人",
+        "合同标准文本",
+        "合同审查法律授权意见书"
+      ],
+      "concept_count": 5,
+      "logical_count": 119,
+      "physical_count": 119
+    },
+    {
+      "domain": "法规",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "核心对象：项目",
+      "cluster_size": 12,
+      "sample_entities": [
+        "出资企业董事会建设监督信息",
+        "合同标准文本",
+        "合同承办人",
+        "尽职免责信息",
+        "不相容岗位清单"
+      ],
+      "concept_count": 12,
+      "logical_count": 161,
+      "physical_count": 161
+    },
+    {
+      "domain": "科技创新",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 24,
+      "sample_entities": [
+        "实施计划信息",
+        "需求征集信息",
+        "科技项目申报信息",
+        "论文征坛信息",
+        "创新指标信息"
+      ],
+      "concept_count": 24,
+      "logical_count": 530,
+      "physical_count": 530
+    },
+    {
+      "domain": "科技创新",
+      "object_code": "OBJ_SYSTEM",
+      "object_name": "系统",
+      "object_type": "AUXILIARY",
+      "description": "信息系统",
+      "cluster_size": 9,
+      "sample_entities": [
+        "产业链建设信息",
+        "专利保护信息",
+        "成本管理信息",
+        "实施过程信息",
+        "专家管理信息"
+      ],
+      "concept_count": 9,
+      "logical_count": 145,
+      "physical_count": 145
+    },
+    {
+      "domain": "系统运行",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 106,
+      "sample_entities": [
+        "调岗人员信息",
+        "调度受令资格认证考核信息",
+        "通信定检计划信息",
+        "新设备主接线图、参数等调度命名、编号用资料",
+        "调度值班场所管理信息"
+      ],
+      "concept_count": 106,
+      "logical_count": 633,
+      "physical_count": 633
+    },
+    {
+      "domain": "系统运行",
+      "object_code": "OBJ_DEFECT",
+      "object_name": "缺陷",
+      "object_type": "AUXILIARY",
+      "description": "缺陷故障",
+      "cluster_size": 29,
+      "sample_entities": [
+        "故障处置预案信息",
+        "基问风险故障处置预案信息",
+        "故障信息",
+        "故障及异常处置",
+        "安自装置异常处理信息"
+      ],
+      "concept_count": 29,
+      "logical_count": 109,
+      "physical_count": 109
+    },
+    {
+      "domain": "系统运行",
+      "object_code": "OBJ_GENERATION",
+      "object_name": "发电",
+      "object_type": "CORE",
+      "description": "发电生产",
+      "cluster_size": 28,
+      "sample_entities": [
+        "控制指令",
+        "日方式控制信息",
+        "系统负荷预信息",
+        "可调节负荷聚合技术",
+        "负荷侧资源集群协同控制"
+      ],
+      "concept_count": 28,
+      "logical_count": 103,
+      "physical_count": 103
+    },
+    {
+      "domain": "系统运行",
+      "object_code": "OBJ_DOCUMENT",
+      "object_name": "文档",
+      "object_type": "AUXILIARY",
+      "description": "业务文档",
+      "cluster_size": 19,
+      "sample_entities": [
+        "测试评估报告信息",
+        "试运行审查报告",
+        "系统评估（测评）报告",
+        "正式运行审查报告",
+        "总调试运行审查报告"
+      ],
+      "concept_count": 19,
+      "logical_count": 79,
+      "physical_count": 79
+    },
+    {
+      "domain": "系统运行",
+      "object_code": "OBJ_TASK",
+      "object_name": "任务",
+      "object_type": "DERIVED",
+      "description": "工作任务",
+      "cluster_size": 13,
+      "sample_entities": [
+        "计算数据",
+        "气象要素监测跟踪信息",
+        "合同支付",
+        "电网气象业务",
+        "计算数据信息"
+      ],
+      "concept_count": 13,
+      "logical_count": 36,
+      "physical_count": 36
+    },
+    {
+      "domain": "系统运行",
+      "object_code": "OBJ_DEVICE",
+      "object_name": "设备",
+      "object_type": "CORE",
+      "description": "电网设备",
+      "cluster_size": 6,
+      "sample_entities": [
+        "物资采购清单",
+        "录波文件",
+        "备品备件储备定额",
+        "备品备件采购",
+        "备件领用"
+      ],
+      "concept_count": 6,
+      "logical_count": 22,
+      "physical_count": 22
+    },
+    {
+      "domain": "系统运行",
+      "object_code": "OBJ_SYSTEM",
+      "object_name": "系统",
+      "object_type": "AUXILIARY",
+      "description": "信息系统",
+      "cluster_size": 8,
+      "sample_entities": [
+        "视频会议保障",
+        "水情预报",
+        "水库综合用水",
+        "峰谷特性中长期评估信息",
+        "风光资源评估信息"
+      ],
+      "concept_count": 8,
+      "logical_count": 22,
+      "physical_count": 22
+    },
+    {
+      "domain": "系统运行",
+      "object_code": "OBJ_现货市",
+      "object_name": "现货市",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：区域现货市场边界信息",
+      "cluster_size": 5,
+      "sample_entities": [
+        "区域现货市场边界信息",
+        "交易规则信息",
+        "边界信息",
+        "日前现货市场交易",
+        "市场咨询信息"
+      ],
+      "concept_count": 5,
+      "logical_count": 11,
+      "physical_count": 11
+    },
+    {
+      "domain": "系统运行",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "核心对象：项目",
+      "cluster_size": 1,
+      "sample_entities": [
+        "中长期运行方式项目进展信息"
+      ],
+      "concept_count": 1,
+      "logical_count": 2,
+      "physical_count": 2
+    },
+    {
+      "domain": "纪检监察",
+      "object_code": "OBJ_AUDIT",
+      "object_name": "监督",
+      "object_type": "AUXILIARY",
+      "description": "监督稽查",
+      "cluster_size": 19,
+      "sample_entities": [
+        "审查调查管理",
+        "案件信息",
+        "监督信息",
+        "落实监督情况信息",
+        "任职信息"
+      ],
+      "concept_count": 19,
+      "logical_count": 43,
+      "physical_count": 43
+    },
+    {
+      "domain": "纪检监察",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "核心对象：项目",
+      "cluster_size": 0,
+      "sample_entities": [],
+      "concept_count": 0,
+      "logical_count": 0,
+      "physical_count": 0
+    },
+    {
+      "domain": "计划财务",
+      "object_code": "OBJ_ASSET",
+      "object_name": "资产",
+      "object_type": "CORE",
+      "description": "固定资产",
+      "cluster_size": 58,
+      "sample_entities": [
+        "物资对账信息",
+        "挂账支付信息",
+        "合同台账信息",
+        "账销案存信息",
+        "资产分类目录信息"
+      ],
+      "concept_count": 58,
+      "logical_count": 876,
+      "physical_count": 876
+    },
+    {
+      "domain": "计划财务",
+      "object_code": "OBJ_METRIC",
+      "object_name": "指标",
+      "object_type": "AUXILIARY",
+      "description": "业务指标",
+      "cluster_size": 50,
+      "sample_entities": [
+        "指标体系分类信息",
+        "统计系统单位对标信息",
+        "统计系统资料信息",
+        "统计系统单位数据信息",
+        "指标数据信息"
+      ],
+      "concept_count": 85,
+      "logical_count": 704,
+      "physical_count": 704
+    },
+    {
+      "domain": "计划财务",
+      "object_code": "OBJ_PERSONNEL",
+      "object_name": "人员",
+      "object_type": "CORE",
+      "description": "相关人员",
+      "cluster_size": 45,
+      "sample_entities": [
+        "计财人员学习经历信息",
+        "费用项目年度预算分解信息",
+        "薪酬福利支付信息",
+        "分子公司任期经营业绩考核方案",
+        "分子公司经营业绩考核方案"
+      ],
+      "concept_count": 90,
+      "logical_count": 1013,
+      "physical_count": 1013
+    },
+    {
+      "domain": "计划财务",
+      "object_code": "OBJ_MATERIAL",
+      "object_name": "物资",
+      "object_type": "CORE",
+      "description": "工程物资",
+      "cluster_size": 20,
+      "sample_entities": [
+        "土地不动产信息",
+        "房地一体信息",
+        "房屋建筑物资不动产信息",
+        "土地更名信息",
+        "土地处置信息"
+      ],
+      "concept_count": 20,
+      "logical_count": 20,
+      "physical_count": 20
+    },
+    {
+      "domain": "计划财务",
+      "object_code": "OBJ_VOUCHER",
+      "object_name": "票据",
+      "object_type": "AUXILIARY",
+      "description": "财务票据凭证",
+      "cluster_size": 14,
+      "sample_entities": [
+        "会计凭证",
+        "核算科目",
+        "抵销凭证",
+        "资金科目",
+        "应收票据"
+      ],
+      "concept_count": 14,
+      "logical_count": 246,
+      "physical_count": 246
+    },
+    {
+      "domain": "计划财务",
+      "object_code": "OBJ_CONTRACT",
+      "object_name": "合同",
+      "object_type": "CORE",
+      "description": "业务合同",
+      "cluster_size": 11,
+      "sample_entities": [
+        "担保合同",
+        "借款合同",
+        "融资合同",
+        "担保费",
+        "担保代偿与追索信息"
+      ],
+      "concept_count": 69,
+      "logical_count": 578,
+      "physical_count": 578
+    },
+    {
+      "domain": "计划财务",
+      "object_code": "OBJ_PROCESS",
+      "object_name": "流程",
+      "object_type": "AUXILIARY",
+      "description": "业务流程",
+      "cluster_size": 10,
+      "sample_entities": [
+        "权证登记信息",
+        "房屋确权信息",
+        "会计档案授权信息",
+        "土地确权信息",
+        "授权信息"
+      ],
+      "concept_count": 68,
+      "logical_count": 433,
+      "physical_count": 433
+    },
+    {
+      "domain": "计划财务",
+      "object_code": "OBJ_DOCUMENT",
+      "object_name": "文档",
+      "object_type": "AUXILIARY",
+      "description": "业务文档",
+      "cluster_size": 8,
+      "sample_entities": [
+        "公司季度经济活动分析会信息",
+        "报表会审信息",
+        "生产经营报告",
+        "宏观经济报告",
+        "财务报表信息"
+      ],
+      "concept_count": 61,
+      "logical_count": 638,
+      "physical_count": 638
+    },
+    {
+      "domain": "计划财务",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 9,
+      "sample_entities": [
+        "费用项目年度预算分解信息",
+        "费用储备项目",
+        "常规可再生项目",
+        "储备项目里程碑计划信息",
+        "可再生能源补贴资金信息"
+      ],
+      "concept_count": 10,
+      "logical_count": 127,
+      "physical_count": 127
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_TASK",
+      "object_name": "任务",
+      "object_type": "DERIVED",
+      "description": "工作任务",
+      "cluster_size": 126,
+      "sample_entities": [
+        "营销施工单位评价进度监控信息",
+        "生产施工单位评价进度监控信息",
+        "施工项目部信息",
+        "生产施工单位评价结果发布信息",
+        "二级进度计划指导工期库信息"
+      ],
+      "concept_count": 126,
+      "logical_count": 1749,
+      "physical_count": 1749
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_AUDIT",
+      "object_name": "监督",
+      "object_type": "AUXILIARY",
+      "description": "监督稽查",
+      "cluster_size": 73,
+      "sample_entities": [
+        "技术监督报告信息",
+        "技术监督告警信息",
+        "安全检查信息",
+        "技术监督计划信息",
+        "监理初检信息"
+      ],
+      "concept_count": 73,
+      "logical_count": 1130,
+      "physical_count": 1130
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_DEVICE",
+      "object_name": "设备",
+      "object_type": "CORE",
+      "description": "电网设备",
+      "cluster_size": 25,
+      "sample_entities": [
+        "设备运行方案信息",
+        "设备材料信息",
+        "设备品类信息",
+        "设备运行分析报告信息",
+        "再利用设备库信息"
+      ],
+      "concept_count": 25,
+      "logical_count": 923,
+      "physical_count": 923
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_COST",
+      "object_name": "费用",
+      "object_type": "DERIVED",
+      "description": "费用成本",
+      "cluster_size": 24,
+      "sample_entities": [
+        "结算资料信息",
+        "项目结算信息",
+        "结算费用信息",
+        "付款登记信息",
+        "工程转资情况统计信息"
+      ],
+      "concept_count": 24,
+      "logical_count": 362,
+      "physical_count": 362
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_CONTRACT",
+      "object_name": "合同",
+      "object_type": "CORE",
+      "description": "业务合同",
+      "cluster_size": 23,
+      "sample_entities": [
+        "设计变更联系单信息",
+        "框架合同变更信息",
+        "服务合同变更信息",
+        "设计变更通知单信息",
+        "设计变更信息"
+      ],
+      "concept_count": 23,
+      "logical_count": 159,
+      "physical_count": 159
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_SYSTEM",
+      "object_name": "系统",
+      "object_type": "AUXILIARY",
+      "description": "信息系统",
+      "cluster_size": 15,
+      "sample_entities": [
+        "安全资料管理信息",
+        "在线监测网络安全运维计划",
+        "系统网络安全技术管控信息",
+        "会议通知管理信息",
+        "新技术入网管控信息"
+      ],
+      "concept_count": 15,
+      "logical_count": 46,
+      "physical_count": 46
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_METRIC",
+      "object_name": "指标",
+      "object_type": "AUXILIARY",
+      "description": "业务指标",
+      "cluster_size": 15,
+      "sample_entities": [
+        "电压合格率指标信息",
+        "电压合格率指标计划信息",
+        "WHS质量监控信息",
+        "输配电指标管控信息",
+        "输配电指标完成信息"
+      ],
+      "concept_count": 15,
+      "logical_count": 304,
+      "physical_count": 304
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_STANDARD",
+      "object_name": "标准",
+      "object_type": "AUXILIARY",
+      "description": "技术标准",
+      "cluster_size": 13,
+      "sample_entities": [
+        "技术标准信息",
+        "技术标准组织信息",
+        "技术标准专家信息",
+        "技术标准项目任务信息",
+        "技术标准修编计划信息"
+      ],
+      "concept_count": 13,
+      "logical_count": 323,
+      "physical_count": 323
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_DOCUMENT",
+      "object_name": "文档",
+      "object_type": "AUXILIARY",
+      "description": "业务文档",
+      "cluster_size": 10,
+      "sample_entities": [
+        "灾害报告信息",
+        "气象灾害监测信息",
+        "灾害技术标准信息",
+        "气象灾害预警信息",
+        "灾害与设备预警信息"
+      ],
+      "concept_count": 10,
+      "logical_count": 532,
+      "physical_count": 532
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_PLAN",
+      "object_name": "计划",
+      "object_type": "AUXILIARY",
+      "description": "业务计划",
+      "cluster_size": 8,
+      "sample_entities": [
+        "组织架构优化方案信息",
+        "生产业务优化方案信息",
+        "创优策划信息",
+        "设计评优管理",
+        "生产业务优化报告信息"
+      ],
+      "concept_count": 8,
+      "logical_count": 10,
+      "physical_count": 10
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_TEAM",
+      "object_name": "班站",
+      "object_type": "AUXILIARY",
+      "description": "班组站所",
+      "cluster_size": 6,
+      "sample_entities": [
+        "星级班站所信息",
+        "班站所建设信息",
+        "班站所评价信息",
+        "交接班信息",
+        "主客体信息"
+      ],
+      "concept_count": 6,
+      "logical_count": 95,
+      "physical_count": 95
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_移交信",
+      "object_name": "移交信",
+      "object_type": "AUXILIARY",
+      "description": "语义聚类对象，代表性实体：档案移交信息",
+      "cluster_size": 5,
+      "sample_entities": [
+        "档案移交信息",
+        "档案交底信息",
+        "电子化移交信息",
+        "移交申请信息",
+        "预归档规则信息"
+      ],
+      "concept_count": 5,
+      "logical_count": 146,
+      "physical_count": 146
+    },
+    {
+      "domain": "输配电",
+      "object_code": "OBJ_PROJECT",
+      "object_name": "项目",
+      "object_type": "CORE",
+      "description": "电网建设项目",
+      "cluster_size": 35,
+      "sample_entities": [
+        "项目中标信息",
+        "项目后评价信息",
+        "项目关闭信息",
+        "项目变更信息",
+        "生产应急项目信息"
+      ],
+      "concept_count": 32,
+      "logical_count": 292,
+      "physical_count": 292
+    }
+  ],
+  "literal_groups": [
+    {
+      "group_id": "GOBJ_OBJ_PROJECT",
+      "group_name": "项目",
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 5
+        },
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 3
+        },
+        {
+          "domain": "企业架构",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 6
+        },
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 27
+        },
+        {
+          "domain": "党建",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 1
+        },
+        {
+          "domain": "办公",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 6
+        },
+        {
+          "domain": "国际业务",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 43
+        },
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 2
+        },
+        {
+          "domain": "审计",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 11
+        },
+        {
+          "domain": "巡视",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 1
+        },
+        {
+          "domain": "工会",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 2
+        },
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 441
+        },
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 81
+        },
+        {
+          "domain": "政策研究",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 23
+        },
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 11
+        },
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 146
+        },
+        {
+          "domain": "法规",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 12
+        },
+        {
+          "domain": "科技创新",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 24
+        },
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 1
+        },
+        {
+          "domain": "纪检监察",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 0
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 9
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 35
+        }
+      ],
+      "present_in_domains": [
+        "产业金融",
+        "人力资源",
+        "企业架构",
+        "供应链",
+        "党建",
+        "办公",
+        "国际业务",
+        "安全监管",
+        "审计",
+        "巡视",
+        "工会",
+        "市场营销",
+        "战略规划",
+        "政策研究",
+        "数字化",
+        "新兴业务",
+        "法规",
+        "科技创新",
+        "系统运行",
+        "纪检监察",
+        "计划财务",
+        "输配电"
+      ],
+      "member_count": 22,
+      "total_concept": 1006,
+      "total_logical": 9173,
+      "total_physical": 9072
+    },
+    {
+      "group_id": "GOBJ_OBJ_PLAN",
+      "group_name": "计划",
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 6
+        },
+        {
+          "domain": "企业架构",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 20
+        },
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 235
+        },
+        {
+          "domain": "党建",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 17
+        },
+        {
+          "domain": "办公",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 12
+        },
+        {
+          "domain": "国际业务",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 9
+        },
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 64
+        },
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 7
+        },
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 27
+        },
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 106
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "人力资源",
+        "企业架构",
+        "供应链",
+        "党建",
+        "办公",
+        "国际业务",
+        "安全监管",
+        "战略规划",
+        "数字化",
+        "系统运行",
+        "输配电"
+      ],
+      "member_count": 11,
+      "total_concept": 563,
+      "total_logical": 6308,
+      "total_physical": 5336
+    },
+    {
+      "group_id": "GOBJ_OBJ_TASK",
+      "group_name": "任务",
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 9
+        },
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 43
+        },
+        {
+          "domain": "办公",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 26
+        },
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 30
+        },
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 10
+        },
+        {
+          "domain": "政策研究",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 7
+        },
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 11
+        },
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 58
+        },
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 13
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 126
+        }
+      ],
+      "present_in_domains": [
+        "产业金融",
+        "供应链",
+        "办公",
+        "市场营销",
+        "战略规划",
+        "政策研究",
+        "数字化",
+        "新兴业务",
+        "系统运行",
+        "输配电"
+      ],
+      "member_count": 10,
+      "total_concept": 333,
+      "total_logical": 2407,
+      "total_physical": 2245
+    },
+    {
+      "group_id": "GOBJ_OBJ_AUDIT",
+      "group_name": "监督",
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 10
+        },
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 53
+        },
+        {
+          "domain": "党建",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 18
+        },
+        {
+          "domain": "办公",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 19
+        },
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 12
+        },
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 85
+        },
+        {
+          "domain": "法规",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 17
+        },
+        {
+          "domain": "纪检监察",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 19
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 73
+        }
+      ],
+      "present_in_domains": [
+        "人力资源",
+        "供应链",
+        "党建",
+        "办公",
+        "安全监管",
+        "市场营销",
+        "法规",
+        "纪检监察",
+        "输配电"
+      ],
+      "member_count": 9,
+      "total_concept": 416,
+      "total_logical": 6076,
+      "total_physical": 6076
+    },
+    {
+      "group_id": "GOBJ_OBJ_DOCUMENT",
+      "group_name": "文档",
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 14
+        },
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 21
+        },
+        {
+          "domain": "审计",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 18
+        },
+        {
+          "domain": "巡视",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 29
+        },
+        {
+          "domain": "法规",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 8
+        },
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 19
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 8
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 10
+        }
+      ],
+      "present_in_domains": [
+        "产业金融",
+        "供应链",
+        "审计",
+        "巡视",
+        "法规",
+        "系统运行",
+        "计划财务",
+        "输配电"
+      ],
+      "member_count": 8,
+      "total_concept": 292,
+      "total_logical": 4163,
+      "total_physical": 4132
+    },
+    {
+      "group_id": "GOBJ_OBJ_PERSONNEL",
+      "group_name": "人员",
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 7
+        },
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 67
+        },
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 11
+        },
+        {
+          "domain": "国际业务",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 15
+        },
+        {
+          "domain": "工会",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 13
+        },
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 5
+        },
+        {
+          "domain": "法规",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 9
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 45
+        }
+      ],
+      "present_in_domains": [
+        "产业金融",
+        "人力资源",
+        "供应链",
+        "国际业务",
+        "工会",
+        "市场营销",
+        "法规",
+        "计划财务"
+      ],
+      "member_count": 8,
+      "total_concept": 332,
+      "total_logical": 7222,
+      "total_physical": 7202
+    },
+    {
+      "group_id": "GOBJ_OBJ_SYSTEM",
+      "group_name": "系统",
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 8
+        },
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 12
+        },
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 24
+        },
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 8
+        },
+        {
+          "domain": "科技创新",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 9
+        },
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 8
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 15
+        }
+      ],
+      "present_in_domains": [
+        "产业金融",
+        "市场营销",
+        "战略规划",
+        "数字化",
+        "科技创新",
+        "系统运行",
+        "输配电"
+      ],
+      "member_count": 7,
+      "total_concept": 84,
+      "total_logical": 1361,
+      "total_physical": 483
+    },
+    {
+      "group_id": "GOBJ_OBJ_METRIC",
+      "group_name": "指标",
+      "members": [
+        {
+          "domain": "企业架构",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 50
+        },
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 27
+        },
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 8
+        },
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 1206
+        },
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 24
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 50
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 15
+        }
+      ],
+      "present_in_domains": [
+        "企业架构",
+        "供应链",
+        "市场营销",
+        "数字化",
+        "新兴业务",
+        "计划财务",
+        "输配电"
+      ],
+      "member_count": 7,
+      "total_concept": 1412,
+      "total_logical": 4815,
+      "total_physical": 4815
+    },
+    {
+      "group_id": "GOBJ_OBJ_CONTRACT",
+      "group_name": "合同",
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 56
+        },
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 55
+        },
+        {
+          "domain": "工会",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 10
+        },
+        {
+          "domain": "法规",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 5
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 11
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 23
+        }
+      ],
+      "present_in_domains": [
+        "人力资源",
+        "供应链",
+        "工会",
+        "法规",
+        "计划财务",
+        "输配电"
+      ],
+      "member_count": 6,
+      "total_concept": 214,
+      "total_logical": 2746,
+      "total_physical": 2746
+    },
+    {
+      "group_id": "GOBJ_OBJ_ASSET",
+      "group_name": "资产",
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_ASSET",
+          "object_name": "资产",
+          "cluster_size": 34
+        },
+        {
+          "domain": "办公",
+          "object_code": "OBJ_ASSET",
+          "object_name": "资产",
+          "cluster_size": 44
+        },
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_ASSET",
+          "object_name": "资产",
+          "cluster_size": 7
+        },
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_ASSET",
+          "object_name": "资产",
+          "cluster_size": 5
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_ASSET",
+          "object_name": "资产",
+          "cluster_size": 58
+        }
+      ],
+      "present_in_domains": [
+        "人力资源",
+        "办公",
+        "数字化",
+        "新兴业务",
+        "计划财务"
+      ],
+      "member_count": 5,
+      "total_concept": 148,
+      "total_logical": 1683,
+      "total_physical": 1683
+    },
+    {
+      "group_id": "GOBJ_OBJ_PROCESS",
+      "group_name": "流程",
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_PROCESS",
+          "object_name": "流程",
+          "cluster_size": 379
+        },
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_PROCESS",
+          "object_name": "流程",
+          "cluster_size": 5
+        },
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_PROCESS",
+          "object_name": "流程",
+          "cluster_size": 81
+        },
+        {
+          "domain": "法规",
+          "object_code": "OBJ_PROCESS",
+          "object_name": "流程",
+          "cluster_size": 5
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_PROCESS",
+          "object_name": "流程",
+          "cluster_size": 10
+        }
+      ],
+      "present_in_domains": [
+        "办公",
+        "战略规划",
+        "新兴业务",
+        "法规",
+        "计划财务"
+      ],
+      "member_count": 5,
+      "total_concept": 523,
+      "total_logical": 1286,
+      "total_physical": 1281
+    },
+    {
+      "group_id": "GOBJ_OBJ_STANDARD",
+      "group_name": "标准",
+      "members": [
+        {
+          "domain": "企业架构",
+          "object_code": "OBJ_STANDARD",
+          "object_name": "标准",
+          "cluster_size": 95
+        },
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_STANDARD",
+          "object_name": "标准",
+          "cluster_size": 19
+        },
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_STANDARD",
+          "object_name": "标准",
+          "cluster_size": 19
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_STANDARD",
+          "object_name": "标准",
+          "cluster_size": 13
+        }
+      ],
+      "present_in_domains": [
+        "企业架构",
+        "供应链",
+        "安全监管",
+        "输配电"
+      ],
+      "member_count": 4,
+      "total_concept": 261,
+      "total_logical": 4494,
+      "total_physical": 4494
+    },
+    {
+      "group_id": "GOBJ_OBJ_COST",
+      "group_name": "费用",
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_COST",
+          "object_name": "费用",
+          "cluster_size": 11
+        },
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_COST",
+          "object_name": "费用",
+          "cluster_size": 8
+        },
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_COST",
+          "object_name": "费用",
+          "cluster_size": 22
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_COST",
+          "object_name": "费用",
+          "cluster_size": 24
+        }
+      ],
+      "present_in_domains": [
+        "供应链",
+        "安全监管",
+        "市场营销",
+        "输配电"
+      ],
+      "member_count": 4,
+      "total_concept": 178,
+      "total_logical": 3093,
+      "total_physical": 3093
+    },
+    {
+      "group_id": "GOBJ_OBJ_MATERIAL",
+      "group_name": "物资",
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_MATERIAL",
+          "object_name": "物资",
+          "cluster_size": 150
+        },
+        {
+          "domain": "巡视",
+          "object_code": "OBJ_MATERIAL",
+          "object_name": "物资",
+          "cluster_size": 15
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_MATERIAL",
+          "object_name": "物资",
+          "cluster_size": 20
+        }
+      ],
+      "present_in_domains": [
+        "供应链",
+        "巡视",
+        "计划财务"
+      ],
+      "member_count": 3,
+      "total_concept": 185,
+      "total_logical": 834,
+      "total_physical": 834
+    },
+    {
+      "group_id": "GOBJ_OBJ_DEVICE",
+      "group_name": "设备",
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_DEVICE",
+          "object_name": "设备",
+          "cluster_size": 20
+        },
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_DEVICE",
+          "object_name": "设备",
+          "cluster_size": 6
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_DEVICE",
+          "object_name": "设备",
+          "cluster_size": 25
+        }
+      ],
+      "present_in_domains": [
+        "办公",
+        "系统运行",
+        "输配电"
+      ],
+      "member_count": 3,
+      "total_concept": 51,
+      "total_logical": 1037,
+      "total_physical": 1037
+    },
+    {
+      "group_id": "GOBJ_OBJ_VOUCHER",
+      "group_name": "票据",
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_VOUCHER",
+          "object_name": "票据",
+          "cluster_size": 9
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_VOUCHER",
+          "object_name": "票据",
+          "cluster_size": 14
+        }
+      ],
+      "present_in_domains": [
+        "人力资源",
+        "计划财务"
+      ],
+      "member_count": 2,
+      "total_concept": 23,
+      "total_logical": 344,
+      "total_physical": 344
+    },
+    {
+      "group_id": "GOBJ_OBJ_ORGANIZATION",
+      "group_name": "组织",
+      "members": [
+        {
+          "domain": "党建",
+          "object_code": "OBJ_ORGANIZATION",
+          "object_name": "组织",
+          "cluster_size": 51
+        },
+        {
+          "domain": "办公",
+          "object_code": "OBJ_ORGANIZATION",
+          "object_name": "组织",
+          "cluster_size": 78
+        }
+      ],
+      "present_in_domains": [
+        "党建",
+        "办公"
+      ],
+      "member_count": 2,
+      "total_concept": 128,
+      "total_logical": 1060,
+      "total_physical": 1060
+    },
+    {
+      "group_id": "GOBJ_OBJ_TEAM",
+      "group_name": "班站",
+      "members": [
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_TEAM",
+          "object_name": "班站",
+          "cluster_size": 6
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_TEAM",
+          "object_name": "班站",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "安全监管",
+        "输配电"
+      ],
+      "member_count": 2,
+      "total_concept": 12,
+      "total_logical": 457,
+      "total_physical": 457
+    },
+    {
+      "group_id": "GOBJ_OBJ_LINE",
+      "group_name": "线路",
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_LINE",
+          "object_name": "线路",
+          "cluster_size": 48
+        },
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_LINE",
+          "object_name": "线路",
+          "cluster_size": 27
+        }
+      ],
+      "present_in_domains": [
+        "市场营销",
+        "战略规划"
+      ],
+      "member_count": 2,
+      "total_concept": 75,
+      "total_logical": 1035,
+      "total_physical": 363
+    },
+    {
+      "group_id": "GOBJ_OBJ_分析",
+      "group_name": "分析",
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_分析",
+          "object_name": "分析",
+          "cluster_size": 6
+        },
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_分析",
+          "object_name": "分析",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "市场营销",
+        "新兴业务"
+      ],
+      "member_count": 2,
+      "total_concept": 11,
+      "total_logical": 149,
+      "total_physical": 149
+    },
+    {
+      "group_id": "GOBJ_OBJ_业务完",
+      "group_name": "业务完",
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_业务完",
+          "object_name": "业务完",
+          "cluster_size": 16
+        }
+      ],
+      "present_in_domains": [
+        "产业金融"
+      ],
+      "member_count": 1,
+      "total_concept": 16,
+      "total_logical": 33,
+      "total_physical": 0
+    },
+    {
+      "group_id": "GOBJ_OBJ_推荐信",
+      "group_name": "推荐信",
+      "members": [
+        {
+          "domain": "企业架构",
+          "object_code": "OBJ_推荐信",
+          "object_name": "推荐信",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "企业架构"
+      ],
+      "member_count": 1,
+      "total_concept": 6,
+      "total_logical": 7,
+      "total_physical": 7
+    },
+    {
+      "group_id": "GOBJ_OBJ_基本信",
+      "group_name": "基本信",
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_基本信",
+          "object_name": "基本信",
+          "cluster_size": 18
+        }
+      ],
+      "present_in_domains": [
+        "办公"
+      ],
+      "member_count": 1,
+      "total_concept": 18,
+      "total_logical": 26,
+      "total_physical": 26
+    },
+    {
+      "group_id": "GOBJ_OBJ_客户信",
+      "group_name": "客户信",
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_客户信",
+          "object_name": "客户信",
+          "cluster_size": 12
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "total_concept": 12,
+      "total_logical": 199,
+      "total_physical": 199
+    },
+    {
+      "group_id": "GOBJ_OBJ_营销业",
+      "group_name": "营销业",
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_营销业",
+          "object_name": "营销业",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "total_concept": 6,
+      "total_logical": 97,
+      "total_physical": 97
+    },
+    {
+      "group_id": "GOBJ_OBJ_度消费",
+      "group_name": "度消费",
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_度消费",
+          "object_name": "度消费",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "total_concept": 5,
+      "total_logical": 105,
+      "total_physical": 105
+    },
+    {
+      "group_id": "GOBJ_OBJ_帮扶管",
+      "group_name": "帮扶管",
+      "members": [
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_帮扶管",
+          "object_name": "帮扶管",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "战略规划"
+      ],
+      "member_count": 1,
+      "total_concept": 5,
+      "total_logical": 129,
+      "total_physical": 0
+    },
+    {
+      "group_id": "GOBJ_OBJ_信息管",
+      "group_name": "信息管",
+      "members": [
+        {
+          "domain": "政策研究",
+          "object_code": "OBJ_信息管",
+          "object_name": "信息管",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "政策研究"
+      ],
+      "member_count": 1,
+      "total_concept": 8,
+      "total_logical": 69,
+      "total_physical": 69
+    },
+    {
+      "group_id": "GOBJ_OBJ_LEDGER",
+      "group_name": "台账",
+      "members": [
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_LEDGER",
+          "object_name": "台账",
+          "cluster_size": 13
+        }
+      ],
+      "present_in_domains": [
+        "数字化"
+      ],
+      "member_count": 1,
+      "total_concept": 13,
+      "total_logical": 70,
+      "total_physical": 70
+    },
+    {
+      "group_id": "GOBJ_OBJ_DEFECT",
+      "group_name": "缺陷",
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_DEFECT",
+          "object_name": "缺陷",
+          "cluster_size": 29
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "total_concept": 29,
+      "total_logical": 109,
+      "total_physical": 109
+    },
+    {
+      "group_id": "GOBJ_OBJ_GENERATION",
+      "group_name": "发电",
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_GENERATION",
+          "object_name": "发电",
+          "cluster_size": 28
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "total_concept": 28,
+      "total_logical": 103,
+      "total_physical": 103
+    },
+    {
+      "group_id": "GOBJ_OBJ_现货市",
+      "group_name": "现货市",
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_现货市",
+          "object_name": "现货市",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "total_concept": 5,
+      "total_logical": 11,
+      "total_physical": 11
+    },
+    {
+      "group_id": "GOBJ_OBJ_移交信",
+      "group_name": "移交信",
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_移交信",
+          "object_name": "移交信",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "total_concept": 5,
+      "total_logical": 146,
+      "total_physical": 146
+    }
+  ],
+  "semantic_groups": [
+    {
+      "group_id": "SEM_17",
+      "repr_name": "任务",
+      "aliases": [
+        "任务"
+      ],
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 9
+        },
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 11
+        }
+      ],
+      "present_in_domains": [
+        "产业金融",
+        "数字化"
+      ],
+      "member_count": 2,
+      "avg_similarity": 0.9065,
+      "total_concept": 20,
+      "total_logical": 37,
+      "total_physical": 18
+    },
+    {
+      "group_id": "SEM_14",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 5
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 35
+        }
+      ],
+      "present_in_domains": [
+        "产业金融",
+        "输配电"
+      ],
+      "member_count": 2,
+      "avg_similarity": 0.8982,
+      "total_concept": 38,
+      "total_logical": 307,
+      "total_physical": 292
+    },
+    {
+      "group_id": "SEM_0",
+      "repr_name": "监督",
+      "aliases": [
+        "监督"
+      ],
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 10
+        },
+        {
+          "domain": "纪检监察",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 19
+        }
+      ],
+      "present_in_domains": [
+        "人力资源",
+        "纪检监察"
+      ],
+      "member_count": 2,
+      "avg_similarity": 0.8615,
+      "total_concept": 29,
+      "total_logical": 482,
+      "total_physical": 482
+    },
+    {
+      "group_id": "SEM_5",
+      "repr_name": "票据",
+      "aliases": [
+        "票据"
+      ],
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_VOUCHER",
+          "object_name": "票据",
+          "cluster_size": 9
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_VOUCHER",
+          "object_name": "票据",
+          "cluster_size": 14
+        }
+      ],
+      "present_in_domains": [
+        "人力资源",
+        "计划财务"
+      ],
+      "member_count": 2,
+      "avg_similarity": 0.9371,
+      "total_concept": 23,
+      "total_logical": 344,
+      "total_physical": 344
+    },
+    {
+      "group_id": "SEM_8",
+      "repr_name": "指标",
+      "aliases": [
+        "指标"
+      ],
+      "members": [
+        {
+          "domain": "企业架构",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 50
+        },
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 50
+        }
+      ],
+      "present_in_domains": [
+        "企业架构",
+        "计划财务"
+      ],
+      "member_count": 2,
+      "avg_similarity": 0.8811,
+      "total_concept": 135,
+      "total_logical": 813,
+      "total_physical": 813
+    },
+    {
+      "group_id": "SEM_6",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "企业架构",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 6
+        },
+        {
+          "domain": "办公",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "企业架构",
+        "办公"
+      ],
+      "member_count": 2,
+      "avg_similarity": 0.8892,
+      "total_concept": 16,
+      "total_logical": 213,
+      "total_physical": 213
+    },
+    {
+      "group_id": "SEM_3",
+      "repr_name": "计划",
+      "aliases": [
+        "计划"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 235
+        },
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 64
+        }
+      ],
+      "present_in_domains": [
+        "供应链",
+        "安全监管"
+      ],
+      "member_count": 2,
+      "avg_similarity": 0.8728,
+      "total_concept": 349,
+      "total_logical": 4056,
+      "total_physical": 4056
+    },
+    {
+      "group_id": "SEM_1",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 441
+        },
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 81
+        }
+      ],
+      "present_in_domains": [
+        "市场营销",
+        "战略规划"
+      ],
+      "member_count": 2,
+      "avg_similarity": 0.8617,
+      "total_concept": 522,
+      "total_logical": 3566,
+      "total_physical": 3480
+    },
+    {
+      "group_id": "SEM_4",
+      "repr_name": "费用",
+      "aliases": [
+        "费用"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_COST",
+          "object_name": "费用",
+          "cluster_size": 22
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_COST",
+          "object_name": "费用",
+          "cluster_size": 24
+        }
+      ],
+      "present_in_domains": [
+        "市场营销",
+        "输配电"
+      ],
+      "member_count": 2,
+      "avg_similarity": 0.9064,
+      "total_concept": 46,
+      "total_logical": 643,
+      "total_physical": 643
+    },
+    {
+      "group_id": "SEM_2",
+      "repr_name": "监督",
+      "aliases": [
+        "监督"
+      ],
+      "members": [
+        {
+          "domain": "法规",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 17
+        },
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 73
+        }
+      ],
+      "present_in_domains": [
+        "法规",
+        "输配电"
+      ],
+      "member_count": 2,
+      "avg_similarity": 0.8795,
+      "total_concept": 90,
+      "total_logical": 1419,
+      "total_physical": 1419
+    },
+    {
+      "group_id": "SEM_73",
+      "repr_name": "文档",
+      "aliases": [
+        "文档"
+      ],
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 14
+        }
+      ],
+      "present_in_domains": [
+        "产业金融"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 14,
+      "total_logical": 31,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_75",
+      "repr_name": "业务完",
+      "aliases": [
+        "业务完"
+      ],
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_业务完",
+          "object_name": "业务完",
+          "cluster_size": 16
+        }
+      ],
+      "present_in_domains": [
+        "产业金融"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 16,
+      "total_logical": 33,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_119",
+      "repr_name": "系统",
+      "aliases": [
+        "系统"
+      ],
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "产业金融"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 8,
+      "total_logical": 18,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_114",
+      "repr_name": "人员",
+      "aliases": [
+        "人员"
+      ],
+      "members": [
+        {
+          "domain": "产业金融",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 7
+        }
+      ],
+      "present_in_domains": [
+        "产业金融"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 7,
+      "total_logical": 20,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_113",
+      "repr_name": "人员",
+      "aliases": [
+        "人员"
+      ],
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 67
+        }
+      ],
+      "present_in_domains": [
+        "人力资源"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 67,
+      "total_logical": 2881,
+      "total_physical": 2881
+    },
+    {
+      "group_id": "SEM_82",
+      "repr_name": "合同",
+      "aliases": [
+        "合同"
+      ],
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 56
+        }
+      ],
+      "present_in_domains": [
+        "人力资源"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 56,
+      "total_logical": 1014,
+      "total_physical": 1014
+    },
+    {
+      "group_id": "SEM_71",
+      "repr_name": "资产",
+      "aliases": [
+        "资产"
+      ],
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_ASSET",
+          "object_name": "资产",
+          "cluster_size": 34
+        }
+      ],
+      "present_in_domains": [
+        "人力资源"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 34,
+      "total_logical": 666,
+      "total_physical": 666
+    },
+    {
+      "group_id": "SEM_91",
+      "repr_name": "计划",
+      "aliases": [
+        "计划"
+      ],
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "人力资源"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 6,
+      "total_logical": 8,
+      "total_physical": 8
+    },
+    {
+      "group_id": "SEM_120",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "人力资源",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 3
+        }
+      ],
+      "present_in_domains": [
+        "人力资源"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 3,
+      "total_logical": 377,
+      "total_physical": 377
+    },
+    {
+      "group_id": "SEM_116",
+      "repr_name": "标准",
+      "aliases": [
+        "标准"
+      ],
+      "members": [
+        {
+          "domain": "企业架构",
+          "object_code": "OBJ_STANDARD",
+          "object_name": "标准",
+          "cluster_size": 95
+        }
+      ],
+      "present_in_domains": [
+        "企业架构"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 95,
+      "total_logical": 1594,
+      "total_physical": 1594
+    },
+    {
+      "group_id": "SEM_102",
+      "repr_name": "计划",
+      "aliases": [
+        "计划"
+      ],
+      "members": [
+        {
+          "domain": "企业架构",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 20
+        }
+      ],
+      "present_in_domains": [
+        "企业架构"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 20,
+      "total_logical": 154,
+      "total_physical": 154
+    },
+    {
+      "group_id": "SEM_112",
+      "repr_name": "推荐信",
+      "aliases": [
+        "推荐信"
+      ],
+      "members": [
+        {
+          "domain": "企业架构",
+          "object_code": "OBJ_推荐信",
+          "object_name": "推荐信",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "企业架构"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 6,
+      "total_logical": 7,
+      "total_physical": 7
+    },
+    {
+      "group_id": "SEM_106",
+      "repr_name": "物资",
+      "aliases": [
+        "物资"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_MATERIAL",
+          "object_name": "物资",
+          "cluster_size": 150
+        }
+      ],
+      "present_in_domains": [
+        "供应链"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 150,
+      "total_logical": 786,
+      "total_physical": 786
+    },
+    {
+      "group_id": "SEM_101",
+      "repr_name": "监督",
+      "aliases": [
+        "监督"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 53
+        }
+      ],
+      "present_in_domains": [
+        "供应链"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 161,
+      "total_logical": 2972,
+      "total_physical": 2972
+    },
+    {
+      "group_id": "SEM_77",
+      "repr_name": "任务",
+      "aliases": [
+        "任务"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 43
+        }
+      ],
+      "present_in_domains": [
+        "供应链"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 43,
+      "total_logical": 52,
+      "total_physical": 52
+    },
+    {
+      "group_id": "SEM_121",
+      "repr_name": "合同",
+      "aliases": [
+        "合同"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 55
+        }
+      ],
+      "present_in_domains": [
+        "供应链"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 51,
+      "total_logical": 285,
+      "total_physical": 285
+    },
+    {
+      "group_id": "SEM_88",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 27
+        }
+      ],
+      "present_in_domains": [
+        "供应链"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 140,
+      "total_logical": 3089,
+      "total_physical": 3089
+    },
+    {
+      "group_id": "SEM_70",
+      "repr_name": "指标",
+      "aliases": [
+        "指标"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 27
+        }
+      ],
+      "present_in_domains": [
+        "供应链"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 27,
+      "total_logical": 119,
+      "total_physical": 119
+    },
+    {
+      "group_id": "SEM_115",
+      "repr_name": "文档",
+      "aliases": [
+        "文档"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 21
+        }
+      ],
+      "present_in_domains": [
+        "供应链"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 133,
+      "total_logical": 2441,
+      "total_physical": 2441
+    },
+    {
+      "group_id": "SEM_64",
+      "repr_name": "标准",
+      "aliases": [
+        "标准"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_STANDARD",
+          "object_name": "标准",
+          "cluster_size": 19
+        }
+      ],
+      "present_in_domains": [
+        "供应链"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 134,
+      "total_logical": 2539,
+      "total_physical": 2539
+    },
+    {
+      "group_id": "SEM_122",
+      "repr_name": "费用",
+      "aliases": [
+        "费用"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_COST",
+          "object_name": "费用",
+          "cluster_size": 11
+        }
+      ],
+      "present_in_domains": [
+        "供应链"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 124,
+      "total_logical": 2433,
+      "total_physical": 2433
+    },
+    {
+      "group_id": "SEM_87",
+      "repr_name": "人员",
+      "aliases": [
+        "人员"
+      ],
+      "members": [
+        {
+          "domain": "供应链",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 11
+        }
+      ],
+      "present_in_domains": [
+        "供应链"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 126,
+      "total_logical": 2434,
+      "total_physical": 2434
+    },
+    {
+      "group_id": "SEM_99",
+      "repr_name": "组织",
+      "aliases": [
+        "组织"
+      ],
+      "members": [
+        {
+          "domain": "党建",
+          "object_code": "OBJ_ORGANIZATION",
+          "object_name": "组织",
+          "cluster_size": 51
+        }
+      ],
+      "present_in_domains": [
+        "党建"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 50,
+      "total_logical": 907,
+      "total_physical": 907
+    },
+    {
+      "group_id": "SEM_60",
+      "repr_name": "监督",
+      "aliases": [
+        "监督"
+      ],
+      "members": [
+        {
+          "domain": "党建",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 18
+        }
+      ],
+      "present_in_domains": [
+        "党建"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 20,
+      "total_logical": 488,
+      "total_physical": 488
+    },
+    {
+      "group_id": "SEM_103",
+      "repr_name": "计划",
+      "aliases": [
+        "计划"
+      ],
+      "members": [
+        {
+          "domain": "党建",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 17
+        }
+      ],
+      "present_in_domains": [
+        "党建"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 19,
+      "total_logical": 317,
+      "total_physical": 317
+    },
+    {
+      "group_id": "SEM_76",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "党建",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 1
+        }
+      ],
+      "present_in_domains": [
+        "党建"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 1,
+      "total_logical": 47,
+      "total_physical": 47
+    },
+    {
+      "group_id": "SEM_43",
+      "repr_name": "流程",
+      "aliases": [
+        "流程"
+      ],
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_PROCESS",
+          "object_name": "流程",
+          "cluster_size": 379
+        }
+      ],
+      "present_in_domains": [
+        "办公"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 364,
+      "total_logical": 534,
+      "total_physical": 534
+    },
+    {
+      "group_id": "SEM_105",
+      "repr_name": "组织",
+      "aliases": [
+        "组织"
+      ],
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_ORGANIZATION",
+          "object_name": "组织",
+          "cluster_size": 78
+        }
+      ],
+      "present_in_domains": [
+        "办公"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 78,
+      "total_logical": 153,
+      "total_physical": 153
+    },
+    {
+      "group_id": "SEM_69",
+      "repr_name": "资产",
+      "aliases": [
+        "资产"
+      ],
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_ASSET",
+          "object_name": "资产",
+          "cluster_size": 44
+        }
+      ],
+      "present_in_domains": [
+        "办公"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 44,
+      "total_logical": 129,
+      "total_physical": 129
+    },
+    {
+      "group_id": "SEM_110",
+      "repr_name": "任务",
+      "aliases": [
+        "任务"
+      ],
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 26
+        }
+      ],
+      "present_in_domains": [
+        "办公"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 26,
+      "total_logical": 41,
+      "total_physical": 41
+    },
+    {
+      "group_id": "SEM_62",
+      "repr_name": "基本信",
+      "aliases": [
+        "基本信"
+      ],
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_基本信",
+          "object_name": "基本信",
+          "cluster_size": 18
+        }
+      ],
+      "present_in_domains": [
+        "办公"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 18,
+      "total_logical": 26,
+      "total_physical": 26
+    },
+    {
+      "group_id": "SEM_79",
+      "repr_name": "计划",
+      "aliases": [
+        "计划"
+      ],
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 12
+        }
+      ],
+      "present_in_domains": [
+        "办公"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 12,
+      "total_logical": 34,
+      "total_physical": 34
+    },
+    {
+      "group_id": "SEM_59",
+      "repr_name": "监督",
+      "aliases": [
+        "监督"
+      ],
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 19
+        }
+      ],
+      "present_in_domains": [
+        "办公"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 19,
+      "total_logical": 62,
+      "total_physical": 62
+    },
+    {
+      "group_id": "SEM_65",
+      "repr_name": "设备",
+      "aliases": [
+        "设备"
+      ],
+      "members": [
+        {
+          "domain": "办公",
+          "object_code": "OBJ_DEVICE",
+          "object_name": "设备",
+          "cluster_size": 20
+        }
+      ],
+      "present_in_domains": [
+        "办公"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 20,
+      "total_logical": 92,
+      "total_physical": 92
+    },
+    {
+      "group_id": "SEM_78",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "国际业务",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 43
+        }
+      ],
+      "present_in_domains": [
+        "国际业务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 43,
+      "total_logical": 225,
+      "total_physical": 225
+    },
+    {
+      "group_id": "SEM_108",
+      "repr_name": "人员",
+      "aliases": [
+        "人员"
+      ],
+      "members": [
+        {
+          "domain": "国际业务",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 15
+        }
+      ],
+      "present_in_domains": [
+        "国际业务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 15,
+      "total_logical": 64,
+      "total_physical": 64
+    },
+    {
+      "group_id": "SEM_84",
+      "repr_name": "计划",
+      "aliases": [
+        "计划"
+      ],
+      "members": [
+        {
+          "domain": "国际业务",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 9
+        }
+      ],
+      "present_in_domains": [
+        "国际业务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 9,
+      "total_logical": 14,
+      "total_physical": 14
+    },
+    {
+      "group_id": "SEM_50",
+      "repr_name": "标准",
+      "aliases": [
+        "标准"
+      ],
+      "members": [
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_STANDARD",
+          "object_name": "标准",
+          "cluster_size": 19
+        }
+      ],
+      "present_in_domains": [
+        "安全监管"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 19,
+      "total_logical": 38,
+      "total_physical": 38
+    },
+    {
+      "group_id": "SEM_68",
+      "repr_name": "监督",
+      "aliases": [
+        "监督"
+      ],
+      "members": [
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 12
+        }
+      ],
+      "present_in_domains": [
+        "安全监管"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 12,
+      "total_logical": 18,
+      "total_physical": 18
+    },
+    {
+      "group_id": "SEM_90",
+      "repr_name": "费用",
+      "aliases": [
+        "费用"
+      ],
+      "members": [
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_COST",
+          "object_name": "费用",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "安全监管"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 8,
+      "total_logical": 17,
+      "total_physical": 17
+    },
+    {
+      "group_id": "SEM_92",
+      "repr_name": "班站",
+      "aliases": [
+        "班站"
+      ],
+      "members": [
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_TEAM",
+          "object_name": "班站",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "安全监管"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 6,
+      "total_logical": 362,
+      "total_physical": 362
+    },
+    {
+      "group_id": "SEM_94",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "安全监管",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 2
+        }
+      ],
+      "present_in_domains": [
+        "安全监管"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 2,
+      "total_logical": 4,
+      "total_physical": 4
+    },
+    {
+      "group_id": "SEM_104",
+      "repr_name": "文档",
+      "aliases": [
+        "文档"
+      ],
+      "members": [
+        {
+          "domain": "审计",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 18
+        }
+      ],
+      "present_in_domains": [
+        "审计"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 18,
+      "total_logical": 130,
+      "total_physical": 130
+    },
+    {
+      "group_id": "SEM_83",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "审计",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 11
+        }
+      ],
+      "present_in_domains": [
+        "审计"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 11,
+      "total_logical": 120,
+      "total_physical": 120
+    },
+    {
+      "group_id": "SEM_63",
+      "repr_name": "文档",
+      "aliases": [
+        "文档"
+      ],
+      "members": [
+        {
+          "domain": "巡视",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 29
+        }
+      ],
+      "present_in_domains": [
+        "巡视"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 29,
+      "total_logical": 61,
+      "total_physical": 61
+    },
+    {
+      "group_id": "SEM_37",
+      "repr_name": "物资",
+      "aliases": [
+        "物资"
+      ],
+      "members": [
+        {
+          "domain": "巡视",
+          "object_code": "OBJ_MATERIAL",
+          "object_name": "物资",
+          "cluster_size": 15
+        }
+      ],
+      "present_in_domains": [
+        "巡视"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 15,
+      "total_logical": 28,
+      "total_physical": 28
+    },
+    {
+      "group_id": "SEM_118",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "巡视",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 1
+        }
+      ],
+      "present_in_domains": [
+        "巡视"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 1,
+      "total_logical": 5,
+      "total_physical": 5
+    },
+    {
+      "group_id": "SEM_89",
+      "repr_name": "合同",
+      "aliases": [
+        "合同"
+      ],
+      "members": [
+        {
+          "domain": "工会",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 10
+        }
+      ],
+      "present_in_domains": [
+        "工会"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 10,
+      "total_logical": 591,
+      "total_physical": 591
+    },
+    {
+      "group_id": "SEM_34",
+      "repr_name": "人员",
+      "aliases": [
+        "人员"
+      ],
+      "members": [
+        {
+          "domain": "工会",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 13
+        }
+      ],
+      "present_in_domains": [
+        "工会"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 13,
+      "total_logical": 690,
+      "total_physical": 690
+    },
+    {
+      "group_id": "SEM_80",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "工会",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 2
+        }
+      ],
+      "present_in_domains": [
+        "工会"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 2,
+      "total_logical": 43,
+      "total_physical": 43
+    },
+    {
+      "group_id": "SEM_66",
+      "repr_name": "监督",
+      "aliases": [
+        "监督"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_AUDIT",
+          "object_name": "监督",
+          "cluster_size": 85
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 85,
+      "total_logical": 635,
+      "total_physical": 635
+    },
+    {
+      "group_id": "SEM_111",
+      "repr_name": "线路",
+      "aliases": [
+        "线路"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_LINE",
+          "object_name": "线路",
+          "cluster_size": 48
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 48,
+      "total_logical": 363,
+      "total_physical": 363
+    },
+    {
+      "group_id": "SEM_31",
+      "repr_name": "任务",
+      "aliases": [
+        "任务"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 30
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 30,
+      "total_logical": 207,
+      "total_physical": 207
+    },
+    {
+      "group_id": "SEM_100",
+      "repr_name": "系统",
+      "aliases": [
+        "系统"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 12
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 12,
+      "total_logical": 137,
+      "total_physical": 137
+    },
+    {
+      "group_id": "SEM_55",
+      "repr_name": "客户信",
+      "aliases": [
+        "客户信"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_客户信",
+          "object_name": "客户信",
+          "cluster_size": 12
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 12,
+      "total_logical": 199,
+      "total_physical": 199
+    },
+    {
+      "group_id": "SEM_41",
+      "repr_name": "指标",
+      "aliases": [
+        "指标"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 8,
+      "total_logical": 69,
+      "total_physical": 69
+    },
+    {
+      "group_id": "SEM_107",
+      "repr_name": "分析",
+      "aliases": [
+        "分析"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_分析",
+          "object_name": "分析",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 6,
+      "total_logical": 144,
+      "total_physical": 144
+    },
+    {
+      "group_id": "SEM_49",
+      "repr_name": "营销业",
+      "aliases": [
+        "营销业"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_营销业",
+          "object_name": "营销业",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 6,
+      "total_logical": 97,
+      "total_physical": 97
+    },
+    {
+      "group_id": "SEM_74",
+      "repr_name": "度消费",
+      "aliases": [
+        "度消费"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_度消费",
+          "object_name": "度消费",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 5,
+      "total_logical": 105,
+      "total_physical": 105
+    },
+    {
+      "group_id": "SEM_51",
+      "repr_name": "人员",
+      "aliases": [
+        "人员"
+      ],
+      "members": [
+        {
+          "domain": "市场营销",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "市场营销"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 5,
+      "total_logical": 13,
+      "total_physical": 13
+    },
+    {
+      "group_id": "SEM_32",
+      "repr_name": "线路",
+      "aliases": [
+        "线路"
+      ],
+      "members": [
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_LINE",
+          "object_name": "线路",
+          "cluster_size": 27
+        }
+      ],
+      "present_in_domains": [
+        "战略规划"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 27,
+      "total_logical": 672,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_124",
+      "repr_name": "系统",
+      "aliases": [
+        "系统"
+      ],
+      "members": [
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 24
+        }
+      ],
+      "present_in_domains": [
+        "战略规划"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 24,
+      "total_logical": 860,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_95",
+      "repr_name": "任务",
+      "aliases": [
+        "任务"
+      ],
+      "members": [
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 10
+        }
+      ],
+      "present_in_domains": [
+        "战略规划"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 10,
+      "total_logical": 143,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_38",
+      "repr_name": "计划",
+      "aliases": [
+        "计划"
+      ],
+      "members": [
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 7
+        }
+      ],
+      "present_in_domains": [
+        "战略规划"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 7,
+      "total_logical": 972,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_123",
+      "repr_name": "帮扶管",
+      "aliases": [
+        "帮扶管"
+      ],
+      "members": [
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_帮扶管",
+          "object_name": "帮扶管",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "战略规划"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 5,
+      "total_logical": 129,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_85",
+      "repr_name": "流程",
+      "aliases": [
+        "流程"
+      ],
+      "members": [
+        {
+          "domain": "战略规划",
+          "object_code": "OBJ_PROCESS",
+          "object_name": "流程",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "战略规划"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 5,
+      "total_logical": 5,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_52",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "政策研究",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 23
+        }
+      ],
+      "present_in_domains": [
+        "政策研究"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 23,
+      "total_logical": 69,
+      "total_physical": 69
+    },
+    {
+      "group_id": "SEM_97",
+      "repr_name": "信息管",
+      "aliases": [
+        "信息管"
+      ],
+      "members": [
+        {
+          "domain": "政策研究",
+          "object_code": "OBJ_信息管",
+          "object_name": "信息管",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "政策研究"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 8,
+      "total_logical": 69,
+      "total_physical": 69
+    },
+    {
+      "group_id": "SEM_67",
+      "repr_name": "任务",
+      "aliases": [
+        "任务"
+      ],
+      "members": [
+        {
+          "domain": "政策研究",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 7
+        }
+      ],
+      "present_in_domains": [
+        "政策研究"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 7,
+      "total_logical": 84,
+      "total_physical": 84
+    },
+    {
+      "group_id": "SEM_98",
+      "repr_name": "指标",
+      "aliases": [
+        "指标"
+      ],
+      "members": [
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 1206
+        }
+      ],
+      "present_in_domains": [
+        "数字化"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 1203,
+      "total_logical": 3428,
+      "total_physical": 3428
+    },
+    {
+      "group_id": "SEM_72",
+      "repr_name": "计划",
+      "aliases": [
+        "计划"
+      ],
+      "members": [
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 27
+        }
+      ],
+      "present_in_domains": [
+        "数字化"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 27,
+      "total_logical": 110,
+      "total_physical": 110
+    },
+    {
+      "group_id": "SEM_15",
+      "repr_name": "台账",
+      "aliases": [
+        "台账"
+      ],
+      "members": [
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_LEDGER",
+          "object_name": "台账",
+          "cluster_size": 13
+        }
+      ],
+      "present_in_domains": [
+        "数字化"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 13,
+      "total_logical": 70,
+      "total_physical": 70
+    },
+    {
+      "group_id": "SEM_96",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 11
+        }
+      ],
+      "present_in_domains": [
+        "数字化"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 11,
+      "total_logical": 142,
+      "total_physical": 142
+    },
+    {
+      "group_id": "SEM_117",
+      "repr_name": "系统",
+      "aliases": [
+        "系统"
+      ],
+      "members": [
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "数字化"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 8,
+      "total_logical": 133,
+      "total_physical": 133
+    },
+    {
+      "group_id": "SEM_61",
+      "repr_name": "资产",
+      "aliases": [
+        "资产"
+      ],
+      "members": [
+        {
+          "domain": "数字化",
+          "object_code": "OBJ_ASSET",
+          "object_name": "资产",
+          "cluster_size": 7
+        }
+      ],
+      "present_in_domains": [
+        "数字化"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 7,
+      "total_logical": 7,
+      "total_physical": 7
+    },
+    {
+      "group_id": "SEM_29",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 146
+        }
+      ],
+      "present_in_domains": [
+        "新兴业务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 146,
+      "total_logical": 146,
+      "total_physical": 146
+    },
+    {
+      "group_id": "SEM_109",
+      "repr_name": "流程",
+      "aliases": [
+        "流程"
+      ],
+      "members": [
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_PROCESS",
+          "object_name": "流程",
+          "cluster_size": 81
+        }
+      ],
+      "present_in_domains": [
+        "新兴业务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 81,
+      "total_logical": 88,
+      "total_physical": 88
+    },
+    {
+      "group_id": "SEM_81",
+      "repr_name": "任务",
+      "aliases": [
+        "任务"
+      ],
+      "members": [
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 58
+        }
+      ],
+      "present_in_domains": [
+        "新兴业务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 58,
+      "total_logical": 58,
+      "total_physical": 58
+    },
+    {
+      "group_id": "SEM_56",
+      "repr_name": "指标",
+      "aliases": [
+        "指标"
+      ],
+      "members": [
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 24
+        }
+      ],
+      "present_in_domains": [
+        "新兴业务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 24,
+      "total_logical": 82,
+      "total_physical": 82
+    },
+    {
+      "group_id": "SEM_40",
+      "repr_name": "分析",
+      "aliases": [
+        "分析"
+      ],
+      "members": [
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_分析",
+          "object_name": "分析",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "新兴业务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 5,
+      "total_logical": 5,
+      "total_physical": 5
+    },
+    {
+      "group_id": "SEM_57",
+      "repr_name": "资产",
+      "aliases": [
+        "资产"
+      ],
+      "members": [
+        {
+          "domain": "新兴业务",
+          "object_code": "OBJ_ASSET",
+          "object_name": "资产",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "新兴业务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 5,
+      "total_logical": 5,
+      "total_physical": 5
+    },
+    {
+      "group_id": "SEM_93",
+      "repr_name": "人员",
+      "aliases": [
+        "人员"
+      ],
+      "members": [
+        {
+          "domain": "法规",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 9
+        }
+      ],
+      "present_in_domains": [
+        "法规"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 9,
+      "total_logical": 107,
+      "total_physical": 107
+    },
+    {
+      "group_id": "SEM_46",
+      "repr_name": "文档",
+      "aliases": [
+        "文档"
+      ],
+      "members": [
+        {
+          "domain": "法规",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "法规"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 8,
+      "total_logical": 251,
+      "total_physical": 251
+    },
+    {
+      "group_id": "SEM_39",
+      "repr_name": "流程",
+      "aliases": [
+        "流程"
+      ],
+      "members": [
+        {
+          "domain": "法规",
+          "object_code": "OBJ_PROCESS",
+          "object_name": "流程",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "法规"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 5,
+      "total_logical": 226,
+      "total_physical": 226
+    },
+    {
+      "group_id": "SEM_54",
+      "repr_name": "合同",
+      "aliases": [
+        "合同"
+      ],
+      "members": [
+        {
+          "domain": "法规",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "法规"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 5,
+      "total_logical": 119,
+      "total_physical": 119
+    },
+    {
+      "group_id": "SEM_33",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "法规",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 12
+        }
+      ],
+      "present_in_domains": [
+        "法规"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 12,
+      "total_logical": 161,
+      "total_physical": 161
+    },
+    {
+      "group_id": "SEM_53",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "科技创新",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 24
+        }
+      ],
+      "present_in_domains": [
+        "科技创新"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 24,
+      "total_logical": 530,
+      "total_physical": 530
+    },
+    {
+      "group_id": "SEM_48",
+      "repr_name": "系统",
+      "aliases": [
+        "系统"
+      ],
+      "members": [
+        {
+          "domain": "科技创新",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 9
+        }
+      ],
+      "present_in_domains": [
+        "科技创新"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 9,
+      "total_logical": 145,
+      "total_physical": 145
+    },
+    {
+      "group_id": "SEM_47",
+      "repr_name": "计划",
+      "aliases": [
+        "计划"
+      ],
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 106
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 106,
+      "total_logical": 633,
+      "total_physical": 633
+    },
+    {
+      "group_id": "SEM_24",
+      "repr_name": "缺陷",
+      "aliases": [
+        "缺陷"
+      ],
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_DEFECT",
+          "object_name": "缺陷",
+          "cluster_size": 29
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 29,
+      "total_logical": 109,
+      "total_physical": 109
+    },
+    {
+      "group_id": "SEM_45",
+      "repr_name": "发电",
+      "aliases": [
+        "发电"
+      ],
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_GENERATION",
+          "object_name": "发电",
+          "cluster_size": 28
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 28,
+      "total_logical": 103,
+      "total_physical": 103
+    },
+    {
+      "group_id": "SEM_18",
+      "repr_name": "文档",
+      "aliases": [
+        "文档"
+      ],
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 19
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 19,
+      "total_logical": 79,
+      "total_physical": 79
+    },
+    {
+      "group_id": "SEM_27",
+      "repr_name": "任务",
+      "aliases": [
+        "任务"
+      ],
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 13
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 13,
+      "total_logical": 36,
+      "total_physical": 36
+    },
+    {
+      "group_id": "SEM_58",
+      "repr_name": "设备",
+      "aliases": [
+        "设备"
+      ],
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_DEVICE",
+          "object_name": "设备",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 6,
+      "total_logical": 22,
+      "total_physical": 22
+    },
+    {
+      "group_id": "SEM_23",
+      "repr_name": "系统",
+      "aliases": [
+        "系统"
+      ],
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 8,
+      "total_logical": 22,
+      "total_physical": 22
+    },
+    {
+      "group_id": "SEM_22",
+      "repr_name": "现货市",
+      "aliases": [
+        "现货市"
+      ],
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_现货市",
+          "object_name": "现货市",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 5,
+      "total_logical": 11,
+      "total_physical": 11
+    },
+    {
+      "group_id": "SEM_16",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "系统运行",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 1
+        }
+      ],
+      "present_in_domains": [
+        "系统运行"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 1,
+      "total_logical": 2,
+      "total_physical": 2
+    },
+    {
+      "group_id": "SEM_30",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "纪检监察",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 0
+        }
+      ],
+      "present_in_domains": [
+        "纪检监察"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 0,
+      "total_logical": 0,
+      "total_physical": 0
+    },
+    {
+      "group_id": "SEM_25",
+      "repr_name": "资产",
+      "aliases": [
+        "资产"
+      ],
+      "members": [
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_ASSET",
+          "object_name": "资产",
+          "cluster_size": 58
+        }
+      ],
+      "present_in_domains": [
+        "计划财务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 58,
+      "total_logical": 876,
+      "total_physical": 876
+    },
+    {
+      "group_id": "SEM_35",
+      "repr_name": "人员",
+      "aliases": [
+        "人员"
+      ],
+      "members": [
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_PERSONNEL",
+          "object_name": "人员",
+          "cluster_size": 45
+        }
+      ],
+      "present_in_domains": [
+        "计划财务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 90,
+      "total_logical": 1013,
+      "total_physical": 1013
+    },
+    {
+      "group_id": "SEM_36",
+      "repr_name": "物资",
+      "aliases": [
+        "物资"
+      ],
+      "members": [
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_MATERIAL",
+          "object_name": "物资",
+          "cluster_size": 20
+        }
+      ],
+      "present_in_domains": [
+        "计划财务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 20,
+      "total_logical": 20,
+      "total_physical": 20
+    },
+    {
+      "group_id": "SEM_86",
+      "repr_name": "合同",
+      "aliases": [
+        "合同"
+      ],
+      "members": [
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 11
+        }
+      ],
+      "present_in_domains": [
+        "计划财务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 69,
+      "total_logical": 578,
+      "total_physical": 578
+    },
+    {
+      "group_id": "SEM_42",
+      "repr_name": "流程",
+      "aliases": [
+        "流程"
+      ],
+      "members": [
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_PROCESS",
+          "object_name": "流程",
+          "cluster_size": 10
+        }
+      ],
+      "present_in_domains": [
+        "计划财务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 68,
+      "total_logical": 433,
+      "total_physical": 433
+    },
+    {
+      "group_id": "SEM_28",
+      "repr_name": "文档",
+      "aliases": [
+        "文档"
+      ],
+      "members": [
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "计划财务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 61,
+      "total_logical": 638,
+      "total_physical": 638
+    },
+    {
+      "group_id": "SEM_11",
+      "repr_name": "项目",
+      "aliases": [
+        "项目"
+      ],
+      "members": [
+        {
+          "domain": "计划财务",
+          "object_code": "OBJ_PROJECT",
+          "object_name": "项目",
+          "cluster_size": 9
+        }
+      ],
+      "present_in_domains": [
+        "计划财务"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 10,
+      "total_logical": 127,
+      "total_physical": 127
+    },
+    {
+      "group_id": "SEM_26",
+      "repr_name": "任务",
+      "aliases": [
+        "任务"
+      ],
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_TASK",
+          "object_name": "任务",
+          "cluster_size": 126
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 126,
+      "total_logical": 1749,
+      "total_physical": 1749
+    },
+    {
+      "group_id": "SEM_20",
+      "repr_name": "设备",
+      "aliases": [
+        "设备"
+      ],
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_DEVICE",
+          "object_name": "设备",
+          "cluster_size": 25
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 25,
+      "total_logical": 923,
+      "total_physical": 923
+    },
+    {
+      "group_id": "SEM_13",
+      "repr_name": "合同",
+      "aliases": [
+        "合同"
+      ],
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_CONTRACT",
+          "object_name": "合同",
+          "cluster_size": 23
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 23,
+      "total_logical": 159,
+      "total_physical": 159
+    },
+    {
+      "group_id": "SEM_19",
+      "repr_name": "系统",
+      "aliases": [
+        "系统"
+      ],
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_SYSTEM",
+          "object_name": "系统",
+          "cluster_size": 15
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 15,
+      "total_logical": 46,
+      "total_physical": 46
+    },
+    {
+      "group_id": "SEM_44",
+      "repr_name": "指标",
+      "aliases": [
+        "指标"
+      ],
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_METRIC",
+          "object_name": "指标",
+          "cluster_size": 15
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 15,
+      "total_logical": 304,
+      "total_physical": 304
+    },
+    {
+      "group_id": "SEM_9",
+      "repr_name": "标准",
+      "aliases": [
+        "标准"
+      ],
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_STANDARD",
+          "object_name": "标准",
+          "cluster_size": 13
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 13,
+      "total_logical": 323,
+      "total_physical": 323
+    },
+    {
+      "group_id": "SEM_7",
+      "repr_name": "文档",
+      "aliases": [
+        "文档"
+      ],
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_DOCUMENT",
+          "object_name": "文档",
+          "cluster_size": 10
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 10,
+      "total_logical": 532,
+      "total_physical": 532
+    },
+    {
+      "group_id": "SEM_21",
+      "repr_name": "计划",
+      "aliases": [
+        "计划"
+      ],
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_PLAN",
+          "object_name": "计划",
+          "cluster_size": 8
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 8,
+      "total_logical": 10,
+      "total_physical": 10
+    },
+    {
+      "group_id": "SEM_10",
+      "repr_name": "班站",
+      "aliases": [
+        "班站"
+      ],
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_TEAM",
+          "object_name": "班站",
+          "cluster_size": 6
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 6,
+      "total_logical": 95,
+      "total_physical": 95
+    },
+    {
+      "group_id": "SEM_12",
+      "repr_name": "移交信",
+      "aliases": [
+        "移交信"
+      ],
+      "members": [
+        {
+          "domain": "输配电",
+          "object_code": "OBJ_移交信",
+          "object_name": "移交信",
+          "cluster_size": 5
+        }
+      ],
+      "present_in_domains": [
+        "输配电"
+      ],
+      "member_count": 1,
+      "avg_similarity": 1.0,
+      "total_concept": 5,
+      "total_logical": 146,
+      "total_physical": 146
+    }
+  ]
+}
