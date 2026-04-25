@@ -41,9 +41,18 @@ EOF
 | 索引 | `IDX_<表>_<字段>` | `IDX_TF_OM_OBJECT_DOMAIN` |
 | 注释 | COMMENT ON TABLE/COLUMN, 逐字段必写 | — |
 
+## 已完成
+
+- [x] 01 EAV 4 表 (DATASET / ENTITY / ATTRIBUTE / VALUE)
+- [x] 02 OM 2 表 (EXTRACTED_OBJECT / ENTITY_RELATION)
+- [x] 03 LC + TR + MF + AL 4 模块共 5 表 (LC_OBJECT_HISTORY / TR_CHAIN / TR_CHAIN_NODE / MF_FUNCTION / AL_ALERT_RECORD)
+- [x] 04 GV 治理 2 视图 (V_TF_GV_COMPLETENESS / V_TF_GV_DEFECTS)
+- [x] 99 预置 4 机理函数 + 3 溯源链路 (MERGE INTO 幂等)
+
 ## 待办
 
-- [ ] 03 生命周期 / 溯源 / 机理函数 / 预警四模块（对应 MySQL bootstrap 第 359-531 行）
-- [ ] 04 治理视图（V_GOVERNANCE_COMPLETENESS / V_GOVERNANCE_DEFECTS）
-- [ ] 99 预置字典（业务域 / 预置对象 / 示例溯源链路）
+- [ ] 99_init_dict_data.sql 中链路节点的 INSERT 翻译 (依赖 OBJECT_ID 子查询, 需 DBA 协助)
+- [ ] 次要表: object_synonyms / object_attribute_definitions / object_business_object_mapping / object_extraction_batches / object_batch_mapping / object_dedup_decisions / formula_chains / field_lineage 等
+  (这些当前 webapp 用得少, 可分阶段补)
 - [ ] 正式交付前由南网 DBA 审核达梦 8.1 上的关键字冲突（参见《达梦数据库设计开发规范》附录 9）
+- [ ] 索引调优: 上线后根据热点查询补复合索引
