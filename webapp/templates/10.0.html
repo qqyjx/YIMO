@@ -722,6 +722,9 @@
             <div class="nav-item" data-section="section-cross-domain" onclick="scrollToSection('section-cross-domain');loadCrossDomain();">
                 <i class="bi bi-diagram-2"></i><span>跨域分析</span>
             </div>
+            <div class="nav-item" data-section="section-lineage" onclick="scrollToSection('section-lineage');loadLineage();">
+                <i class="bi bi-share"></i><span>数据血缘</span>
+            </div>
             <!-- HTAP 已移至右下角浮动面板 -->
         </nav>
 
@@ -1296,6 +1299,35 @@
                     <h3 style="font-size:.9rem;font-weight:600;margin-bottom:8px;color:var(--text-pri);">跨域对象一致性对比</h3>
                     <div id="govDomainComparison" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
                         <div class="empty-state"><i class="bi bi-diagram-2"></i><p>加载中...</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 数据血缘 (4.9 反馈: 项目金额=多字段相加 字段级溯源) -->
+            <section class="section" id="section-lineage" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-share"></i>数据血缘 / 字段链路追踪
+                    </div>
+                    <button class="btn-sm" onclick="loadLineage()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                </div>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:14px;">
+                    字段级数据溯源: 一个衍生字段(如"项目总金额")可能由多个原始字段相加/相减得来.
+                    从下方公式列表选一个查看完整血缘图谱; 这是穿透式监管"从结算单追溯到底层业务"的字段层落地.
+                </p>
+                <div style="display:grid;grid-template-columns:300px 1fr;gap:14px;height:480px;">
+                    <div class="card-pane" style="overflow-y:auto;">
+                        <div class="section-title" style="font-size:14px;margin-bottom:8px;">
+                            <i class="bi bi-list-ul"></i>公式列表
+                        </div>
+                        <div id="lineageFormulaList"><div class="empty-state"><p>加载中...</p></div></div>
+                    </div>
+                    <div class="card-pane">
+                        <div id="lineageHead" style="margin-bottom:6px;">
+                            <div style="font-size:14px;font-weight:600;" id="lineageTitle">点击左侧选择公式</div>
+                            <div style="font-size:12px;color:var(--text-muted);" id="lineageDesc"></div>
+                        </div>
+                        <div id="lineageGraph" style="width:100%;height:calc(100% - 50px);"></div>
                     </div>
                 </div>
             </section>
@@ -4705,6 +4737,91 @@
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-shield-check"></i>执行检查';
         }
+    }
+
+    // ========== Field Lineage / 数据血缘 (4.9 反馈) ==========
+    let _lineageChart = null;
+    let _lineageFormulas = [];
+
+    async function loadLineage() {
+        document.getElementById('section-lineage').style.display = 'block';
+        try {
+            const r = await fetch('/api/olm/mechanism-functions');
+            const d = await r.json();
+            const all = d.functions || d.data || d || [];
+            _lineageFormulas = all.filter(f => f.func_type === 'FORMULA');
+
+            const list = document.getElementById('lineageFormulaList');
+            if (_lineageFormulas.length === 0) {
+                list.innerHTML = '<div class="empty-state"><p>暂无 FORMULA 类型的机理函数</p></div>';
+                return;
+            }
+            list.innerHTML = _lineageFormulas.map((f, i) => `
+                <div class="cd-row" style="padding:10px;border-bottom:1px solid #eee;cursor:pointer;"
+                     onclick="renderLineageGraph(${i})">
+                    <div style="font-weight:600;">${esc(f.func_name)}</div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
+                        ${esc(f.source_object_code || '-')} · ${esc(f.data_domain || 'all')}
+                    </div>
+                    <div style="font-size:11px;color:var(--text-sec);margin-top:3px;">${esc(f.func_code)}</div>
+                </div>
+            `).join('');
+
+            // 默认渲染第一个
+            if (_lineageFormulas.length > 0) renderLineageGraph(0);
+        } catch (e) {
+            document.getElementById('lineageFormulaList').innerHTML =
+                `<div class="empty-state"><p>加载失败: ${esc(e.message)}</p></div>`;
+        }
+    }
+
+    function renderLineageGraph(idx) {
+        const f = _lineageFormulas[idx];
+        if (!f) return;
+        let expr;
+        try {
+            expr = typeof f.expression === 'string' ? JSON.parse(f.expression) : f.expression;
+        } catch { expr = {}; }
+
+        const result = expr.result || f.func_name;
+        const variables = expr.variables || [];
+        const exprStr = expr.expression || '';
+
+        document.getElementById('lineageTitle').innerHTML =
+            `<i class="bi bi-magic"></i> ${esc(f.func_name)} <span style="font-size:11px;color:var(--text-muted);font-weight:normal;">${esc(f.func_code)}</span>`;
+        document.getElementById('lineageDesc').textContent =
+            (f.description || '') + (exprStr ? ' · 公式: ' + exprStr : '');
+
+        const nodes = [
+            { name: result, category: 1, symbolSize: 56, label: { fontSize: 13, fontWeight: 'bold' } },
+            ...variables.map(v => ({ name: v, category: 0, symbolSize: 36, label: { fontSize: 11 } }))
+        ];
+        const links = variables.map(v => ({
+            source: v, target: result,
+            lineStyle: { width: 2, color: '#2590FF' },
+            label: { show: false }
+        }));
+
+        const dom = document.getElementById('lineageGraph');
+        if (!_lineageChart) _lineageChart = echarts.init(dom);
+        _lineageChart.setOption({
+            tooltip: { formatter: p => p.dataType === 'edge' ? '贡献于 ' + p.data.target : esc(p.data.name) },
+            legend: { data: ['原始字段', '衍生字段'], top: 4, textStyle: { fontSize: 11 } },
+            series: [{
+                type: 'graph', layout: 'force',
+                roam: true, draggable: true,
+                categories: [
+                    { name: '原始字段', itemStyle: { color: '#10b981' } },
+                    { name: '衍生字段', itemStyle: { color: '#ef4444' } }
+                ],
+                force: { repulsion: 200, edgeLength: 120 },
+                label: { show: true, position: 'right' },
+                edgeSymbol: ['none', 'arrow'],
+                edgeSymbolSize: [0, 10],
+                data: nodes, links: links
+            }]
+        }, true);
+        _lineageChart.resize();
     }
 
     // ========== Cross-Domain Analysis (字面 + 语义双路) ==========
