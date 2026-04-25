@@ -2156,6 +2156,30 @@ def api_global_objects():
     return jsonify(payload)
 
 
+@olm_api.route('/api/olm/join-sample-summary')
+def api_join_sample_summary():
+    """P1 代表向量联合聚类 (sample_join_extract.py 产物) 摘要.
+    展示跨域语义簇 (字面对齐发现不了的 '同概念不同字面' 对象)."""
+    path = OUTPUTS_DIR / 'extraction_join_sample.json'
+    if not path.exists():
+        return jsonify({'available': False,
+                        'message': '请运行 scripts/sample_join_extract.py'}), 200
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            g = json.load(f)
+    except Exception as e:
+        return jsonify({'available': False, 'error': str(e)}), 200
+
+    cross = [x for x in g.get('join_groups', []) if x.get('domain_count', 0) >= 2]
+    cross.sort(key=lambda x: (-x['domain_count'], -x['size']))
+    return jsonify({
+        'available': True,
+        'meta': g.get('meta', {}),
+        'cross_domain_count': len(cross),
+        'top_cross_domain': cross[:30],
+    })
+
+
 @olm_api.route('/api/olm/global-summary')
 def api_global_summary():
     """跨域融合汇总卡片数据 (轻量, 仅 meta + 前 10 个跨域组)."""
