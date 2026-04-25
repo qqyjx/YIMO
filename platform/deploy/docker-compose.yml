@@ -36,6 +36,30 @@ services:
     restart: unless-stopped
     networks: [twin-net]
 
+  algo:
+    build:
+      context: ../..
+      dockerfile: platform/algo/Dockerfile
+    container_name: twin-fusion-algo
+    environment:
+      SBERT_MODEL_NAME: shibing624/text2vec-base-chinese
+      DEEPSEEK_API_BASE: ${DEEPSEEK_API_BASE:-https://api.deepseek.com/v1}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?must set}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-v4-pro}
+      TZ: Asia/Shanghai
+    volumes:
+      - ../../scripts:/app/scripts:ro
+      - ../../DATA:/data:ro
+      - ../../outputs:/outputs
+    ports:
+      - "9000:9000"
+    deploy:
+      resources:
+        limits: { cpus: "8", memory: 4G }
+        reservations: { cpus: "2", memory: 2G }
+    restart: unless-stopped
+    networks: [twin-net]
+
 networks:
   twin-net:
     driver: bridge
