@@ -816,7 +816,11 @@
                     <div class="section-title">
                         <i class="bi bi-box-seam"></i>抽取对象
                     </div>
+                    <button class="btn-sm" onclick="showCreateObjectForm()" title="低代码方式新建一个抽象对象">
+                        <i class="bi bi-plus-lg"></i> 新建对象
+                    </button>
                 </div>
+                <div id="createObjectForm" class="card-pane" style="display:none;margin-bottom:12px;padding:14px;"></div>
                 <div class="filter-tabs" id="filterTabs">
                     <div class="filter-tab active" data-filter="ALL" onclick="filterObjects('ALL')">全部<span class="count" id="countAll">0</span></div>
                     <div class="filter-tab" data-filter="CORE" onclick="filterObjects('CORE')">核心<span class="count" id="countCore">0</span></div>
@@ -3015,6 +3019,100 @@
             }
         } catch(e) {
             showToast('合并失败: ' + e.message, 'error');
+        }
+    }
+
+    // ========== 低代码: 新建对象 (3.19 反馈) ==========
+    function showCreateObjectForm() {
+        const container = document.getElementById('createObjectForm');
+        if (!container) return;
+        container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        if (container.style.display !== 'block') return;
+        const domainOpts = (allDomainCodes || []).map(c =>
+            `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        container.innerHTML = `
+            <div style="font-weight:600;margin-bottom:12px;"><i class="bi bi-plus-lg" style="color:var(--primary);"></i> 新建抽象对象</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>
+                    <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">对象编码 *</label>
+                    <input type="text" id="newObjCode" placeholder="如: OBJ_PROJECT" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                </div>
+                <div>
+                    <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">对象名称 *</label>
+                    <input type="text" id="newObjName" placeholder="如: 项目" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                </div>
+                <div>
+                    <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">英文名 (可选)</label>
+                    <input type="text" id="newObjNameEn" placeholder="Project" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                </div>
+                <div>
+                    <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">类型</label>
+                    <select id="newObjType" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                        <option value="CORE">CORE - 核心</option>
+                        <option value="DERIVED">DERIVED - 派生</option>
+                        <option value="AUXILIARY">AUXILIARY - 辅助</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">数据域 *</label>
+                    <select id="newObjDomain" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                        ${domainOpts}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">置信度 0-1</label>
+                    <input type="number" id="newObjConf" min="0" max="1" step="0.01" value="0.85" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;">
+                </div>
+                <div style="grid-column:1/-1;">
+                    <label style="font-size:.78rem;font-weight:500;display:block;margin-bottom:4px;">描述</label>
+                    <textarea id="newObjDesc" rows="2" placeholder="对象的业务含义..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;resize:vertical;"></textarea>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+                <button class="btn btn-outline" onclick="document.getElementById('createObjectForm').style.display='none';">取消</button>
+                <button class="btn btn-primary" onclick="createObject()"><i class="bi bi-check-lg"></i> 创建</button>
+            </div>`;
+    }
+
+    async function createObject() {
+        const code = document.getElementById('newObjCode').value.trim().toUpperCase();
+        const name = document.getElementById('newObjName').value.trim();
+        const domain = document.getElementById('newObjDomain').value;
+        if (!code || !name || !domain) {
+            showToast('对象编码 / 名称 / 数据域 必填', 'error');
+            return;
+        }
+        if (!/^[A-Z][A-Z0-9_]*$/.test(code)) {
+            showToast('对象编码必须大写英文 + 下划线 (如 OBJ_PROJECT)', 'error');
+            return;
+        }
+        const body = {
+            object_code: code,
+            object_name: name,
+            object_name_en: document.getElementById('newObjNameEn').value.trim() || null,
+            object_type: document.getElementById('newObjType').value,
+            data_domain: domain,
+            description: document.getElementById('newObjDesc').value.trim() || null,
+            extraction_source: 'MANUAL',
+            extraction_confidence: parseFloat(document.getElementById('newObjConf').value) || 0.85,
+        };
+        try {
+            const r = await fetch('/api/olm/objects', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body),
+            });
+            const d = await r.json();
+            if (d.success || r.ok) {
+                showToast('已创建对象 ' + code, 'success');
+                document.getElementById('createObjectForm').style.display = 'none';
+                loadObjects();
+                if (typeof loadGranularity === 'function') loadGranularity();
+            } else {
+                showToast('创建失败: ' + (d.error || JSON.stringify(d)), 'error');
+            }
+        } catch (e) {
+            showToast('创建失败: ' + e.message, 'error');
         }
     }
 
