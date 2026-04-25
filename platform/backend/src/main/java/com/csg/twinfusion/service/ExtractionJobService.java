@@ -6,12 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -111,10 +111,11 @@ public class ExtractionJobService {
     @Configuration
     static class RestTemplateConfig {
         @Bean
-        RestTemplate restTemplate(RestTemplateBuilder b) {
-            return b.connectTimeout(Duration.ofSeconds(3))
-                    .readTimeout(Duration.ofSeconds(15))
-                    .build();
+        RestTemplate restTemplate() {
+            SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
+            f.setConnectTimeout((int) Duration.ofSeconds(3).toMillis());
+            f.setReadTimeout((int) Duration.ofSeconds(15).toMillis());
+            return new RestTemplate(f);
         }
     }
 }

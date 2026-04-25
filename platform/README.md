@@ -97,22 +97,87 @@ platform/
 
 ---
 
-## 本地跑起
+## 本地跑起 (实测通过)
+
+### 前置依赖
 
 ```bash
-# 后端
+# 1) JDK 17 (用户态, 无需 sudo)
+mkdir -p ~/.local && cd ~/.local
+curl -L -o jdk17.tar.gz \
+  "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.10_7.tar.gz"
+mkdir -p jvm && tar -xzf jdk17.tar.gz -C jvm/ --strip-components=1
+
+# 2) Maven 3.9
+curl -L -o maven.tar.gz \
+  "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz"
+mkdir -p maven && tar -xzf maven.tar.gz -C maven/ --strip-components=1
+
+# 3) 加 PATH
+cat >> ~/.bashrc <<'EOF'
+export JAVA_HOME=$HOME/.local/jvm
+export PATH=$JAVA_HOME/bin:$HOME/.local/maven/bin:$PATH
+EOF
+source ~/.bashrc
+
+# 4) Maven 走代理 + 阿里源 (国内必配)
+cat > ~/.m2/settings.xml <<'EOF'
+<settings>
+  <proxies>
+    <proxy>
+      <id>local-mihomo</id><active>true</active><protocol>https</protocol>
+      <host>127.0.0.1</host><port>7890</port>
+      <nonProxyHosts>localhost|127.0.0.1</nonProxyHosts>
+    </proxy>
+  </proxies>
+  <mirrors>
+    <mirror>
+      <id>aliyun</id><mirrorOf>central</mirrorOf>
+      <url>https://maven.aliyun.com/repository/public</url>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
+```
+
+### 后端 Spring Boot
+
+```bash
 cd platform/backend
-mvn spring-boot:run   # :8080
-curl http://localhost:8080/api/v1/health
+mvn package -DskipTests          # 第一次 ~3 分钟下依赖
 
-# 前端
+# 启动 (用绝对路径指向 DATA/outputs, 避免相对路径解析错误)
+java -jar target/twin-fusion-platform.jar \
+  --spring.profiles.active=local \
+  --algo.base-url=http://localhost:9000 \
+  --twinfusion.data-dir=$HOME/YIMO/DATA \
+  --twinfusion.outputs-dir=$HOME/YIMO/outputs
+
+curl http://localhost:8080/api/v1/health    # → systemName + UP
+curl http://localhost:8080/api/v1/summary   # → 22 域 / 135 对象 / 125094 关联
+# Knife4j 文档: http://localhost:8080/doc.html
+```
+
+### 前端 Vue 3 + Vite
+
+```bash
 cd platform/frontend
-pnpm install
-pnpm dev              # :5173
+npm config set registry https://registry.npmmirror.com
+npm install                       # ~30 秒
+npm run dev -- --host 0.0.0.0     # :5173
 
-# 达梦本地（需预装 DM8；测试期可短暂用 MySQL 兼容模式）
+# 浏览器打开 http://localhost:5173/
+# Vite 自动代理 /api/* → :8080 Spring Boot
+```
+
+### 达梦本地 (可选)
+
+```bash
 cd platform/dm-schema
-./init.sh             # 见脚本，或手动 disql 执行 01-99 ddl
+# 需预装 DM8 客户端; 测试期 backend 已走 MySQL profile=local 兜底
+disql USER/PWD@127.0.0.1:5236 < 01_ddl_tf_eav.sql
+disql USER/PWD@127.0.0.1:5236 < 02_ddl_tf_om.sql
+# ... 03/04/99 同上
 ```
 
 ---

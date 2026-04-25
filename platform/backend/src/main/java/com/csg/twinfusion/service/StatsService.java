@@ -69,9 +69,15 @@ public class StatsService {
             return s;
         }
         s.setExtracted(true);
-        JsonNode stats = root.get().path("stats");
-        s.setObjectCount(stats.path("total_objects").asInt(0));
-        s.setRelationCount(stats.path("total_relations").asInt(0));
+        JsonNode r = root.get();
+        JsonNode stats = r.path("stats");
+        // 优先用根数组长度 (新 JSON 格式), 兜底 stats.total_* (旧格式)
+        int objectCount = r.path("objects").isArray() ? r.path("objects").size()
+                : stats.path("total_objects").asInt(0);
+        int relationCount = r.path("relations").isArray() ? r.path("relations").size()
+                : stats.path("total_relations").asInt(0);
+        s.setObjectCount(objectCount);
+        s.setRelationCount(relationCount);
         int concept = 0;
         int logical = 0;
         int physical = 0;
