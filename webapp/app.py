@@ -203,10 +203,11 @@ def home():
                     })
                     idx += 1
 
-        # 默认使用 ontology 新版 Palantir 风格模板；?v=10.0 回退旧版
-        v = request.args.get('v', 'ontology')
+        # 演示版主入口默认 v10.0 (功能最全, 甲方过第三方测试用);
+        # ?v=ontology 切到 Palantir 风格新版 (产品演进路线 demo)
+        v = request.args.get('v', '10.0')
         if not all(c.isalnum() or c == '.' for c in v):
-            v = 'ontology'
+            v = '10.0'
 
         template_name = f"{v}.html"
         # 使用 Jinja2 loader 检查模板是否存在
