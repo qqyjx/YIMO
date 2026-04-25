@@ -719,6 +719,9 @@
             <div class="nav-item" data-section="section-governance" onclick="scrollToSection('section-governance');loadGovernance();">
                 <i class="bi bi-clipboard-data"></i><span>治理看板</span>
             </div>
+            <div class="nav-item" data-section="section-cross-domain" onclick="scrollToSection('section-cross-domain');loadCrossDomain();">
+                <i class="bi bi-diagram-2"></i><span>跨域分析</span>
+            </div>
             <!-- HTAP 已移至右下角浮动面板 -->
         </nav>
 
@@ -1293,6 +1296,59 @@
                     <h3 style="font-size:.9rem;font-weight:600;margin-bottom:8px;color:var(--text-pri);">跨域对象一致性对比</h3>
                     <div id="govDomainComparison" style="background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;">
                         <div class="empty-state"><i class="bi bi-diagram-2"></i><p>加载中...</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 跨域分析 (字面 + 语义两路, 揭示对象在多业务域共享情况) -->
+            <section class="section" id="section-cross-domain" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title">
+                        <i class="bi bi-diagram-2"></i>跨域对象分析
+                    </div>
+                    <button class="btn-sm" onclick="loadCrossDomain()"><i class="bi bi-arrow-clockwise"></i> 刷新</button>
+                </div>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:14px;">
+                    展示同一抽象对象在多业务域出现情况, 这是穿透式监管的关键证据.
+                    "字面对齐"基于精确同名匹配, "语义对齐"基于 SBERT 向量聚类发现同概念不同字面的对象.
+                </p>
+                <!-- 顶部 4 个指标 -->
+                <div class="stats-grid" style="margin-bottom:16px;">
+                    <div class="stat-card" style="border-left:3px solid #2590FF;">
+                        <div class="stat-value" id="cdTotalDomains">-</div>
+                        <div class="stat-label">业务域</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #10b981;">
+                        <div class="stat-value" id="cdLocalObjects">-</div>
+                        <div class="stat-label">本地对象 (拍平)</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #f59e0b;">
+                        <div class="stat-value" id="cdLiteralCross">-</div>
+                        <div class="stat-label">字面跨域组</div>
+                    </div>
+                    <div class="stat-card" style="border-left:3px solid #8b5cf6;">
+                        <div class="stat-value" id="cdSemanticCross">-</div>
+                        <div class="stat-label">语义跨域簇</div>
+                    </div>
+                </div>
+
+                <!-- 字面 + 语义双面板 -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div class="card-pane">
+                        <div class="section-title" style="font-size:14px;margin-bottom:8px;">
+                            <i class="bi bi-card-list"></i>字面跨域 Top 10 (object_name 精确匹配)
+                        </div>
+                        <div id="cdLiteralList" class="cd-list">
+                            <div class="empty-state"><p>加载中...</p></div>
+                        </div>
+                    </div>
+                    <div class="card-pane">
+                        <div class="section-title" style="font-size:14px;margin-bottom:8px;">
+                            <i class="bi bi-magic"></i>语义跨域 Top 10 (SBERT 联合聚类)
+                        </div>
+                        <div id="cdSemanticList" class="cd-list">
+                            <div class="empty-state"><p>加载中...</p></div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -4648,6 +4704,74 @@
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-shield-check"></i>执行检查';
+        }
+    }
+
+    // ========== Cross-Domain Analysis (字面 + 语义双路) ==========
+    async function loadCrossDomain() {
+        document.getElementById('section-cross-domain').style.display = 'block';
+
+        const [globalSum, joinSum] = await Promise.all([
+            fetch('/api/olm/global-summary').then(r => r.json()).catch(() => ({available: false})),
+            fetch('/api/olm/join-sample-summary').then(r => r.json()).catch(() => ({available: false}))
+        ]);
+
+        const lit = globalSum.meta || {};
+        document.getElementById('cdTotalDomains').textContent = lit.total_domains || '-';
+        document.getElementById('cdLocalObjects').textContent = (lit.total_local_objects || '-').toLocaleString();
+        document.getElementById('cdLiteralCross').textContent = lit.cross_domain_literal_count || '-';
+        document.getElementById('cdSemanticCross').textContent = (joinSum.meta || {}).cross_domain_clusters || joinSum.cross_domain_count || '-';
+
+        // 字面跨域 Top 10
+        const litList = document.getElementById('cdLiteralList');
+        const litTop = (globalSum.top_literal_cross_domain || []).slice(0, 10);
+        if (litTop.length === 0) {
+            litList.innerHTML = '<div class="empty-state"><p>无数据 (请先运行 cross_domain_merge.py)</p></div>';
+        } else {
+            litList.innerHTML = litTop.map(g => {
+                const total = (g.total_concept || 0) + (g.total_logical || 0) + (g.total_physical || 0);
+                const domsPreview = (g.present_in_domains || []).slice(0, 5).join(' / ');
+                const moreDoms = g.present_in_domains.length > 5 ? ` 等 ${g.present_in_domains.length} 域` : '';
+                return `
+                <div class="cd-row" style="padding:8px;border-bottom:1px solid #eee;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="font-weight:600;">${esc(g.group_name)}</div>
+                    <div style="background:#2590FF;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">跨 ${g.present_in_domains.length} 域</div>
+                  </div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+                    ${esc(domsPreview)}${moreDoms}
+                  </div>
+                  <div style="font-size:11px;color:var(--text-sec);margin-top:2px;">
+                    合计 ${total.toLocaleString()} 关联 (概念 ${g.total_concept || 0} / 逻辑 ${g.total_logical || 0} / 物理 ${g.total_physical || 0})
+                  </div>
+                </div>`;
+            }).join('');
+        }
+
+        // 语义跨域 Top 10
+        const semList = document.getElementById('cdSemanticList');
+        const semTop = (joinSum.top_cross_domain || []).slice(0, 10);
+        if (semTop.length === 0) {
+            semList.innerHTML = '<div class="empty-state"><p>无数据 (请先运行 sample_join_extract.py)</p></div>';
+        } else {
+            semList.innerHTML = semTop.map(g => {
+                const samples = (g.sample_examples || []).slice(0, 3).join(' · ');
+                const domsPreview = (g.present_in_domains || []).slice(0, 5).join(' / ');
+                const moreDoms = g.present_in_domains.length > 5 ? ` 等 ${g.present_in_domains.length} 域` : '';
+                return `
+                <div class="cd-row" style="padding:8px;border-bottom:1px solid #eee;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="font-weight:600;">${esc(g.repr_name)}</div>
+                    <div style="background:#8b5cf6;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">跨 ${g.present_in_domains.length} 域 · 相似度 ${g.intra_avg_similarity}</div>
+                  </div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+                    ${esc(domsPreview)}${moreDoms}
+                  </div>
+                  <div style="font-size:11px;color:var(--text-sec);margin-top:2px;">
+                    样例: ${esc(samples)}
+                  </div>
+                </div>`;
+            }).join('');
         }
     }
 
