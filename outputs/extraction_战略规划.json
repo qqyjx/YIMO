@@ -148,8 +148,8 @@
       ]
     },
     {
-      "object_code": "OBJ_帮扶管",
-      "object_name": "帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
+      "object_name": "帮扶管理",
       "object_name_en": "帮扶管",
       "parent_object_code": null,
       "object_type": "AUXILIARY",
@@ -45839,7 +45839,7 @@
       "source_row": 58241
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "乡村振兴工作管理信息",
       "entity_code": "nan",
@@ -45855,7 +45855,7 @@
       "source_row": 9
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "乡村振兴工作管理信息",
       "entity_code": "PC_RR_key_WORK",
@@ -45871,7 +45871,7 @@
       "source_row": 16399
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "消费帮扶信息",
       "entity_code": "nan",
@@ -45887,7 +45887,7 @@
       "source_row": 10
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "产品信息",
       "entity_code": "PC_PSP_RP_PRODUCT_INFO",
@@ -45903,7 +45903,7 @@
       "source_row": 19667
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "汇总表审批信息",
       "entity_code": "PC_PSP_RP_SUM_APPROVAL_INFO",
@@ -45919,7 +45919,7 @@
       "source_row": 19689
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "个人申请基本信息",
       "entity_code": "PC_PSP_RP_APPLY_BASIC_INFO",
@@ -45935,7 +45935,7 @@
       "source_row": 19709
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "专区申请基本信息",
       "entity_code": "PC_PSP_RP_APPLY_AREA_INFO",
@@ -45951,7 +45951,7 @@
       "source_row": 19741
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "采购计划目标表单",
       "entity_code": "PC_IP_TARGET_PRODUCT",
@@ -45967,7 +45967,7 @@
       "source_row": 83040
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "采购计划方案表单",
       "entity_code": "PC_IP_DIRECT_PURCHASE",
@@ -45983,7 +45983,7 @@
       "source_row": 83046
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "计划及方案实施表单",
       "entity_code": "CONSUME_PLAN_IMPLEMENT",
@@ -45999,7 +45999,7 @@
       "source_row": 83084
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮助销售计划调研表单",
       "entity_code": "CONSUME_SALES_RESEARCH",
@@ -46015,7 +46015,7 @@
       "source_row": 83089
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮助销售计划策略表单",
       "entity_code": "CONSUME_SALES_STRATEGY",
@@ -46031,7 +46031,7 @@
       "source_row": 83094
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮助销售计划实施",
       "entity_code": "CONSUME_SALES_IMPLEMENT",
@@ -46047,7 +46047,7 @@
       "source_row": 83099
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "行业帮扶管理",
       "entity_code": "nan",
@@ -46063,7 +46063,7 @@
       "source_row": 11
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶项目",
       "entity_code": "PC_LL_HELP_PROJECT",
@@ -46079,7 +46079,7 @@
       "source_row": 7013
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶记录",
       "entity_code": "PC_LL_HELP_LOG",
@@ -46095,7 +46095,7 @@
       "source_row": 7035
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶项目基础信息",
       "entity_code": "PC_ASSIST",
@@ -46111,7 +46111,7 @@
       "source_row": 17372
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶项目填报记录信息",
       "entity_code": "PC_ASSIST_RECORD",
@@ -46127,7 +46127,7 @@
       "source_row": 17398
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶项目统计信息",
       "entity_code": "PC_ASSIST_SUM",
@@ -46143,7 +46143,7 @@
       "source_row": 17409
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "意见反馈信息",
       "entity_code": "PC_FEEDBACK",
@@ -46159,7 +46159,7 @@
       "source_row": 17417
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "县级供电企业综合情况",
       "entity_code": "PC_RURAL_POWER_MERATE",
@@ -46175,7 +46175,7 @@
       "source_row": 17452
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "数据指标录入信息",
       "entity_code": "PC_QTA_DATA",
@@ -46191,7 +46191,7 @@
       "source_row": 17523
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "采购申请信息",
       "entity_code": "PC_PURCH_REQUISITION",
@@ -46207,7 +46207,7 @@
       "source_row": 17553
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "行业帮扶基本信息",
       "entity_code": "PC_PSP_RPG_INDUSTRY_ASSIST",
@@ -46223,7 +46223,7 @@
       "source_row": 43515
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "支持乡村振兴重点县农网改造项目统计",
       "entity_code": "PC_PSP_RPG_POWER_GRID_ST",
@@ -46239,7 +46239,7 @@
       "source_row": 58261
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "支持革命老区的农网改造项目统计",
       "entity_code": "PC_PSP_RPG_PROJ_OLD_BASE_ST",
@@ -46255,7 +46255,7 @@
       "source_row": 58275
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "扶贫光伏电站盈收情况",
       "entity_code": "PC_PSP_RPG_INCOME_POWER",
@@ -46271,7 +46271,7 @@
       "source_row": 58289
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "扶贫光伏电站发电情况",
       "entity_code": "PC_PSP_RPG_PHOTOVOLTAIC_POWER",
@@ -46287,7 +46287,7 @@
       "source_row": 58305
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "扶贫光伏电站上网电量情况",
       "entity_code": "PC_PSP_RPG_POWERSTATION_ONLINE",
@@ -46303,7 +46303,7 @@
       "source_row": 58321
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "农村区域供电可靠率统计",
       "entity_code": "PC_PSP_RPG_RELI_ST_RURAL_AREAS",
@@ -46319,7 +46319,7 @@
       "source_row": 58337
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "农村区域客户平均停电时间（中压）统计",
       "entity_code": "PC_PSP_RPG_ST_RURAL_AREAS",
@@ -46335,7 +46335,7 @@
       "source_row": 58352
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "农村区域电压合格率统计",
       "entity_code": "PC_PSP_RPG_RURAL_VOLTAGE_RATE",
@@ -46351,7 +46351,7 @@
       "source_row": 58367
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "农村区域户均配变容量统计",
       "entity_code": "PC_PSP_RPG_RURAL_TRANS_CAP",
@@ -46367,7 +46367,7 @@
       "source_row": 58382
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "异地搬迁安置点用电量",
       "entity_code": "PC_PSP_RPG_RELOCA_POWER_USAGE",
@@ -46383,7 +46383,7 @@
       "source_row": 58397
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "扶贫边境县农网改造项目统计",
       "entity_code": "PC_PSP_RPG_POVERTY_AGRINET_PRO",
@@ -46399,7 +46399,7 @@
       "source_row": 58412
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "低保户电量补贴",
       "entity_code": "PC_PSP_RPG_LOWINCOME_ELEC",
@@ -46415,7 +46415,7 @@
       "source_row": 58428
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "五保电量补贴",
       "entity_code": "PC_PSP_RPG_FIVEGUARANTEE_ELEC",
@@ -46431,7 +46431,7 @@
       "source_row": 58443
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "支持乡村振兴重点县农网改造项目采集",
       "entity_code": "PC_PSP_ESEP_RURAL_GRID_UPGRADE",
@@ -46447,7 +46447,7 @@
       "source_row": 58458
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "支持革命老区的农网改造项目采集",
       "entity_code": "PC_PSP_ESEP_REVOLUTION_GRID",
@@ -46463,7 +46463,7 @@
       "source_row": 58474
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "扶贫边境县农网改造项目采集",
       "entity_code": "PC_PSP_ESEP_BORDER_GRID",
@@ -46479,7 +46479,7 @@
       "source_row": 58490
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "扶贫光伏电站盈收情况采集",
       "entity_code": "PC_PSP_ESEP_PV_STATION_INCOME",
@@ -46495,7 +46495,7 @@
       "source_row": 58506
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "扶贫光伏电站发电情况采集",
       "entity_code": "PC_PSP_ESEP_PV_STATION_GEN",
@@ -46511,7 +46511,7 @@
       "source_row": 58522
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "扶贫光伏电站上网电量情况采集",
       "entity_code": "PC_PSP_ESEP_PV_STATION_GRID",
@@ -46527,7 +46527,7 @@
       "source_row": 58538
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "低保户电量补贴采集",
       "entity_code": "PC_PSP_ESEP_LOW_INCOME_ELEC",
@@ -46543,7 +46543,7 @@
       "source_row": 58554
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "南网知行教育发展基金管理",
       "entity_code": "nan",
@@ -46559,7 +46559,7 @@
       "source_row": 12
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "南网知行教育发展基金基本信息",
       "entity_code": "PC_PSP_RPG_EDUCATION_MANAGE",
@@ -46575,7 +46575,7 @@
       "source_row": 43491
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "书屋地图",
       "entity_code": "PC_PSP_ESEP_BOOKSTORE_MAP",
@@ -46591,7 +46591,7 @@
       "source_row": 70820
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "书屋使用情况数据采集",
       "entity_code": "PC_PSP_ESEP_BOOKSTORE_USAGE",
@@ -46607,7 +46607,7 @@
       "source_row": 70837
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "书屋借阅情况数据采集",
       "entity_code": "PC_PSP_ESEP_BOOKSTORE_HARVEST",
@@ -46623,7 +46623,7 @@
       "source_row": 70853
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "教育帮扶行动开展情况表单新增",
       "entity_code": "PC_PSP_ESEP_DSESA",
@@ -46639,7 +46639,7 @@
       "source_row": 70869
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "教育帮扶行动开展情况表单填报",
       "entity_code": "PC_PSP_ESEP_DSESA_FILL",
@@ -46655,7 +46655,7 @@
       "source_row": 70885
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "书屋人流量数据采集",
       "entity_code": "PC_PSP_ESEP_HUMAN_FLOW",
@@ -46671,7 +46671,7 @@
       "source_row": 70901
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "知行书屋项目新增管理",
       "entity_code": "PC_PSP_ESEP_BOOKSTORE_PROJECT",
@@ -46687,7 +46687,7 @@
       "source_row": 70916
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "知行书屋项目填报管理",
       "entity_code": "PC_PSP_ESEP_BOOKSTORE_PRO_FILL",
@@ -46703,7 +46703,7 @@
       "source_row": 70932
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "书屋总览视图",
       "entity_code": "PC_PSP_ESEP_BOOKSTORE_VIEW",
@@ -46719,7 +46719,7 @@
       "source_row": 70948
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "书屋书籍借阅情况数据采集",
       "entity_code": "PC_PSP_ESEP_BOOKSTORE_BORROW",
@@ -46735,7 +46735,7 @@
       "source_row": 70964
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "定点帮扶管理",
       "entity_code": "nan",
@@ -46751,7 +46751,7 @@
       "source_row": 13
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶点基本信息",
       "entity_code": "PC_PSP_RPG_ASSIST_PLACE",
@@ -46767,7 +46767,7 @@
       "source_row": 43427
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶项目基本信息",
       "entity_code": "PC_PSP_RPG_ASSIST_PROJECT",
@@ -46783,7 +46783,7 @@
       "source_row": 43462
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "目标达成度新增表单",
       "entity_code": "PC_PSP_RPG_GOAL_ACHIEVEMENT",
@@ -46799,7 +46799,7 @@
       "source_row": 58570
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "目标达成度填报表单",
       "entity_code": "PC_PSP_RPG_GOAL_COMPLETION",
@@ -46815,7 +46815,7 @@
       "source_row": 58586
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "项目持续性新增表单",
       "entity_code": "PC_PSP_RPG_PROJ_PERSISTENCE",
@@ -46831,7 +46831,7 @@
       "source_row": 58602
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "项目持续性填报表单",
       "entity_code": "PC_PSP_RPG_PROJ_CONTINUITY_COM",
@@ -46847,7 +46847,7 @@
       "source_row": 58618
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "项目回访计划表单录入",
       "entity_code": "PC_PSP_RPG_PROJ_VISIT_PLAN",
@@ -46863,7 +46863,7 @@
       "source_row": 58634
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "项目回访计划表单填报",
       "entity_code": "PC_PSP_RPG_PROJ_VISIT_COMP",
@@ -46879,7 +46879,7 @@
       "source_row": 58651
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "问题整改问题表单录入",
       "entity_code": "PC_PSP_RPG_PROBLEM_RECTIFICATE",
@@ -46895,7 +46895,7 @@
       "source_row": 58668
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "问题整改管理表单填报",
       "entity_code": "PC_PSP_RPG_PROBLEM_COMP",
@@ -46911,7 +46911,7 @@
       "source_row": 58686
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "资金结余情况表单新增",
       "entity_code": "PC_PSP_RPG_FUND_BALANCE",
@@ -46927,7 +46927,7 @@
       "source_row": 58704
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "资金结余情况填报表单",
       "entity_code": "PC_PSP_RPG_FUND_BALANCE_COMP",
@@ -46943,7 +46943,7 @@
       "source_row": 58719
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "结余资金使用计划新增表单",
       "entity_code": "PC_PSP_RPG_BALANCE_FUNDS_USAGE",
@@ -46959,7 +46959,7 @@
       "source_row": 58734
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "结余资金使用计划填报表单",
       "entity_code": "PC_PSP_RPG_BALANCE_FUNDS_COMP",
@@ -46975,7 +46975,7 @@
       "source_row": 58752
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶项目后评估",
       "entity_code": "PC_PSP_RPG_HELP_PROJ_EVALUA",
@@ -46991,7 +46991,7 @@
       "source_row": 58770
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "项目结余资金全过程跟踪",
       "entity_code": "PC_PSP_RPG_TRACK_BALANCE_FUNDS",
@@ -47007,7 +47007,7 @@
       "source_row": 58785
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "项目年度回访管理内容信息统计",
       "entity_code": "PC_PSP_RPG_PROJ_ANNUAL_MNG_ST",
@@ -47023,7 +47023,7 @@
       "source_row": 58800
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶点智瞰地图",
       "entity_code": "PC_PSP_RPG_HELP_POINT_VIEW_MAP",
@@ -47039,7 +47039,7 @@
       "source_row": 58816
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶点管理",
       "entity_code": "PC_PSP_RPG_MNG_SUPPORT_POINT",
@@ -47055,7 +47055,7 @@
       "source_row": 58832
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶点卡片管理",
       "entity_code": "PC_PSP_RPG_HELP_POINT_CARD_MNG",
@@ -47071,7 +47071,7 @@
       "source_row": 58849
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶点视图",
       "entity_code": "PC_PSP_RPG_SUPPORT_POINT_VIEW",
@@ -47087,7 +47087,7 @@
       "source_row": 58866
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶点干部情况信息表",
       "entity_code": "TEMP_HELP_POINT_officer_INFO",
@@ -47103,7 +47103,7 @@
       "source_row": 59110
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶资金情况信息表",
       "entity_code": "TEMP_HELP_POINT_CADRE_INFO",
@@ -47119,7 +47119,7 @@
       "source_row": 59116
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶项目关联",
       "entity_code": "HELP_PROJECT_RELATION",
@@ -47135,7 +47135,7 @@
       "source_row": 82760
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "务工岗位表单",
       "entity_code": "WORK_JOB_FORM",
@@ -47151,7 +47151,7 @@
       "source_row": 82766
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "员工薪酬管理表单",
       "entity_code": "EMPLOYEE_SALARY_MANAGEMENT",
@@ -47167,7 +47167,7 @@
       "source_row": 82773
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "务工人员管理表单",
       "entity_code": "WORKER_MANAGEMENT_FORM",
@@ -47183,7 +47183,7 @@
       "source_row": 82783
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "结对帮扶管理",
       "entity_code": "PAIRING_HELP_MANAGEMENT",
@@ -47199,7 +47199,7 @@
       "source_row": 82793
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "帮扶点跟进情况",
       "entity_code": "HELP_POINT_FOLLOWUP",
@@ -47215,7 +47215,7 @@
       "source_row": 82803
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "村集体产业项目新增表单管理",
       "entity_code": "VILLAGE_PROJECT_ADD_FORM",
@@ -47231,7 +47231,7 @@
       "source_row": 82813
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "村集体产业项目填报表单管理",
       "entity_code": "VILLAGE_PROJECT_REPORT_FORM",
@@ -47247,7 +47247,7 @@
       "source_row": 82821
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "村集体产业项目结项表单管理",
       "entity_code": "VILLAGE_PROJECT_CLOSE_FORM",
@@ -47263,7 +47263,7 @@
       "source_row": 82829
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "工作经费管理表单管理",
       "entity_code": "WORK_FUND_MANAGEMENT_FORM",
@@ -47279,7 +47279,7 @@
       "source_row": 82837
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "工作经费使用管理表单管理",
       "entity_code": "WORK_FUND_USAGE_FORM",
@@ -47295,7 +47295,7 @@
       "source_row": 82844
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "驻村干部提拔及使用情况信息",
       "entity_code": "CADRE_PROMOTION_INFO",
@@ -47311,7 +47311,7 @@
       "source_row": 82852
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "驻村干部奖惩情况信息",
       "entity_code": "CADRE_REWARD_PUNISH_INFO",
@@ -47327,7 +47327,7 @@
       "source_row": 82861
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "干部政府年度考评结果信息",
       "entity_code": "CADRE_EVALUATION_INFO",
@@ -47343,7 +47343,7 @@
       "source_row": 82870
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "派出干部年度进一步培养使用计划信息",
       "entity_code": "CADRE_TRAINING_PLAN",
@@ -47359,7 +47359,7 @@
       "source_row": 82879
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "单位党委与驻村干部述职谈话记录信息",
       "entity_code": "CADRE_TALK_RECORD",
@@ -47375,7 +47375,7 @@
       "source_row": 82888
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "系统外培训管理表单管理",
       "entity_code": "OUT_TRAIN_FORM_MANAGE",
@@ -47391,7 +47391,7 @@
       "source_row": 82892
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "系统外培训管理评价表单管理",
       "entity_code": "OUT_TRAIN_EVAL_FORM_MANAGE",
@@ -47407,7 +47407,7 @@
       "source_row": 82901
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "系统内培训管理",
       "entity_code": "IN_TRAIN_MANAGE",
@@ -47423,7 +47423,7 @@
       "source_row": 82909
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "系统内培训管理评价表单管理",
       "entity_code": "IN_TRAIN_EVAL_FORM_MANAGE",
@@ -47439,7 +47439,7 @@
       "source_row": 82917
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "干部考勤管理管理",
       "entity_code": "DF_HELP_CADRE_ATTENDANCE",
@@ -47455,7 +47455,7 @@
       "source_row": 82925
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "考勤情况录入表单管理",
       "entity_code": "DF_HELP_ATTENDANCE_FORM",
@@ -47471,7 +47471,7 @@
       "source_row": 82933
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "考核项管理表单",
       "entity_code": "DF_HELP_ASSESSMENT_ITEM",
@@ -47487,7 +47487,7 @@
       "source_row": 82941
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "组织领导考核省级评价表单",
       "entity_code": "DF_HELP_LEADERSHIP_PROVINCE",
@@ -47503,7 +47503,7 @@
       "source_row": 82949
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "组织领导考核自评表单",
       "entity_code": "FIXED_HELP_LEAD_ASSESS_SELF",
@@ -47519,7 +47519,7 @@
       "source_row": 82959
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "工作成效考核省级评价表单",
       "entity_code": "FIXED_HELP_WORK_EFFECT_PROV",
@@ -47535,7 +47535,7 @@
       "source_row": 82969
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "工作成效考核自评评价表单",
       "entity_code": "FIXED_HELP_WORK_EFFECT_SELF",
@@ -47551,7 +47551,7 @@
       "source_row": 82982
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "选派干部考核省级评价表单",
       "entity_code": "FIXED_HELP_CADRE_EVAL_PROV",
@@ -47567,7 +47567,7 @@
       "source_row": 82992
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "选派干部考核自评表单",
       "entity_code": "FIXED_HELP_CADRE_EVAL_SELF",
@@ -47583,7 +47583,7 @@
       "source_row": 83002
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "履职情况考核省级评价表单",
       "entity_code": "FIXED_HELP_PERFORMANCE_EVAL_PROV",
@@ -47599,7 +47599,7 @@
       "source_row": 83012
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "履职情况考核自评表单",
       "entity_code": "PC_IP_HELP_VILLAGE_COUNT",
@@ -47615,7 +47615,7 @@
       "source_row": 83019
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "工作创新考核省级评价表单",
       "entity_code": "PC_IP_INTRODUCE_FUNDS",
@@ -47631,7 +47631,7 @@
       "source_row": 83026
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "考核评价结果表单",
       "entity_code": "PC_IP_INCOME_PER_CAPITA",
@@ -47647,7 +47647,7 @@
       "source_row": 83033
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "工作创新考核自评价表单",
       "entity_code": "WORK_INNOVATION_SELF_EVAL",
@@ -47663,7 +47663,7 @@
       "source_row": 83053
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "负面影响考核省级评价表单",
       "entity_code": "NEGATIVE_IMPACT_PROVINCE_EVAL",
@@ -47679,7 +47679,7 @@
       "source_row": 83060
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "负面影响考核自评价表单",
       "entity_code": "NEGATIVE_IMPACT_SELF_EVAL",
@@ -47695,7 +47695,7 @@
       "source_row": 83066
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "加分项考核省级评价表单",
       "entity_code": "BONUS_PROVINCE_EVAL",
@@ -47711,7 +47711,7 @@
       "source_row": 83072
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "加分项考核自评价表单",
       "entity_code": "BONUS_SELF_EVAL",
@@ -47727,7 +47727,7 @@
       "source_row": 83078
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "待办提醒",
       "entity_code": "HELP_TODO_REMINDER",
@@ -47743,7 +47743,7 @@
       "source_row": 83104
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "首页管理",
       "entity_code": "HOME_MANAGEMENT",
@@ -47759,7 +47759,7 @@
       "source_row": 83109
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "用电信息视图",
       "entity_code": "POWER_INFO_VIEW",
@@ -47775,7 +47775,7 @@
       "source_row": 83115
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "村情全景视图",
       "entity_code": "VILLAGE_OVERVIEW",
@@ -47791,7 +47791,7 @@
       "source_row": 83120
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "定点项目信息视图",
       "entity_code": "PROJECT_INFO_VIEW",
@@ -47807,7 +47807,7 @@
       "source_row": 83125
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "乡村振兴要闻信息视图",
       "entity_code": "NEWS_INFO_VIEW",
@@ -47823,7 +47823,7 @@
       "source_row": 83130
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "数字党建视图",
       "entity_code": "DIGITAL_PARTY_VIEW",
@@ -47839,7 +47839,7 @@
       "source_row": 83135
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "乡村经济收入视图",
       "entity_code": "VILLAGE_ECONOMY_VIEW",
@@ -47855,7 +47855,7 @@
       "source_row": 83139
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "定点项目填报表单",
       "entity_code": "PROJECT_FORM",
@@ -47871,7 +47871,7 @@
       "source_row": 83143
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "村政信息视图",
       "entity_code": "VILLAGE_GOV_VIEW",
@@ -47887,7 +47887,7 @@
       "source_row": 83148
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "用电信息表单",
       "entity_code": "ELECTRIC_INFO_FORM",
@@ -47903,7 +47903,7 @@
       "source_row": 83157
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "定点项目成效表单",
       "entity_code": "PROJECT_RESULT_FORM",
@@ -47919,7 +47919,7 @@
       "source_row": 83166
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "数字党建表单",
       "entity_code": "DIGITAL_PARTY_FORM",
@@ -47935,7 +47935,7 @@
       "source_row": 83175
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "村政管理表单",
       "entity_code": "VILLAGE_MANAGE_FORM",
@@ -47951,7 +47951,7 @@
       "source_row": 83184
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "村情全景表单",
       "entity_code": "VILLAGE_PANORAMA_FORM",
@@ -47967,7 +47967,7 @@
       "source_row": 83188
     },
     {
-      "object_code": "OBJ_帮扶管",
+      "object_code": "OBJ_AID_MANAGEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "乡村振兴要闻信息表单",
       "entity_code": "RURAL_REVITALIZATION_NEWS",
@@ -48936,17 +48936,6 @@
       "cluster_relations": 979,
       "bridge_relations": 0
     },
-    "OBJ_帮扶管": {
-      "object_name": "帮扶管",
-      "cluster_id": 1,
-      "cluster_size": 5,
-      "concept": 5,
-      "logical": 129,
-      "physical": 0,
-      "total": 134,
-      "cluster_relations": 134,
-      "bridge_relations": 0
-    },
     "OBJ_PROCESS": {
       "object_name": "流程",
       "cluster_id": 20,
@@ -48956,6 +48945,17 @@
       "physical": 0,
       "total": 10,
       "cluster_relations": 10,
+      "bridge_relations": 0
+    },
+    "OBJ_AID_MANAGEMENT": {
+      "object_name": "帮扶管理",
+      "cluster_id": 1,
+      "cluster_size": 5,
+      "concept": 5,
+      "logical": 129,
+      "physical": 0,
+      "total": 134,
+      "cluster_relations": 134,
       "bridge_relations": 0
     }
   },

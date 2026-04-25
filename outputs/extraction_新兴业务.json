@@ -129,8 +129,8 @@
       ]
     },
     {
-      "object_code": "OBJ_分析",
-      "object_name": "分析",
+      "object_code": "OBJ_TRACK",
+      "object_name": "赛道",
       "object_name_en": "分析",
       "parent_object_code": null,
       "object_type": "AUXILIARY",
@@ -16228,7 +16228,7 @@
       "source_row": 6843
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "CONCEPT",
       "entity_name": "赛道清单信息",
       "entity_code": "nan",
@@ -16244,7 +16244,7 @@
       "source_row": 28
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "LOGICAL",
       "entity_name": "赛道清单信息表",
       "entity_code": "track_list_info",
@@ -16260,7 +16260,7 @@
       "source_row": 5340
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "PHYSICAL",
       "entity_name": "赛道清单信息表（推断）",
       "entity_code": "INFERRED_track_list_info",
@@ -16276,7 +16276,7 @@
       "source_row": 5340
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "CONCEPT",
       "entity_name": "赛道相识度分析规则信息",
       "entity_code": "nan",
@@ -16292,7 +16292,7 @@
       "source_row": 29
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "LOGICAL",
       "entity_name": "赛道相识度分析规则表",
       "entity_code": "track_similarity_analysis_rule",
@@ -16308,7 +16308,7 @@
       "source_row": 5369
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "PHYSICAL",
       "entity_name": "赛道相识度分析规则表（推断）",
       "entity_code": "INFERRED_track_similarity_analysis_rule",
@@ -16324,7 +16324,7 @@
       "source_row": 5369
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "CONCEPT",
       "entity_name": "赛道相识度分析结果信息",
       "entity_code": "nan",
@@ -16340,7 +16340,7 @@
       "source_row": 30
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "LOGICAL",
       "entity_name": "赛道相识度分析结果表",
       "entity_code": "track_similarity_analysis_result",
@@ -16356,7 +16356,7 @@
       "source_row": 5356
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "PHYSICAL",
       "entity_name": "赛道相识度分析结果表（推断）",
       "entity_code": "INFERRED_track_similarity_analysis_result",
@@ -16372,7 +16372,7 @@
       "source_row": 5356
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "CONCEPT",
       "entity_name": "赛道申请信息",
       "entity_code": "nan",
@@ -16388,7 +16388,7 @@
       "source_row": 31
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "LOGICAL",
       "entity_name": "赛道申请信息表",
       "entity_code": "track_application_info",
@@ -16404,7 +16404,7 @@
       "source_row": 5306
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "PHYSICAL",
       "entity_name": "赛道申请信息表（推断）",
       "entity_code": "INFERRED_track_application_info",
@@ -16420,7 +16420,7 @@
       "source_row": 5306
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "CONCEPT",
       "entity_name": "赛道退出信息",
       "entity_code": "nan",
@@ -16436,7 +16436,7 @@
       "source_row": 32
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "LOGICAL",
       "entity_name": "赛道退出信息表",
       "entity_code": "track_exit_info",
@@ -16452,7 +16452,7 @@
       "source_row": 5325
     },
     {
-      "object_code": "OBJ_分析",
+      "object_code": "OBJ_TRACK",
       "entity_layer": "PHYSICAL",
       "entity_name": "赛道退出信息表（推断）",
       "entity_code": "INFERRED_track_exit_info",
@@ -17938,9 +17938,9 @@
       "cluster_relations": 188,
       "bridge_relations": 0
     },
-    "OBJ_分析": {
-      "object_name": "分析",
-      "cluster_id": 14,
+    "OBJ_ASSET": {
+      "object_name": "资产",
+      "cluster_id": 8,
       "cluster_size": 5,
       "concept": 5,
       "logical": 5,
@@ -17949,9 +17949,9 @@
       "cluster_relations": 15,
       "bridge_relations": 0
     },
-    "OBJ_ASSET": {
-      "object_name": "资产",
-      "cluster_id": 8,
+    "OBJ_TRACK": {
+      "object_name": "赛道",
+      "cluster_id": 14,
       "cluster_size": 5,
       "concept": 5,
       "logical": 5,

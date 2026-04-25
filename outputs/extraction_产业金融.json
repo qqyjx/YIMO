@@ -30,8 +30,8 @@
       ]
     },
     {
-      "object_code": "OBJ_业务完",
-      "object_name": "业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
+      "object_name": "机构客户",
       "object_name_en": "业务完",
       "parent_object_code": null,
       "object_type": "AUXILIARY",
@@ -910,7 +910,7 @@
       "source_row": 1696
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "客户",
       "entity_code": "nan",
@@ -926,7 +926,7 @@
       "source_row": 12
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "客户消息记录表",
       "entity_code": "IFP_FCM_UCI_MSG",
@@ -942,7 +942,7 @@
       "source_row": 60
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "用户与客户关联信息表",
       "entity_code": "IFP_FCM_UCR",
@@ -958,7 +958,7 @@
       "source_row": 78
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "客户分级信息",
       "entity_code": "nan",
@@ -974,7 +974,7 @@
       "source_row": 15
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "企业客户扩展信息表",
       "entity_code": "IFP_FCM_ENTERPRISE_EXT",
@@ -990,7 +990,7 @@
       "source_row": 46
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "客户协议",
       "entity_code": "nan",
@@ -1006,7 +1006,7 @@
       "source_row": 16
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "用户协议表",
       "entity_code": "IFP_FCM_PROTOCOL",
@@ -1022,7 +1022,7 @@
       "source_row": 33
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "业务资质",
       "entity_code": "nan",
@@ -1038,7 +1038,7 @@
       "source_row": 64
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "业务资质",
       "entity_code": "IFP_YS_YWZZ",
@@ -1054,7 +1054,7 @@
       "source_row": 1272
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "业务资质变动",
       "entity_code": "IFP_YS_YWZZ_CHANGE",
@@ -1070,7 +1070,7 @@
       "source_row": 1278
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "公司业务基本情况",
       "entity_code": "nan",
@@ -1086,7 +1086,7 @@
       "source_row": 85
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "公司业务基本情况",
       "entity_code": "IFP_YS_GSYWJBQK",
@@ -1102,7 +1102,7 @@
       "source_row": 1548
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "金融单位业务完成情况",
       "entity_code": "nan",
@@ -1118,7 +1118,7 @@
       "source_row": 87
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融单位业务完成情况（供应链金融）",
       "entity_code": "IFP_YS_JRDWYWWCQK_GYLJR",
@@ -1134,7 +1134,7 @@
       "source_row": 1585
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融单位业务完成情况（普惠金融）",
       "entity_code": "IFP_YS_JRDWYWWCQK_PHJR",
@@ -1150,7 +1150,7 @@
       "source_row": 1674
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "管制单位业务完成情况",
       "entity_code": "nan",
@@ -1166,7 +1166,7 @@
       "source_row": 88
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "管制单位业务完成情况（供应链金融）",
       "entity_code": "IFP_YS_GZDWYWWCQK_GYLJR",
@@ -1182,7 +1182,7 @@
       "source_row": 1596
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "管制单位业务完成情况（普惠金融）",
       "entity_code": "IFP_YS_GZDWYWWCQK_PHJR",
@@ -1198,7 +1198,7 @@
       "source_row": 1685
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "供应链业务完成情况",
       "entity_code": "nan",
@@ -1214,7 +1214,7 @@
       "source_row": 89
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "供应链业务完成情况",
       "entity_code": "IFP_YS_GYLYWWCQK",
@@ -1230,7 +1230,7 @@
       "source_row": 1607
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "各产品业务规模与收益情况",
       "entity_code": "nan",
@@ -1246,7 +1246,7 @@
       "source_row": 91
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "各产品业务规模与收益情况",
       "entity_code": "IFP_YS_GCPYWGMYSYQK",
@@ -1262,7 +1262,7 @@
       "source_row": 1627
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "客户数量",
       "entity_code": "nan",
@@ -1278,7 +1278,7 @@
       "source_row": 92
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "客户数量",
       "entity_code": "IFP_YS_KHSL",
@@ -1294,7 +1294,7 @@
       "source_row": 1639
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "经营情况分析",
       "entity_code": "nan",
@@ -1310,7 +1310,7 @@
       "source_row": 98
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "经营情况分析",
       "entity_code": "IFP_YS_JYQKFX",
@@ -2974,7 +2974,7 @@
       "source_row": 1737
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "金融需求",
       "entity_code": "nan",
@@ -2990,7 +2990,7 @@
       "source_row": 5
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融产品需求派发",
       "entity_code": "IFP_DEMAND_DISTRIBUTION_CONFIG",
@@ -3006,7 +3006,7 @@
       "source_row": 5
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融需求意向",
       "entity_code": "IFP_DEMAND_INTENTION",
@@ -3022,7 +3022,7 @@
       "source_row": 6
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融需求信息",
       "entity_code": "IFP_REQUIREMENT",
@@ -3038,7 +3038,7 @@
       "source_row": 10
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "需求意向评价",
       "entity_code": "IFP_EVALUATION_CUSTOMER",
@@ -3054,7 +3054,7 @@
       "source_row": 13
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "需求处理流水记录",
       "entity_code": "IFP_REQUIREMENT_DEAL",
@@ -3070,7 +3070,7 @@
       "source_row": 14
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "服务响应金融单位",
       "entity_code": "IFP_SERVICE_RESPONSE_UNIT",
@@ -3086,7 +3086,7 @@
       "source_row": 19
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "需求响应管制单位评价",
       "entity_code": "IFP_EVALUATION_UNIT",
@@ -3102,7 +3102,7 @@
       "source_row": 40
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融意向产品",
       "entity_code": "IFP_INTENTIONAL_PRODUCT",
@@ -3118,7 +3118,7 @@
       "source_row": 102
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融需求项内容",
       "entity_code": "IFP_REQUIREMENT_ITEM",
@@ -3134,7 +3134,7 @@
       "source_row": 107
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融服务指标表",
       "entity_code": "IFP_SERVICE_METRICS",
@@ -3150,7 +3150,7 @@
       "source_row": 136
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融模糊需求信息表",
       "entity_code": "IFP_VAGUE_REQUIREMENT",
@@ -3166,7 +3166,7 @@
       "source_row": 209
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "银行机构记录表",
       "entity_code": "IFP_IFO_BANK_INSTITUTION",
@@ -3182,7 +3182,7 @@
       "source_row": 228
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融机构记录表",
       "entity_code": "IFP_IFO_FINANCE_INSTITUTION",
@@ -3198,7 +3198,7 @@
       "source_row": 243
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "金融产品",
       "entity_code": "nan",
@@ -3214,7 +3214,7 @@
       "source_row": 4
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "配置金融产品需求项表",
       "entity_code": "IFP_REQUIREMENT_ITEM_CONFIG",
@@ -3230,7 +3230,7 @@
       "source_row": 117
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "金融机构",
       "entity_code": "nan",
@@ -3246,7 +3246,7 @@
       "source_row": 69
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融机构管理（南网国际、澜湄国际、国际香港）",
       "entity_code": "IFP_YS_JRJG_NWGJ_LMGJ_GJXG",
@@ -3262,7 +3262,7 @@
       "source_row": 1308
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "为客户节约融资成本",
       "entity_code": "nan",
@@ -3278,7 +3278,7 @@
       "source_row": 90
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "为客户节约融资成本",
       "entity_code": "IFP_YS_WKHJYRZCB",
@@ -3294,7 +3294,7 @@
       "source_row": 1614
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "CONCEPT",
       "entity_name": "金融衍生业务",
       "entity_code": "nan",
@@ -3310,7 +3310,7 @@
       "source_row": 70
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融衍生业务发起（南网国际、澜湄国际）",
       "entity_code": "IFP_YS_JRYSYWFQ_NWGJ_LMGJ",
@@ -3326,7 +3326,7 @@
       "source_row": 1316
     },
     {
-      "object_code": "OBJ_业务完",
+      "object_code": "OBJ_ORG_CUSTOMER",
       "entity_layer": "LOGICAL",
       "entity_name": "金融衍生业务发起（国际香港）",
       "entity_code": "IFP_YS_JRYSYWFQ_GJXG",
@@ -3435,17 +3435,6 @@
       "cluster_relations": 45,
       "bridge_relations": 0
     },
-    "OBJ_业务完": {
-      "object_name": "业务完",
-      "cluster_id": 8,
-      "cluster_size": 16,
-      "concept": 16,
-      "logical": 33,
-      "physical": 0,
-      "total": 49,
-      "cluster_relations": 26,
-      "bridge_relations": 23
-    },
     "OBJ_TASK": {
       "object_name": "任务",
       "cluster_id": 9,
@@ -3489,6 +3478,17 @@
       "total": 21,
       "cluster_relations": 16,
       "bridge_relations": 0
+    },
+    "OBJ_ORG_CUSTOMER": {
+      "object_name": "机构客户",
+      "cluster_id": 8,
+      "cluster_size": 16,
+      "concept": 16,
+      "logical": 33,
+      "physical": 0,
+      "total": 49,
+      "cluster_relations": 26,
+      "bridge_relations": 23
     }
   },
   "biz_obj_matches": {

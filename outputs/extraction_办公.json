@@ -129,8 +129,8 @@
       ]
     },
     {
-      "object_code": "OBJ_基本信",
-      "object_name": "基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
+      "object_name": "公告",
       "object_name_en": "基本信",
       "parent_object_code": null,
       "object_type": "AUXILIARY",
@@ -34315,7 +34315,7 @@
       "source_row": 18305
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "通知信息",
       "entity_code": "nan",
@@ -34331,7 +34331,7 @@
       "source_row": 4
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "通知表",
       "entity_code": "T_TZ",
@@ -34347,7 +34347,7 @@
       "source_row": 620
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "通知表（推断）",
       "entity_code": "INFERRED_T_TZ",
@@ -34363,7 +34363,7 @@
       "source_row": 620
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "通知阅读表",
       "entity_code": "T_YDTZ",
@@ -34379,7 +34379,7 @@
       "source_row": 649
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "通知阅读表（推断）",
       "entity_code": "INFERRED_T_YDTZ",
@@ -34395,7 +34395,7 @@
       "source_row": 649
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "约稿通知",
       "entity_code": "nan",
@@ -34411,7 +34411,7 @@
       "source_row": 6
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "正文表",
       "entity_code": "T_ZW",
@@ -34427,7 +34427,7 @@
       "source_row": 613
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "正文表（推断）",
       "entity_code": "INFERRED_T_ZW",
@@ -34443,7 +34443,7 @@
       "source_row": 613
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "保密承诺书基本信息",
       "entity_code": "nan",
@@ -34459,7 +34459,7 @@
       "source_row": 9
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "保密承诺书",
       "entity_code": "T_SECRET_COMMITMENT",
@@ -34475,7 +34475,7 @@
       "source_row": 221
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "保密承诺书（推断）",
       "entity_code": "INFERRED_T_SECRET_COMMITMENT",
@@ -34491,7 +34491,7 @@
       "source_row": 221
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "保密机构信息",
       "entity_code": "nan",
@@ -34507,7 +34507,7 @@
       "source_row": 13
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "部门机要联络员信息",
       "entity_code": "T_SECURITY_CONTACT",
@@ -34523,7 +34523,7 @@
       "source_row": 177
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "部门机要联络员信息（推断）",
       "entity_code": "INFERRED_T_SECURITY_CONTACT",
@@ -34539,7 +34539,7 @@
       "source_row": 177
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "保密机构会议统计",
       "entity_code": "T_SECURITY_MEETING",
@@ -34555,7 +34555,7 @@
       "source_row": 189
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "保密机构会议统计（推断）",
       "entity_code": "INFERRED_T_SECURITY_MEETING",
@@ -34571,7 +34571,7 @@
       "source_row": 189
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "保密机构信息填报",
       "entity_code": "T_SECURITY_ORG_INSTRUCTION",
@@ -34587,7 +34587,7 @@
       "source_row": 204
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "保密机构信息填报（推断）",
       "entity_code": "INFERRED_T_SECURITY_ORG_INSTRUCTION",
@@ -34603,7 +34603,7 @@
       "source_row": 204
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "保密责任告知书基本信息",
       "entity_code": "nan",
@@ -34619,7 +34619,7 @@
       "source_row": 14
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "保密责任制",
       "entity_code": "T_BMZRZ_COMMITMENT",
@@ -34635,7 +34635,7 @@
       "source_row": 241
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "保密责任制（推断）",
       "entity_code": "INFERRED_T_BMZRZ_COMMITMENT",
@@ -34651,7 +34651,7 @@
       "source_row": 241
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "通知公告表",
       "entity_code": "nan",
@@ -34667,7 +34667,7 @@
       "source_row": 30
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "通知公告表",
       "entity_code": "GM_NOTIFICATION",
@@ -34683,7 +34683,7 @@
       "source_row": 999
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "通知公告表（推断）",
       "entity_code": "INFERRED_GM_NOTIFICATION",
@@ -34699,7 +34699,7 @@
       "source_row": 999
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "来文来电信息",
       "entity_code": "nan",
@@ -34715,7 +34715,7 @@
       "source_row": 38
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "来文信息表",
       "entity_code": "CSG_DUTY_RECEIVED_DOCUMENT",
@@ -34731,7 +34731,7 @@
       "source_row": 733
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "来文信息表（推断）",
       "entity_code": "INFERRED_CSG_DUTY_RECEIVED_DOCUMENT",
@@ -34747,7 +34747,7 @@
       "source_row": 733
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "来电信息表",
       "entity_code": "CSG_DUTY_INCOMING_CALL",
@@ -34763,7 +34763,7 @@
       "source_row": 743
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "来电信息表（推断）",
       "entity_code": "INFERRED_CSG_DUTY_INCOMING_CALL",
@@ -34779,7 +34779,7 @@
       "source_row": 743
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "发文基本信息",
       "entity_code": "nan",
@@ -34795,7 +34795,7 @@
       "source_row": 84
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "发文表",
       "entity_code": "T_SEND",
@@ -34811,7 +34811,7 @@
       "source_row": 537
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "发文表（推断）",
       "entity_code": "INFERRED_T_SEND",
@@ -34827,7 +34827,7 @@
       "source_row": 537
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "收文基本信息",
       "entity_code": "nan",
@@ -34843,7 +34843,7 @@
       "source_row": 85
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "收文表",
       "entity_code": "T_RECEIVE",
@@ -34859,7 +34859,7 @@
       "source_row": 483
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "收文表（推断）",
       "entity_code": "INFERRED_T_RECEIVE",
@@ -34875,7 +34875,7 @@
       "source_row": 483
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "公告",
       "entity_code": "nan",
@@ -34891,7 +34891,7 @@
       "source_row": 120
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "公告管理表",
       "entity_code": "GM_SYS_ANNOUNCEMENT",
@@ -34907,7 +34907,7 @@
       "source_row": 3438
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "公告管理表（推断）",
       "entity_code": "INFERRED_GM_SYS_ANNOUNCEMENT",
@@ -34923,7 +34923,7 @@
       "source_row": 3438
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "校稿错误信息",
       "entity_code": "nan",
@@ -34939,7 +34939,7 @@
       "source_row": 137
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "错误信息",
       "entity_code": "GM_OA_JG_WRONG_INFO",
@@ -34955,7 +34955,7 @@
       "source_row": 3656
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "错误信息（推断）",
       "entity_code": "INFERRED_GM_OA_JG_WRONG_INFO",
@@ -34971,7 +34971,7 @@
       "source_row": 3656
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "错误记录",
       "entity_code": "GM_OA_JG_WRONG_RECORD",
@@ -34987,7 +34987,7 @@
       "source_row": 3661
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "错误记录（推断）",
       "entity_code": "INFERRED_GM_OA_JG_WRONG_RECORD",
@@ -35003,7 +35003,7 @@
       "source_row": 3661
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "机要涉密发文信息",
       "entity_code": "nan",
@@ -35019,7 +35019,7 @@
       "source_row": 178
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "机要涉密发文信息",
       "entity_code": "GM_OA_JYSMFWXX",
@@ -35035,7 +35035,7 @@
       "source_row": 10073
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "机要涉密发文信息（推断）",
       "entity_code": "INFERRED_GM_OA_JYSMFWXX",
@@ -35051,7 +35051,7 @@
       "source_row": 10073
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "保密委员会会议信息",
       "entity_code": "nan",
@@ -35067,7 +35067,7 @@
       "source_row": 233
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "保密委员会会议信息",
       "entity_code": "GM_OA_BMWYHHYXX_INFO",
@@ -35083,7 +35083,7 @@
       "source_row": 3840
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "保密委员会会议信息（推断）",
       "entity_code": "INFERRED_GM_OA_BMWYHHYXX_INFO",
@@ -35099,7 +35099,7 @@
       "source_row": 3840
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "公告信息",
       "entity_code": "nan",
@@ -35115,7 +35115,7 @@
       "source_row": 293
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "公告用户读取状态表",
       "entity_code": "S_CMS_USER_STATUS",
@@ -35131,7 +35131,7 @@
       "source_row": 12645
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "公告用户读取状态表（推断）",
       "entity_code": "INFERRED_S_CMS_USER_STATUS",
@@ -35147,7 +35147,7 @@
       "source_row": 12645
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "公告对应公司表",
       "entity_code": "S_CMS_COMPANY",
@@ -35163,7 +35163,7 @@
       "source_row": 12654
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "公告对应公司表（推断）",
       "entity_code": "INFERRED_S_CMS_COMPANY",
@@ -35179,7 +35179,7 @@
       "source_row": 12654
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "公告频道表",
       "entity_code": "S_CMS_CHANNEL",
@@ -35195,7 +35195,7 @@
       "source_row": 12658
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "公告频道表（推断）",
       "entity_code": "INFERRED_S_CMS_CHANNEL",
@@ -35211,7 +35211,7 @@
       "source_row": 12658
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "公告表",
       "entity_code": "S_CMS",
@@ -35227,7 +35227,7 @@
       "source_row": 12662
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "公告表（推断）",
       "entity_code": "INFERRED_S_CMS",
@@ -35243,7 +35243,7 @@
       "source_row": 12662
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "消息通知",
       "entity_code": "nan",
@@ -35259,7 +35259,7 @@
       "source_row": 307
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "系统消息表",
       "entity_code": "SYS_MESSAGE",
@@ -35275,7 +35275,7 @@
       "source_row": 13322
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "系统消息表（推断）",
       "entity_code": "INFERRED_SYS_MESSAGE",
@@ -35291,7 +35291,7 @@
       "source_row": 13322
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "预警通知信息",
       "entity_code": "nan",
@@ -35307,7 +35307,7 @@
       "source_row": 931
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "预警通知表",
       "entity_code": "GM_OA_EARLY_NOTION",
@@ -35323,7 +35323,7 @@
       "source_row": 18911
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "预警通知表（推断）",
       "entity_code": "INFERRED_GM_OA_EARLY_NOTION",
@@ -42651,7 +42651,7 @@
       "source_row": 3417
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "图书借阅",
       "entity_code": "nan",
@@ -42667,7 +42667,7 @@
       "source_row": 845
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "借阅记录表",
       "entity_code": "BORROW_RECORD",
@@ -42683,7 +42683,7 @@
       "source_row": 10427
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "借阅记录表（推断）",
       "entity_code": "INFERRED_BORROW_RECORD",
@@ -42699,7 +42699,7 @@
       "source_row": 10427
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "CONCEPT",
       "entity_name": "快递收发",
       "entity_code": "nan",
@@ -42715,7 +42715,7 @@
       "source_row": 837
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "LOGICAL",
       "entity_name": "快递收发记录表",
       "entity_code": "EXPRESS_RECORD",
@@ -42731,7 +42731,7 @@
       "source_row": 10359
     },
     {
-      "object_code": "OBJ_基本信",
+      "object_code": "OBJ_ANNOUNCEMENT",
       "entity_layer": "PHYSICAL",
       "entity_name": "快递收发记录表（推断）",
       "entity_code": "INFERRED_EXPRESS_RECORD",
@@ -44761,17 +44761,6 @@
       "cluster_relations": 102,
       "bridge_relations": 6
     },
-    "OBJ_基本信": {
-      "object_name": "基本信",
-      "cluster_id": 16,
-      "cluster_size": 18,
-      "concept": 18,
-      "logical": 26,
-      "physical": 26,
-      "total": 70,
-      "cluster_relations": 64,
-      "bridge_relations": 6
-    },
     "OBJ_PLAN": {
       "object_name": "计划",
       "cluster_id": 4,
@@ -44815,6 +44804,17 @@
       "total": 28,
       "cluster_relations": 0,
       "bridge_relations": 0
+    },
+    "OBJ_ANNOUNCEMENT": {
+      "object_name": "公告",
+      "cluster_id": 16,
+      "cluster_size": 18,
+      "concept": 18,
+      "logical": 26,
+      "physical": 26,
+      "total": 70,
+      "cluster_relations": 64,
+      "bridge_relations": 6
     }
   },
   "biz_obj_matches": {

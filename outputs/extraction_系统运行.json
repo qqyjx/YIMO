@@ -193,8 +193,8 @@
       ]
     },
     {
-      "object_code": "OBJ_现货市",
-      "object_name": "现货市",
+      "object_code": "OBJ_MARKET_INFO",
+      "object_name": "市场信息",
       "object_name_en": "现货市",
       "parent_object_code": null,
       "object_type": "AUXILIARY",
@@ -34430,7 +34430,7 @@
       "source_row": 41711
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "市场咨询信息",
       "entity_code": "nan",
@@ -34446,7 +34446,7 @@
       "source_row": 155
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "自动化日志跟进中分组统计",
       "entity_code": "nan",
@@ -34462,7 +34462,7 @@
       "source_row": 34050
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "自动化日志跟进中分组统计（推断）",
       "entity_code": "INFERRED_nan",
@@ -34478,7 +34478,7 @@
       "source_row": 34050
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "人员权限表",
       "entity_code": "nan",
@@ -34494,7 +34494,7 @@
       "source_row": 34176
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "人员权限表（推断）",
       "entity_code": "INFERRED_nan",
@@ -34510,7 +34510,7 @@
       "source_row": 34176
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "发电周度检修计划回退及签收意见",
       "entity_code": "nan",
@@ -34526,7 +34526,7 @@
       "source_row": 37329
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "发电周度检修计划回退及签收意见（推断）",
       "entity_code": "INFERRED_nan",
@@ -34542,7 +34542,7 @@
       "source_row": 37329
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "边界信息",
       "entity_code": "nan",
@@ -34558,7 +34558,7 @@
       "source_row": 229
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "保护设备检修详情审核表(广西)",
       "entity_code": "nan",
@@ -34574,7 +34574,7 @@
       "source_row": 29802
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "保护设备检修详情审核表(广西)（推断）",
       "entity_code": "INFERRED_nan",
@@ -34590,7 +34590,7 @@
       "source_row": 29802
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "单位指标统计",
       "entity_code": "nan",
@@ -34606,7 +34606,7 @@
       "source_row": 43405
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "单位指标统计（推断）",
       "entity_code": "INFERRED_nan",
@@ -34622,7 +34622,7 @@
       "source_row": 43405
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "区域现货市场边界信息",
       "entity_code": "nan",
@@ -34638,7 +34638,7 @@
       "source_row": 273
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "网络安全技术管控-设备信息表",
       "entity_code": "nan",
@@ -34654,7 +34654,7 @@
       "source_row": 33323
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "网络安全技术管控-设备信息表（推断）",
       "entity_code": "INFERRED_nan",
@@ -34670,7 +34670,7 @@
       "source_row": 33323
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "装置归属类型",
       "entity_code": "nan",
@@ -34686,7 +34686,7 @@
       "source_row": 34990
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "装置归属类型（推断）",
       "entity_code": "INFERRED_nan",
@@ -34702,7 +34702,7 @@
       "source_row": 34990
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "交易规则信息",
       "entity_code": "nan",
@@ -34718,7 +34718,7 @@
       "source_row": 278
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "运维单位评价-申请",
       "entity_code": "nan",
@@ -34734,7 +34734,7 @@
       "source_row": 27571
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "运维单位评价-申请（推断）",
       "entity_code": "INFERRED_nan",
@@ -34750,7 +34750,7 @@
       "source_row": 27571
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "附件表",
       "entity_code": "nan",
@@ -34766,7 +34766,7 @@
       "source_row": 38365
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "附件表（推断）",
       "entity_code": "INFERRED_nan",
@@ -34782,7 +34782,7 @@
       "source_row": 38365
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "日前现货市场交易",
       "entity_code": "nan",
@@ -34798,7 +34798,7 @@
       "source_row": 482
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "基问风险控制要求",
       "entity_code": "nan",
@@ -34814,7 +34814,7 @@
       "source_row": 36250
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "基问风险控制要求（推断）",
       "entity_code": "INFERRED_nan",
@@ -34830,7 +34830,7 @@
       "source_row": 36250
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "IP地址管理审核信息表",
       "entity_code": "nan",
@@ -34846,7 +34846,7 @@
       "source_row": 42694
     },
     {
-      "object_code": "OBJ_现货市",
+      "object_code": "OBJ_MARKET_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "IP地址管理审核信息表（推断）",
       "entity_code": "INFERRED_nan",
@@ -36605,17 +36605,6 @@
       "cluster_relations": 31,
       "bridge_relations": 21
     },
-    "OBJ_现货市": {
-      "object_name": "现货市",
-      "cluster_id": 14,
-      "cluster_size": 5,
-      "concept": 5,
-      "logical": 11,
-      "physical": 11,
-      "total": 27,
-      "cluster_relations": 27,
-      "bridge_relations": 0
-    },
     "OBJ_PROJECT": {
       "object_name": "项目",
       "cluster_id": -1,
@@ -36625,6 +36614,17 @@
       "physical": 2,
       "total": 5,
       "cluster_relations": 0,
+      "bridge_relations": 0
+    },
+    "OBJ_MARKET_INFO": {
+      "object_name": "市场信息",
+      "cluster_id": 14,
+      "cluster_size": 5,
+      "concept": 5,
+      "logical": 11,
+      "physical": 11,
+      "total": 27,
+      "cluster_relations": 27,
       "bridge_relations": 0
     }
   },

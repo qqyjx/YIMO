@@ -123,8 +123,8 @@
       ]
     },
     {
-      "object_code": "OBJ_推荐信",
-      "object_name": "推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
+      "object_name": "知识信息",
       "object_name_en": "推荐信",
       "parent_object_code": null,
       "object_type": "AUXILIARY",
@@ -61913,7 +61913,7 @@
       "source_row": 23061
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "问答对话信息",
       "entity_code": "nan",
@@ -61929,7 +61929,7 @@
       "source_row": 458
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "输出结果表",
       "entity_code": "T_SCJG",
@@ -61945,7 +61945,7 @@
       "source_row": 7109
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "输出结果表（推断）",
       "entity_code": "INFERRED_T_SCJG",
@@ -61961,7 +61961,7 @@
       "source_row": 7109
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "对话内容表",
       "entity_code": "T_DHNR",
@@ -61977,7 +61977,7 @@
       "source_row": 7121
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "对话内容表（推断）",
       "entity_code": "INFERRED_T_DHNR",
@@ -61993,7 +61993,7 @@
       "source_row": 7121
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "关键词信息",
       "entity_code": "nan",
@@ -62009,7 +62009,7 @@
       "source_row": 778
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "关键词信息",
       "entity_code": "T_INSTITUTION_GJC_INFO",
@@ -62025,7 +62025,7 @@
       "source_row": 5760
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "关键词信息（推断）",
       "entity_code": "INFERRED_T_INSTITUTION_GJC_INFO",
@@ -62041,7 +62041,7 @@
       "source_row": 5760
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "知识解答信息",
       "entity_code": "nan",
@@ -62057,7 +62057,7 @@
       "source_row": 779
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "知识解答信息",
       "entity_code": "T_INSTITUTION_ZSJD_INFO",
@@ -62073,7 +62073,7 @@
       "source_row": 5764
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "知识解答信息（推断）",
       "entity_code": "INFERRED_T_INSTITUTION_ZSJD_INFO",
@@ -62089,7 +62089,7 @@
       "source_row": 5764
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "查询信息",
       "entity_code": "nan",
@@ -62105,7 +62105,7 @@
       "source_row": 781
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "查询历史信息",
       "entity_code": "T_INSTITUTION_CXLS_INFO",
@@ -62121,7 +62121,7 @@
       "source_row": 5768
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "查询历史信息（推断）",
       "entity_code": "INFERRED_T_INSTITUTION_CXLS_INFO",
@@ -62137,7 +62137,7 @@
       "source_row": 5768
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "知识推荐信息",
       "entity_code": "nan",
@@ -62153,7 +62153,7 @@
       "source_row": 782
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "知识推荐信息",
       "entity_code": "T_INSTITUTION_ZSTJ_INFO",
@@ -62169,7 +62169,7 @@
       "source_row": 5772
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "知识推荐信息（推断）",
       "entity_code": "INFERRED_T_INSTITUTION_ZSTJ_INFO",
@@ -62185,7 +62185,7 @@
       "source_row": 5772
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "个性化推荐信息",
       "entity_code": "nan",
@@ -62201,7 +62201,7 @@
       "source_row": 783
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "个性化知识推荐信息",
       "entity_code": "T_INSTITUTION_GXHZSTJ_INFO",
@@ -62217,7 +62217,7 @@
       "source_row": 5775
     },
     {
-      "object_code": "OBJ_推荐信",
+      "object_code": "OBJ_KNOWLEDGE_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "个性化知识推荐信息（推断）",
       "entity_code": "INFERRED_T_INSTITUTION_GXHZSTJ_INFO",
@@ -69415,8 +69415,8 @@
       "cluster_relations": 32,
       "bridge_relations": 0
     },
-    "OBJ_推荐信": {
-      "object_name": "推荐信",
+    "OBJ_KNOWLEDGE_INFO": {
+      "object_name": "知识信息",
       "cluster_id": 3,
       "cluster_size": 6,
       "concept": 6,

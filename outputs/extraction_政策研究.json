@@ -29,8 +29,8 @@
       ]
     },
     {
-      "object_code": "OBJ_信息管",
-      "object_name": "信息管",
+      "object_code": "OBJ_INFO",
+      "object_name": "信息",
       "object_name_en": "信息管",
       "parent_object_code": null,
       "object_type": "AUXILIARY",
@@ -2714,7 +2714,7 @@
       "source_row": 2251
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "资源信息",
       "entity_code": "nan",
@@ -2730,7 +2730,7 @@
       "source_row": 2
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "资源信息表",
       "entity_code": "GM_NFDW_FILE",
@@ -2746,7 +2746,7 @@
       "source_row": 898
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "资源信息表",
       "entity_code": "GM_NFDW_FILE",
@@ -2762,7 +2762,7 @@
       "source_row": 898
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "时事新词信息表",
       "entity_code": "PR_NEW_AFFAIR",
@@ -2778,7 +2778,7 @@
       "source_row": 2415
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "时事新词信息表",
       "entity_code": "PR_NEW_AFFAIR",
@@ -2794,7 +2794,7 @@
       "source_row": 2415
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "词语逻辑关系表",
       "entity_code": "PR_NEW_AFFAIR_INFO",
@@ -2810,7 +2810,7 @@
       "source_row": 2424
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "词语逻辑关系表",
       "entity_code": "PR_NEW_AFFAIR_INFO",
@@ -2826,7 +2826,7 @@
       "source_row": 2424
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "新闻聚合文章内容表",
       "entity_code": "PR_AGGREGATE_NEWS",
@@ -2842,7 +2842,7 @@
       "source_row": 2434
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "新闻聚合文章内容表",
       "entity_code": "PR_AGGREGATE_NEWS",
@@ -2858,7 +2858,7 @@
       "source_row": 2434
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "查阅筛选表",
       "entity_code": "PR_SEARCH_FILTER",
@@ -2874,7 +2874,7 @@
       "source_row": 2446
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "查阅筛选表",
       "entity_code": "PR_SEARCH_FILTER",
@@ -2890,7 +2890,7 @@
       "source_row": 2446
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "新词与文章关联记录表",
       "entity_code": "PR_WORDS_ARTICLE_ASSOCIATION",
@@ -2906,7 +2906,7 @@
       "source_row": 2453
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "新词与文章关联记录表",
       "entity_code": "PR_WORDS_ARTICLE_ASSOCIATION",
@@ -2922,7 +2922,7 @@
       "source_row": 2453
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "用户信息与稿件记录关系表",
       "entity_code": "PR_USER_DRAFT",
@@ -2938,7 +2938,7 @@
       "source_row": 2514
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "用户信息与稿件记录关系表",
       "entity_code": "PR_USER_DRAFT",
@@ -2954,7 +2954,7 @@
       "source_row": 2514
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "用户信息与收藏记录关系表",
       "entity_code": "PR_USER_COLLECTION",
@@ -2970,7 +2970,7 @@
       "source_row": 2609
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "用户信息与收藏记录关系表",
       "entity_code": "PR_USER_COLLECTION",
@@ -2986,7 +2986,7 @@
       "source_row": 2609
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "政策解读结果表",
       "entity_code": "PR_POLICY_UNSCRAMBLE",
@@ -3002,7 +3002,7 @@
       "source_row": 2726
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "政策解读结果表",
       "entity_code": "PR_POLICY_UNSCRAMBLE",
@@ -3018,7 +3018,7 @@
       "source_row": 2726
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "智能汇编表",
       "entity_code": "PR_SYS_NEWS_COMPILE",
@@ -3034,7 +3034,7 @@
       "source_row": 2736
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "智能汇编表",
       "entity_code": "PR_SYS_NEWS_COMPILE",
@@ -3050,7 +3050,7 @@
       "source_row": 2736
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "简报汇编表",
       "entity_code": "PR_SIMPLE_COMPILE",
@@ -3066,7 +3066,7 @@
       "source_row": 2743
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "简报汇编表",
       "entity_code": "PR_SIMPLE_COMPILE",
@@ -3082,7 +3082,7 @@
       "source_row": 2743
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "文章聚类表",
       "entity_code": "PR_ARTICLE_CLUSTER",
@@ -3098,7 +3098,7 @@
       "source_row": 2750
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "文章聚类表",
       "entity_code": "PR_ARTICLE_CLUSTER",
@@ -3114,7 +3114,7 @@
       "source_row": 2750
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "稿件信息表",
       "entity_code": "PR_DRAFT_INFO",
@@ -3130,7 +3130,7 @@
       "source_row": 2764
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "稿件信息表",
       "entity_code": "PR_DRAFT_INFO",
@@ -3146,7 +3146,7 @@
       "source_row": 2764
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "文献信息",
       "entity_code": "PR_ARTCLE_IFNO",
@@ -3162,7 +3162,7 @@
       "source_row": 2820
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "文献信息",
       "entity_code": "PR_ARTCLE_IFNO",
@@ -3178,7 +3178,7 @@
       "source_row": 2820
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "文献引用记录信息表",
       "entity_code": "PR_ARTCLE_CITATION_RECORD",
@@ -3194,7 +3194,7 @@
       "source_row": 2830
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "文献引用记录信息表",
       "entity_code": "PR_ARTCLE_CITATION_RECORD",
@@ -3210,7 +3210,7 @@
       "source_row": 2830
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "个人稿件表",
       "entity_code": "PR_DRAFT",
@@ -3226,7 +3226,7 @@
       "source_row": 2879
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "个人稿件表",
       "entity_code": "PR_DRAFT",
@@ -3242,7 +3242,7 @@
       "source_row": 2879
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "信息快报",
       "entity_code": "nan",
@@ -3258,7 +3258,7 @@
       "source_row": 4
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "信息快报表",
       "entity_code": "GM_NFDW_NEWS_ER",
@@ -3274,7 +3274,7 @@
       "source_row": 976
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "信息快报表",
       "entity_code": "GM_NFDW_NEWS_ER",
@@ -3290,7 +3290,7 @@
       "source_row": 976
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "咨询咨政",
       "entity_code": "nan",
@@ -3306,7 +3306,7 @@
       "source_row": 10
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "咨询咨政记录表",
       "entity_code": "PR_CONSULT_RECORD",
@@ -3322,7 +3322,7 @@
       "source_row": 1936
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "咨询咨政记录表",
       "entity_code": "PR_CONSULT_RECORD",
@@ -3338,7 +3338,7 @@
       "source_row": 1936
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "交流情况",
       "entity_code": "nan",
@@ -3354,7 +3354,7 @@
       "source_row": 15
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "交流情况登记表",
       "entity_code": "PR_EXCHANGE_RECORD",
@@ -3370,7 +3370,7 @@
       "source_row": 1957
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "交流情况登记表",
       "entity_code": "PR_EXCHANGE_RECORD",
@@ -3386,7 +3386,7 @@
       "source_row": 1957
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "智能问答信息",
       "entity_code": "nan",
@@ -3402,7 +3402,7 @@
       "source_row": 66
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "句子分解文本信息表",
       "entity_code": "PR_SPLIT_TEXT",
@@ -3418,7 +3418,7 @@
       "source_row": 2270
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "句子分解文本信息表",
       "entity_code": "PR_SPLIT_TEXT",
@@ -3434,7 +3434,7 @@
       "source_row": 2270
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "文本语义分析信息表",
       "entity_code": "PR_SEMANTIC_ANALYSIS",
@@ -3450,7 +3450,7 @@
       "source_row": 2279
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "文本语义分析信息表",
       "entity_code": "PR_SEMANTIC_ANALYSIS",
@@ -3466,7 +3466,7 @@
       "source_row": 2279
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "文本上下文向量表",
       "entity_code": "PR_CONTEXT_VECTOR",
@@ -3482,7 +3482,7 @@
       "source_row": 2288
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "文本上下文向量表",
       "entity_code": "PR_CONTEXT_VECTOR",
@@ -3498,7 +3498,7 @@
       "source_row": 2288
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "单词短语关系向量表",
       "entity_code": "PR_WORD_PHRASE",
@@ -3514,7 +3514,7 @@
       "source_row": 2299
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "单词短语关系向量表",
       "entity_code": "PR_WORD_PHRASE",
@@ -3530,7 +3530,7 @@
       "source_row": 2299
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "检索记录表",
       "entity_code": "PR_SEARCH_LOG",
@@ -3546,7 +3546,7 @@
       "source_row": 2310
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "检索记录表",
       "entity_code": "PR_SEARCH_LOG",
@@ -3562,7 +3562,7 @@
       "source_row": 2310
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "用户信息表",
       "entity_code": "GM_SYS_USER",
@@ -3578,7 +3578,7 @@
       "source_row": 2319
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "用户信息表",
       "entity_code": "GM_SYS_USER",
@@ -3594,7 +3594,7 @@
       "source_row": 2319
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "逻辑关系搜索表",
       "entity_code": "PR_LOGIC_SEARCH",
@@ -3610,7 +3610,7 @@
       "source_row": 2349
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "逻辑关系搜索表",
       "entity_code": "PR_LOGIC_SEARCH",
@@ -3626,7 +3626,7 @@
       "source_row": 2349
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "热门问题信息表",
       "entity_code": "PR_HOT_ISSUE",
@@ -3642,7 +3642,7 @@
       "source_row": 2356
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "热门问题信息表",
       "entity_code": "PR_HOT_ISSUE",
@@ -3658,7 +3658,7 @@
       "source_row": 2356
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "对话检索信息表",
       "entity_code": "PR_SESSION_INFO",
@@ -3674,7 +3674,7 @@
       "source_row": 2365
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "对话检索信息表",
       "entity_code": "PR_SESSION_INFO",
@@ -3690,7 +3690,7 @@
       "source_row": 2365
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "检索结果信息表",
       "entity_code": "PR_SESSION_RESULT",
@@ -3706,7 +3706,7 @@
       "source_row": 2375
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "检索结果信息表",
       "entity_code": "PR_SESSION_RESULT",
@@ -3722,7 +3722,7 @@
       "source_row": 2375
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "标签关系表",
       "entity_code": "PR_TAG_RELATION",
@@ -3738,7 +3738,7 @@
       "source_row": 2385
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "标签关系表",
       "entity_code": "PR_TAG_RELATION",
@@ -3754,7 +3754,7 @@
       "source_row": 2385
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "es查询中间表",
       "entity_code": "PR_ES_SEARCH",
@@ -3770,7 +3770,7 @@
       "source_row": 2395
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "es查询中间表",
       "entity_code": "PR_ES_SEARCH",
@@ -3786,7 +3786,7 @@
       "source_row": 2395
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "政策文件信息对应表",
       "entity_code": "PR_POLICY_FILE",
@@ -3802,7 +3802,7 @@
       "source_row": 2405
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "政策文件信息对应表",
       "entity_code": "PR_POLICY_FILE",
@@ -3818,7 +3818,7 @@
       "source_row": 2405
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "用户评价信息表",
       "entity_code": "PR_USER_RATING_INFO",
@@ -3834,7 +3834,7 @@
       "source_row": 2523
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "用户评价信息表",
       "entity_code": "PR_USER_RATING_INFO",
@@ -3850,7 +3850,7 @@
       "source_row": 2523
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "文件评价信息表",
       "entity_code": "PR_FILE_RATING_INFO",
@@ -3866,7 +3866,7 @@
       "source_row": 2532
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "文件评价信息表",
       "entity_code": "PR_FILE_RATING_INFO",
@@ -3882,7 +3882,7 @@
       "source_row": 2532
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "自定义模板表",
       "entity_code": "PR_ARTCLE_TEMPLATE",
@@ -3898,7 +3898,7 @@
       "source_row": 2540
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "自定义模板表",
       "entity_code": "PR_ARTCLE_TEMPLATE",
@@ -3914,7 +3914,7 @@
       "source_row": 2540
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "文件信息对应表",
       "entity_code": "PR_FILE_INFO",
@@ -3930,7 +3930,7 @@
       "source_row": 2547
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "文件信息对应表",
       "entity_code": "PR_FILE_INFO",
@@ -3946,7 +3946,7 @@
       "source_row": 2547
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "稿件与模板信息关系表",
       "entity_code": "PR_DRAFT_TEMPLATE",
@@ -3962,7 +3962,7 @@
       "source_row": 2579
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "稿件与模板信息关系表",
       "entity_code": "PR_DRAFT_TEMPLATE",
@@ -3978,7 +3978,7 @@
       "source_row": 2579
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "模板使用记录表",
       "entity_code": "PR_TEMPLATE_USE",
@@ -3994,7 +3994,7 @@
       "source_row": 2589
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "模板使用记录表",
       "entity_code": "PR_TEMPLATE_USE",
@@ -4010,7 +4010,7 @@
       "source_row": 2589
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "个人收藏表",
       "entity_code": "PR_COLLECTION",
@@ -4026,7 +4026,7 @@
       "source_row": 2599
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "个人收藏表",
       "entity_code": "PR_COLLECTION",
@@ -4042,7 +4042,7 @@
       "source_row": 2599
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "稿件与标题信息关系表",
       "entity_code": "PR_DRAFT_TITLE",
@@ -4058,7 +4058,7 @@
       "source_row": 2775
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "稿件与标题信息关系表",
       "entity_code": "PR_DRAFT_TITLE",
@@ -4074,7 +4074,7 @@
       "source_row": 2775
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "文章提纲表",
       "entity_code": "PR_ARTICLE_OUTLINE",
@@ -4090,7 +4090,7 @@
       "source_row": 2784
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "文章提纲表",
       "entity_code": "PR_ARTICLE_OUTLINE",
@@ -4106,7 +4106,7 @@
       "source_row": 2784
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "稿件与提纲信息关系表",
       "entity_code": "PR_DRAFT_OUTLINE",
@@ -4122,7 +4122,7 @@
       "source_row": 2791
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "稿件与提纲信息关系表",
       "entity_code": "PR_DRAFT_OUTLINE",
@@ -4138,7 +4138,7 @@
       "source_row": 2791
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "模板分类表",
       "entity_code": "PR_TEMPLATE_TYPE",
@@ -4154,7 +4154,7 @@
       "source_row": 2808
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "模板分类表",
       "entity_code": "PR_TEMPLATE_TYPE",
@@ -4170,7 +4170,7 @@
       "source_row": 2808
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "热门问题表",
       "entity_code": "PR_HOT_QUESTIONS",
@@ -4186,7 +4186,7 @@
       "source_row": 2838
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "热门问题表",
       "entity_code": "PR_HOT_QUESTIONS",
@@ -4202,7 +4202,7 @@
       "source_row": 2838
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "历史对话表",
       "entity_code": "PR_HISTORY_CHAT",
@@ -4218,7 +4218,7 @@
       "source_row": 2843
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "历史对话表",
       "entity_code": "PR_HISTORY_CHAT",
@@ -4234,7 +4234,7 @@
       "source_row": 2843
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "历史对话详情表",
       "entity_code": "PR_HISTORY_CHAT_DETAIL",
@@ -4250,7 +4250,7 @@
       "source_row": 2852
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "历史对话详情表",
       "entity_code": "PR_HISTORY_CHAT_DETAIL",
@@ -4266,7 +4266,7 @@
       "source_row": 2852
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "会话审计日志表",
       "entity_code": "PR_CHAT_AUDIT",
@@ -4282,7 +4282,7 @@
       "source_row": 2862
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "会话审计日志表",
       "entity_code": "PR_CHAT_AUDIT",
@@ -4298,7 +4298,7 @@
       "source_row": 2862
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "我的信息详情表",
       "entity_code": "PR_SYS_MY_DETAIL",
@@ -4314,7 +4314,7 @@
       "source_row": 2872
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "我的信息详情表",
       "entity_code": "PR_SYS_MY_DETAIL",
@@ -4330,7 +4330,7 @@
       "source_row": 2872
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "词句信息关联表",
       "entity_code": "PR_WORD_SENTENCE",
@@ -4346,7 +4346,7 @@
       "source_row": 2890
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "词句信息关联表",
       "entity_code": "PR_WORD_SENTENCE",
@@ -4362,7 +4362,7 @@
       "source_row": 2890
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "用户信息管理",
       "entity_code": "nan",
@@ -4378,7 +4378,7 @@
       "source_row": 67
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "系统角色信息表",
       "entity_code": "GM_SYS_ROLE",
@@ -4394,7 +4394,7 @@
       "source_row": 2481
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "系统角色信息表",
       "entity_code": "GM_SYS_ROLE",
@@ -4410,7 +4410,7 @@
       "source_row": 2481
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "用户和角色关联表",
       "entity_code": "PR_SYS_USER_ROLE",
@@ -4426,7 +4426,7 @@
       "source_row": 2494
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "用户和角色关联表",
       "entity_code": "PR_SYS_USER_ROLE",
@@ -4442,7 +4442,7 @@
       "source_row": 2494
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "角色和菜单关联表",
       "entity_code": "PR_SYS_ROLE_MENU",
@@ -4458,7 +4458,7 @@
       "source_row": 2503
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "角色和菜单关联表",
       "entity_code": "PR_SYS_ROLE_MENU",
@@ -4474,7 +4474,7 @@
       "source_row": 2503
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "角色文献库权限表",
       "entity_code": "PR_SYS_ROLE_TAG",
@@ -4490,7 +4490,7 @@
       "source_row": 2506
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "角色文献库权限表",
       "entity_code": "PR_SYS_ROLE_TAG",
@@ -4506,7 +4506,7 @@
       "source_row": 2506
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "内容信息管理",
       "entity_code": "nan",
@@ -4522,7 +4522,7 @@
       "source_row": 68
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "浏览统计记录信息表",
       "entity_code": "PR_BROWSE_STATISTICS_RECORD",
@@ -4538,7 +4538,7 @@
       "source_row": 2461
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "浏览统计记录信息表",
       "entity_code": "PR_BROWSE_STATISTICS_RECORD",
@@ -4554,7 +4554,7 @@
       "source_row": 2461
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "意见反馈信息表",
       "entity_code": "PR_FEEDBACK",
@@ -4570,7 +4570,7 @@
       "source_row": 2470
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "意见反馈信息表",
       "entity_code": "PR_FEEDBACK",
@@ -4586,7 +4586,7 @@
       "source_row": 2470
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "文章查询记录信息表",
       "entity_code": "GM_VISIT_LOG",
@@ -4602,7 +4602,7 @@
       "source_row": 2558
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "文章查询记录信息表",
       "entity_code": "GM_VISIT_LOG",
@@ -4618,7 +4618,7 @@
       "source_row": 2558
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "文章访问记录信息表",
       "entity_code": "GM_VISIT_LOGS",
@@ -4634,7 +4634,7 @@
       "source_row": 2568
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "文章访问记录信息表",
       "entity_code": "GM_VISIT_LOGS",
@@ -4650,7 +4650,7 @@
       "source_row": 2568
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "管理权限表",
       "entity_code": "PR_PERMISSION_SET",
@@ -4666,7 +4666,7 @@
       "source_row": 2620
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "管理权限表",
       "entity_code": "PR_PERMISSION_SET",
@@ -4682,7 +4682,7 @@
       "source_row": 2620
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "用户登录数据表",
       "entity_code": "PR_LOGIN_INFO",
@@ -4698,7 +4698,7 @@
       "source_row": 2630
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "用户登录数据表",
       "entity_code": "PR_LOGIN_INFO",
@@ -4714,7 +4714,7 @@
       "source_row": 2630
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "监控指标数据表",
       "entity_code": "PR_MONITOR_TARGET",
@@ -4730,7 +4730,7 @@
       "source_row": 2640
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "监控指标数据表",
       "entity_code": "PR_MONITOR_TARGET",
@@ -4746,7 +4746,7 @@
       "source_row": 2640
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "监控规则设置表",
       "entity_code": "PR_MONITOR_RULE",
@@ -4762,7 +4762,7 @@
       "source_row": 2650
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "监控规则设置表",
       "entity_code": "PR_MONITOR_RULE",
@@ -4778,7 +4778,7 @@
       "source_row": 2650
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "数据源表",
       "entity_code": "PR_MONITOR_SOUCR",
@@ -4794,7 +4794,7 @@
       "source_row": 2659
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "数据源表",
       "entity_code": "PR_MONITOR_SOUCR",
@@ -4810,7 +4810,7 @@
       "source_row": 2659
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "外部接口采集表",
       "entity_code": "PR_GATHER_OUT",
@@ -4826,7 +4826,7 @@
       "source_row": 2669
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "外部接口采集表",
       "entity_code": "PR_GATHER_OUT",
@@ -4842,7 +4842,7 @@
       "source_row": 2669
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "采集目录表",
       "entity_code": "PR_GATHER_CATALOGUE",
@@ -4858,7 +4858,7 @@
       "source_row": 2680
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "采集目录表",
       "entity_code": "PR_GATHER_CATALOGUE",
@@ -4874,7 +4874,7 @@
       "source_row": 2680
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "分类规则信息表",
       "entity_code": "GM_DROOLS_CHANNEL_RULE",
@@ -4890,7 +4890,7 @@
       "source_row": 2702
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "分类规则信息表",
       "entity_code": "GM_DROOLS_CHANNEL_RULE",
@@ -4906,7 +4906,7 @@
       "source_row": 2702
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "敏感词库",
       "entity_code": "PR_SENSITIVE_WORDS",
@@ -4922,7 +4922,7 @@
       "source_row": 2801
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "敏感词库",
       "entity_code": "PR_SENSITIVE_WORDS",
@@ -4938,7 +4938,7 @@
       "source_row": 2801
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "反馈信息办理表",
       "entity_code": "PR_FEEDBACK_INFO_APPLY",
@@ -4954,7 +4954,7 @@
       "source_row": 2900
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "反馈信息办理表",
       "entity_code": "PR_FEEDBACK_INFO_APPLY",
@@ -7818,7 +7818,7 @@
       "source_row": 4720
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "CONCEPT",
       "entity_name": "内部稿件",
       "entity_code": "nan",
@@ -7834,7 +7834,7 @@
       "source_row": 3
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "内部动态表",
       "entity_code": "GM_NFDW_SSD_IN",
@@ -7850,7 +7850,7 @@
       "source_row": 933
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "LOGICAL",
       "entity_name": "稿件写作表",
       "entity_code": "PR_ARTICLE_EDIT",
@@ -7866,7 +7866,7 @@
       "source_row": 2757
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "内部动态表",
       "entity_code": "GM_NFDW_SSD_IN",
@@ -7882,7 +7882,7 @@
       "source_row": 933
     },
     {
-      "object_code": "OBJ_信息管",
+      "object_code": "OBJ_INFO",
       "entity_layer": "PHYSICAL",
       "entity_name": "稿件写作表",
       "entity_code": "PR_ARTICLE_EDIT",
@@ -7911,17 +7911,6 @@
       "cluster_relations": 158,
       "bridge_relations": 3
     },
-    "OBJ_信息管": {
-      "object_name": "信息管",
-      "cluster_id": 1,
-      "cluster_size": 8,
-      "concept": 8,
-      "logical": 69,
-      "physical": 69,
-      "total": 146,
-      "cluster_relations": 141,
-      "bridge_relations": 5
-    },
     "OBJ_TASK": {
       "object_name": "任务",
       "cluster_id": 7,
@@ -7932,6 +7921,17 @@
       "total": 175,
       "cluster_relations": 175,
       "bridge_relations": 0
+    },
+    "OBJ_INFO": {
+      "object_name": "信息",
+      "cluster_id": 1,
+      "cluster_size": 8,
+      "concept": 8,
+      "logical": 69,
+      "physical": 69,
+      "total": 146,
+      "cluster_relations": 141,
+      "bridge_relations": 5
     }
   },
   "biz_obj_matches": {
