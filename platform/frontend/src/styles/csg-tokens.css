@@ -1,0 +1,133 @@
+/**
+ * 南方电网数字平台 Web 应用界面设计规范 (CSG-SZDGRI-STD-WebUI v3.1) 落地 token.
+ * 出处: docs/需求/web应用界面设计规范.pdf (2021.9 修订)
+ *
+ * 覆盖 ElementPlus CSS 变量 + 全局字体 + 通用间距, 不动业务组件结构.
+ * 等南网数字平台前端 SDK 现场拿到后, 用 SDK 替换 ElementPlus 即可平滑迁移.
+ */
+
+:root {
+  /* ===== 颜色: 主色 ===== */
+  --csg-primary: #2590FF;          /* 主色: 按钮/链接/焦点/交互强调 */
+  --csg-primary-hover: #4DA8FF;
+  --csg-primary-active: #1A7AE0;
+  --csg-primary-soft: #E6F2FF;     /* 主色淡背景 */
+
+  /* ===== 颜色: 辅助 / 文本 / 状态 ===== */
+  --csg-text-main: #1F2D3D;
+  --csg-text-sub: #4B5B6F;
+  --csg-text-muted: #6B84A5;       /* 灰蓝, 默认 icon / 次文本 */
+  --csg-text-note: #666666;        /* 备注 12px */
+  --csg-bg: #F4F6F8;               /* 页面背景 */
+  --csg-bg-card: #FFFFFF;
+  --csg-border: #DCE3EC;
+  --csg-border-light: #E6E8EB;
+  --csg-success: #2CC069;
+  --csg-warning: #F2B033;
+  --csg-danger: #E55340;
+
+  /* ===== 字体 ===== */
+  --csg-font-family: '微软雅黑', 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+  --csg-font-size-h1: 22px;
+  --csg-font-size-h2: 18px;
+  --csg-font-size-base: 14px;
+  --csg-font-size-small: 12px;     /* 备注/帮助文本 */
+
+  /* ===== 间距 (规范第 5 章) ===== */
+  --csg-gap-xs: 4px;
+  --csg-gap-sm: 8px;
+  --csg-gap-md: 12px;
+  --csg-gap-btn: 10px;             /* 按钮间距 */
+  --csg-gap-lg: 16px;
+  --csg-gap-xl: 20px;              /* 弹窗内距 */
+  --csg-gap-xxl: 40px;             /* 选人选部门弹窗 */
+  --csg-radius-sm: 2px;
+  --csg-radius: 4px;
+  --csg-radius-lg: 8px;
+
+  /* ===== 阴影 ===== */
+  --csg-shadow-card: 0 1px 4px rgba(31,45,61,0.06);
+  --csg-shadow-pop: 0 4px 16px rgba(31,45,61,0.12);
+
+  /* ===== ElementPlus 变量覆盖 (运行时把蓝色基底切到南网色) ===== */
+  --el-color-primary: var(--csg-primary);
+  --el-color-primary-light-3: #5BA9FF;
+  --el-color-primary-light-5: #80BCFF;
+  --el-color-primary-light-7: #A6CDFF;
+  --el-color-primary-light-8: #C2DCFF;
+  --el-color-primary-light-9: var(--csg-primary-soft);
+  --el-color-primary-dark-2: var(--csg-primary-active);
+
+  --el-color-success: var(--csg-success);
+  --el-color-warning: var(--csg-warning);
+  --el-color-danger:  var(--csg-danger);
+
+  --el-text-color-primary:   var(--csg-text-main);
+  --el-text-color-regular:   var(--csg-text-sub);
+  --el-text-color-secondary: var(--csg-text-muted);
+  --el-text-color-placeholder: #A8B6C7;
+
+  --el-bg-color: var(--csg-bg-card);
+  --el-bg-color-page: var(--csg-bg);
+
+  --el-border-color: var(--csg-border);
+  --el-border-color-light: var(--csg-border-light);
+
+  --el-border-radius-base:  var(--csg-radius);
+  --el-border-radius-small: var(--csg-radius-sm);
+  --el-border-radius-round: 999px;
+
+  --el-font-family: var(--csg-font-family);
+  --el-font-size-base: var(--csg-font-size-base);
+  --el-font-size-small: var(--csg-font-size-small);
+}
+
+/* ===== 全局基底 ===== */
+html, body {
+  margin: 0;
+  background: var(--csg-bg);
+  color: var(--csg-text-main);
+  font-family: var(--csg-font-family);
+  font-size: var(--csg-font-size-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== 规范一致性辅助类 ===== */
+.csg-note    { color: var(--csg-text-note);  font-size: var(--csg-font-size-small); }
+.csg-muted   { color: var(--csg-text-muted); font-size: var(--csg-font-size-small); }
+.csg-link    { color: var(--csg-primary); cursor: pointer; }
+.csg-link:hover { color: var(--csg-primary-hover); text-decoration: underline; }
+
+/* 按钮间距 (按钮集) */
+.csg-btn-group > .el-button + .el-button {
+  margin-left: var(--csg-gap-btn);
+}
+
+/* 卡片基底 */
+.csg-card {
+  background: var(--csg-bg-card);
+  border: 1px solid var(--csg-border-light);
+  border-radius: var(--csg-radius);
+  box-shadow: var(--csg-shadow-card);
+  padding: var(--csg-gap-lg);
+}
+
+/* 紧凑表单标题对齐 ("非"字对齐: 标签右对齐, 输入框左对齐) */
+.csg-form-label {
+  text-align: right;
+  color: var(--csg-text-sub);
+  padding-right: var(--csg-gap-md);
+}
+
+/* 工作区最大化: 页面级标题栏不超过 56px */
+.csg-page-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--csg-gap-xl);
+  background: linear-gradient(90deg, #0a2e5c 0%, #1A7AE0 100%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+}
