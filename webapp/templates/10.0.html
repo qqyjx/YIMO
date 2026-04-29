@@ -128,7 +128,7 @@
 
         /* ========== Domain Filter Bar（企业级 tab 样式） ========== */
         .domain-filter-bar {
-            display: flex; align-items: center; flex-wrap: wrap;
+            display: flex; align-items: center;
             gap: .75rem; padding: .9rem 2rem 0;
             font-size: .82rem;
         }
@@ -137,21 +137,35 @@
             font-weight: 500; color: var(--text-sec);
             font-size: .8rem;
             padding-right: .4rem;
+            flex-shrink: 0;
         }
+        /* 22 域横向 segmented 容器: 不换行, 超出可横滚 */
         .domain-segmented {
-            display: inline-flex; align-items: center;
+            display: inline-flex; align-items: stretch;
             gap: 0;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            min-width: 0;
+            flex: 1 1 auto;
+            padding-bottom: 4px;
         }
+        .domain-segmented::-webkit-scrollbar { height: 6px; }
+        .domain-segmented::-webkit-scrollbar-thumb { background: #d9e2ec; border-radius: 3px; }
         .domain-chip {
-            display: inline-flex; align-items: center; gap: .4rem;
-            padding: .45rem 1rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: .4rem;
+            padding: .5rem .75rem;
             background: #FFFFFF;
             border: 1px solid var(--border);
             color: var(--text-sec); cursor: pointer;
             transition: var(--transition);
             user-select: none;
-            font-size: .82rem; font-weight: 400;
+            font-size: .8rem; font-weight: 400;
             margin-left: -1px;
+            white-space: nowrap;       /* 关键: 文字不竖排 */
+            flex-shrink: 0;
+            line-height: 1.2;
         }
         .domain-chip:first-of-type { border-radius: 2px 0 0 2px; margin-left: 0; }
         .domain-chip:last-of-type { border-radius: 0 2px 2px 0; }
@@ -201,13 +215,17 @@
             position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
             color: var(--text-muted); font-size: .9rem;
         }
-        .topbar-actions { display: flex; gap: .5rem; margin-left: auto; }
+        .topbar-actions { display: flex; gap: .5rem; margin-left: auto; align-items: center; }
         .btn {
-            display: inline-flex; align-items: center; gap: .4rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: .4rem;
             padding: .5rem 1rem; border-radius: 8px;
             font-size: .82rem; font-weight: 600; cursor: pointer;
             border: none; transition: var(--transition);
+            line-height: 1;
+            white-space: nowrap;
         }
+        .btn i { line-height: 1; font-size: .95rem; }
         .btn-primary {
             background: var(--primary); color: #fff;
             box-shadow: none;
@@ -748,6 +766,9 @@
                 <span class="legend-chip"><span class="legend-dot physical"></span>物理实体</span>
             </div>
             <div class="topbar-actions">
+                <button class="btn btn-outline" onclick="window.location.href='/?v=ontology'" title="切换 Palantir 风格新版">
+                    <i class="bi bi-grid-3x3-gap"></i>新版
+                </button>
                 <button class="btn btn-outline" onclick="refreshAll()" title="刷新数据">
                     <i class="bi bi-arrow-clockwise"></i>刷新
                 </button>

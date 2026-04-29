@@ -80,7 +80,6 @@ function safe(v: unknown, suffix = '') {
         </el-descriptions-item>
         <el-descriptions-item label="UI 规范" label-class-name="desc-label">
           南方电网深圳数字电网研究院 — Web 应用界面设计规范 v3.1
-          (主色 #2590FF · 微软雅黑 · 文档参见 docs/需求/web应用界面设计规范.pdf)
         </el-descriptions-item>
       </el-descriptions>
       <el-alert v-else-if="loadErr" :title="loadErr" type="error" show-icon class="mt-md" />
